@@ -52,12 +52,14 @@ func (s *Service) RegisterLeaf(ctx context.Context, userID string, req RegisterL
 		return nil, ErrNoWalletBound
 	}
 
+	fullName := leafName + "." + parentName
+	nameHash := "0x" + utils.SHA256HexString(fullName)
 	walletBindingHash := utils.SHA256HexString(wb.SuiAddress + ":" + wb.AuthScheme)
 
 	avsInput := avs.LeafRegistrationInput{
 		Label:             leafName,
 		ParentName:        parentName,
-		LeafName:          leafName + "." + parentName,
+		LeafName:          fullName,
 		UserAddress:       wb.SuiAddress,
 		WalletBindingHash: walletBindingHash,
 	}
@@ -70,18 +72,20 @@ func (s *Service) RegisterLeaf(ctx context.Context, userID string, req RegisterL
 		return nil, ErrAVSUnauthorized
 	}
 
+	expiresAt := avsResult.Authorization.ExpiresAtMs / 1000
 	now := utils.NowUnix()
+
 	task := &NameOperationTask{
-		ID:         utils.NewID(),
-		UserID:     userID,
-		SuiAddress: wb.SuiAddress,
-		LeafName:   leafName,
-		ParentName: parentName,
-		Action:     "leaf_name.register_initial",
-		Status:     "authorized",
-		AuthTaskID: avsResult.Authorization.Nonce,
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		ID:          utils.NewID(),
+		UserID:      userID,
+		Action:      "leaf_name.register_initial",
+		PayloadHash: nameHash,
+		Nonce:       avsResult.Authorization.Nonce,
+		Status:      "authorized",
+		AVSTaskID:   avsResult.Authorization.SignerSetID,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		ExpiresAt:   expiresAt,
 	}
 
 	if err := s.store.CreateTask(ctx, task); err != nil {
@@ -89,10 +93,11 @@ func (s *Service) RegisterLeaf(ctx context.Context, userID string, req RegisterL
 	}
 
 	return &RegisterLeafResponse{
-		TaskID:     task.ID,
-		LeafName:   leafName,
-		ParentName: parentName,
-		Status:     task.Status,
+		TaskID:    task.ID,
+		NameHash:  nameHash,
+		Action:    task.Action,
+		Status:    task.Status,
+		ExpiresAt: task.ExpiresAt,
 	}, nil
 }
 
@@ -106,14 +111,12 @@ func (s *Service) GetTask(ctx context.Context, taskID, userID string) (*GetTaskR
 	}
 
 	return &GetTaskResponse{
-		TaskID:     task.ID,
-		LeafName:   task.LeafName,
-		ParentName: task.ParentName,
-		Action:     task.Action,
-		Status:     task.Status,
-		TxDigest:   task.TxDigest,
-		ErrorMsg:   task.ErrorMsg,
-		CreatedAt:  task.CreatedAt,
-		UpdatedAt:  task.UpdatedAt,
+		TaskID:    task.ID,
+		NameHash:  task.PayloadHash,
+		Action:    task.Action,
+		Status:    task.Status,
+		CreatedAt: task.CreatedAt,
+		UpdatedAt: task.UpdatedAt,
+		ExpiresAt: task.ExpiresAt,
 	}, nil
 }
