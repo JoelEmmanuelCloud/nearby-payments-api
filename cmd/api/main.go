@@ -14,6 +14,7 @@ import (
 
 	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/avs"
 	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/config"
+	"github.com/joho/godotenv"
 	dbpkg "github.com/JoelEmmanuelCloud/nearby-payments-api/internal/db"
 	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/auth"
 	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/deposit"
@@ -26,6 +27,8 @@ import (
 
 func main() {
 	ctx := context.Background()
+
+	_ = godotenv.Load()
 
 	cfg, err := config.Load()
 	if err != nil {
