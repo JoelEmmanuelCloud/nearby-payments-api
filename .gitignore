@@ -3,4 +3,7 @@ CLAUDE.md
 .claude
 architecture.zip
 architecture/
+.env
+tmp/
+bin/
 
