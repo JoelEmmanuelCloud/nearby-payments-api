@@ -7,9 +7,8 @@ import (
 )
 
 var (
-	ErrBridgeUnavailable       = apperr.New("bridge_unavailable", "Bridge service is currently unavailable", http.StatusServiceUnavailable)
-	ErrKycNotApproved          = apperr.New("kyc_not_approved", "KYC verification is not yet approved", http.StatusForbidden)
+	ErrFincraUnavailable       = apperr.New("fincra_unavailable", "Fincra service is currently unavailable", http.StatusServiceUnavailable)
+	ErrBlockradarUnavailable   = apperr.New("blockradar_unavailable", "Blockradar service is currently unavailable", http.StatusServiceUnavailable)
 	ErrWebhookSignatureInvalid = apperr.New("webhook_signature_invalid", "Webhook signature is invalid", http.StatusUnauthorized)
-	ErrWebhookDuplicate        = apperr.New("webhook_duplicate", "Webhook event already processed", http.StatusConflict)
 	ErrRouteNotFound           = apperr.New("route_not_found", "Deposit route not found", http.StatusNotFound)
 )
