@@ -93,8 +93,7 @@ func New(deps Deps) http.Handler {
 			r.Post("/sessions/{id}/acknowledge", deps.NearbyHandler.AcknowledgeSession)
 		})
 
-		r.Post("/webhooks/fincra", deps.WebhookHandler.HandleFincraWebhook)
-		r.Post("/webhooks/blockradar", deps.WebhookHandler.HandleBlockradarWebhook)
+		r.Post("/webhooks/bridge", deps.WebhookHandler.HandleBridgeWebhook)
 	})
 
 	return r

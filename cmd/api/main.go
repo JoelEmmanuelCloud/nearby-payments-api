@@ -103,16 +103,14 @@ func main() {
 	authHandler := auth.NewHandler(authSvc)
 
 	depositStore := deposit.NewStore(pool)
-	fincraClient := deposit.NewFincraClient(cfg.FincraAPIKey, cfg.FincraAPIURL)
-	blockradarClient := deposit.NewBlockradarClient(cfg.BlockradarAPIKey, cfg.BlockradarWalletID, cfg.BlockradarAPIURL)
+	bridgeClient := deposit.NewBridgeClient(cfg.BridgeAPIKey, cfg.BridgeAPIURL)
 	depositSvc := deposit.NewService(deposit.ServiceDeps{
-		Store:            depositStore,
-		FincraClient:     fincraClient,
-		BlockradarClient: blockradarClient,
-		AuthStore:        authStore,
+		Store:        depositStore,
+		BridgeClient: bridgeClient,
+		AuthStore:    authStore,
 	})
 	depositHandler := deposit.NewHandler(depositSvc)
-	webhookHandler := deposit.NewWebhookHandler(depositStore, cfg.FincraWebhookSecret, cfg.BlockradarWebhookSecret)
+	webhookHandler := deposit.NewWebhookHandler(depositStore, cfg.BridgeWebhookSecret)
 
 	paymentStore := payment.NewStore(pool)
 	paymentSvc := payment.NewService(payment.ServiceDeps{
