@@ -21,7 +21,7 @@ jobs:
       - name: Gazelle API
         run: bazel run //apps/api:gazelle
 
-      - name: Build
+      - name: Build API
         run: |
           bazel build \
             --config=ci \
@@ -32,13 +32,42 @@ jobs:
           BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
 
-      - name: Test
+      - name: Build packages
+        run: |
+          bazel build \
+            --remote_cache="$BAZEL_REMOTE_CACHE_URL" \
+            --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" \
+            //packages/...
+        env:
+          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
+          BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
+
+      - name: Build iOS app
+        run: |
+          bazel build \
+          --config=ci \
+          --apple_platform_type=ios \
+          --ios_multi_cpus=sim_arm64 \
+          //apps/ios:Nearby
+
+      - name: Test API
         run: |
           bazel test \
             --config=ci \
             --remote_cache="$BAZEL_REMOTE_CACHE_URL" \
             --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" \
             //apps/api/...
+        env:
+          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
+          BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
+
+      - name: Test packages
+        run: |
+          bazel test \
+            --config=ci \
+            --remote_cache="$BAZEL_REMOTE_CACHE_URL" \
+            --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" \
+            //packages/...
         env:
           BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
