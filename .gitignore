@@ -198,3 +198,6 @@ logs/
 # Temporary files
 tmp/
 .cache/
+
+# swift
+.build/

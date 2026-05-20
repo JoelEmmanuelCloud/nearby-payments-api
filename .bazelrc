@@ -18,6 +18,9 @@ build --disk_cache=~/.cache/bazel-disk
 test --test_output=errors
 test --test_summary=short
 
+# move generated symlinks to a separate directory
+# to avoid polluting the workspace.
+build --symlink_prefix=out/bazel-
 
 build:ci --verbose_failures
 build:ci --incompatible_strict_action_env
