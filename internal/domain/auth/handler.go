@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apperr "github.com/JoelEmmanuelCloud/nearby-payments-api/internal/errors"
+	apperr "github.com/vaariance/nearby/internal/errors"
 )
 
 type Handler struct {

@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/auth"
-	apperr "github.com/JoelEmmanuelCloud/nearby-payments-api/internal/errors"
+	"github.com/vaariance/nearby/internal/domain/auth"
+	apperr "github.com/vaariance/nearby/internal/errors"
 )
 
 type Handler struct {

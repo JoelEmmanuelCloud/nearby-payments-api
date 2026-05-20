@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/utils"
+	"github.com/vaariance/nearby/internal/utils"
 )
 
 type contextKey string

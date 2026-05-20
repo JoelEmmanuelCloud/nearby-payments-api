@@ -3,7 +3,7 @@ package payment
 import (
 	"net/http"
 
-	apperr "github.com/JoelEmmanuelCloud/nearby-payments-api/internal/errors"
+	apperr "github.com/vaariance/nearby/internal/errors"
 )
 
 var (

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/auth"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/utils"
+	"github.com/vaariance/nearby/internal/domain/auth"
+	"github.com/vaariance/nearby/internal/utils"
 )
 
 const (

@@ -1,4 +1,4 @@
-module github.com/JoelEmmanuelCloud/nearby-payments-api
+module github.com/vaariance/nearby
 
 go 1.22.0
 

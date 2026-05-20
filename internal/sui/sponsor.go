@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/avs"
+	"github.com/vaariance/nearby/internal/avs"
 )
 
 type Sponsor struct {

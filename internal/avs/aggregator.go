@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/utils"
+	"github.com/vaariance/nearby/internal/utils"
 )
 
 type Aggregator struct {

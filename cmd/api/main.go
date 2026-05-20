@@ -12,17 +12,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/avs"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/config"
+	"github.com/vaariance/nearby/internal/avs"
+	"github.com/vaariance/nearby/internal/config"
 	"github.com/joho/godotenv"
-	dbpkg "github.com/JoelEmmanuelCloud/nearby-payments-api/internal/db"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/auth"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/deposit"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/names"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/nearby"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/payment"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/sui"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/router"
+	dbpkg "github.com/vaariance/nearby/internal/db"
+	"github.com/vaariance/nearby/internal/domain/auth"
+	"github.com/vaariance/nearby/internal/domain/deposit"
+	"github.com/vaariance/nearby/internal/domain/names"
+	"github.com/vaariance/nearby/internal/domain/nearby"
+	"github.com/vaariance/nearby/internal/domain/payment"
+	"github.com/vaariance/nearby/internal/sui"
+	"github.com/vaariance/nearby/router"
 )
 
 func main() {

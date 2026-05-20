@@ -6,12 +6,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/auth"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/deposit"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/names"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/nearby"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/payment"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/middleware"
+	"github.com/vaariance/nearby/internal/domain/auth"
+	"github.com/vaariance/nearby/internal/domain/deposit"
+	"github.com/vaariance/nearby/internal/domain/names"
+	"github.com/vaariance/nearby/internal/domain/nearby"
+	"github.com/vaariance/nearby/internal/domain/payment"
+	"github.com/vaariance/nearby/internal/middleware"
 	"github.com/redis/go-redis/v9"
 )
 

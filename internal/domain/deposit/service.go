@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/auth"
-	apperr "github.com/JoelEmmanuelCloud/nearby-payments-api/internal/errors"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/utils"
+	"github.com/vaariance/nearby/internal/domain/auth"
+	apperr "github.com/vaariance/nearby/internal/errors"
+	"github.com/vaariance/nearby/internal/utils"
 )
 
 type ServiceDeps struct {

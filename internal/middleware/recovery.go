@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	apperr "github.com/JoelEmmanuelCloud/nearby-payments-api/internal/errors"
+	apperr "github.com/vaariance/nearby/internal/errors"
 )
 
 func Recovery(next http.Handler) http.Handler {

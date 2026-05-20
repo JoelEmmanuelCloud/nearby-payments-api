@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/utils"
+	"github.com/vaariance/nearby/internal/utils"
 )
 
 type Client struct {

@@ -7,7 +7,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	apperr "github.com/JoelEmmanuelCloud/nearby-payments-api/internal/errors"
+	apperr "github.com/vaariance/nearby/internal/errors"
 )
 
 const idempotencyTTL = 24 * time.Hour

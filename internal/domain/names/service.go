@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/avs"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/domain/auth"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/utils"
+	"github.com/vaariance/nearby/internal/avs"
+	"github.com/vaariance/nearby/internal/domain/auth"
+	"github.com/vaariance/nearby/internal/utils"
 )
 
 var leafNameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]$|^[a-z0-9]$`)

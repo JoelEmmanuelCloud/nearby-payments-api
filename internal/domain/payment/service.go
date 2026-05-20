@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/sui"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/utils"
+	"github.com/vaariance/nearby/internal/sui"
+	"github.com/vaariance/nearby/internal/utils"
 )
 
 const (

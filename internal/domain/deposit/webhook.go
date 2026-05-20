@@ -10,8 +10,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	apperr "github.com/JoelEmmanuelCloud/nearby-payments-api/internal/errors"
-	"github.com/JoelEmmanuelCloud/nearby-payments-api/internal/utils"
+	apperr "github.com/vaariance/nearby/internal/errors"
+	"github.com/vaariance/nearby/internal/utils"
 )
 
 type WebhookHandler struct {
