@@ -17,3 +17,8 @@ build --disk_cache=~/.cache/bazel-disk
 # Only print test logs on failure.
 test --test_output=errors
 test --test_summary=short
+
+
+build:ci --verbose_failures
+build:ci --incompatible_strict_action_env
+test:ci --test_output=errors

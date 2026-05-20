@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [dev, staging, main]
+
+jobs:
+  bazel:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: true
+
+      - name: Gazelle API
+        run: bazel run //apps/api:gazelle
+
+      - name: Build
+        run: |
+          bazel build \
+            --config=ci \
+            --remote_cache="$BAZEL_REMOTE_CACHE_URL" \
+            --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" \
+            //apps/api/...
+        env:
+          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
+          BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
+
+      - name: Test
+        run: |
+          bazel test \
+            --config=ci \
+            --remote_cache="$BAZEL_REMOTE_CACHE_URL" \
+            --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" \
+            //apps/api/...
+        env:
+          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
+          BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
