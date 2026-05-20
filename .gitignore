@@ -1,9 +1,37 @@
 # Claude rules file (local only)
 CLAUDE.md
 .claude
-architecture.zip
-architecture/
 .env
 tmp/
 bin/
 
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# env / secrets
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Go
+bin/
+*.test
+*.out
+coverage.out
+
+# Bazel
+/bazel-*
+.bazeliskrc
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+.cache/

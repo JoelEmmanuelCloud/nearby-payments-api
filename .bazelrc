@@ -1,0 +1,19 @@
+# Use Bazel's module system instead of legacy WORKSPACE.
+common --enable_bzlmod
+
+# Keep terminal output readable.
+common --color=yes
+common --curses=yes
+
+# Show which bazelrc files were loaded.
+common --announce_rc
+
+# Lets Bazel decide parallelism automatically based on the machine.
+build --jobs=auto
+
+# Enables a local disk cache so rebuilds are faster.
+build --disk_cache=~/.cache/bazel-disk
+
+# Only print test logs on failure.
+test --test_output=errors
+test --test_summary=short

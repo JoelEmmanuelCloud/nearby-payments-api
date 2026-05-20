@@ -1,0 +1,13 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "utils",
+    srcs = [
+        "crypto.go",
+        "id.go",
+        "time.go",
+    ],
+    importpath = "github.com/vaariance/nearby/internal/utils",
+    visibility = ["//apps/api:__subpackages__"],
+    deps = ["@com_github_oklog_ulid_v2//:ulid"],
+)

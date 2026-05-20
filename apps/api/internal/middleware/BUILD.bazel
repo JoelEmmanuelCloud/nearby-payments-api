@@ -1,0 +1,18 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "middleware",
+    srcs = [
+        "idempotency.go",
+        "logging.go",
+        "recovery.go",
+        "request_id.go",
+    ],
+    importpath = "github.com/vaariance/nearby/internal/middleware",
+    visibility = ["//apps/api:__subpackages__"],
+    deps = [
+        "//apps/api/internal/errors",
+        "//apps/api/internal/utils",
+        "@com_github_redis_go_redis_v9//:go-redis",
+    ],
+)
