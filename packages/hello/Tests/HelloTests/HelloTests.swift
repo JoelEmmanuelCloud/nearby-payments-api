@@ -3,5 +3,5 @@ import Hello
 
 @Test
 func messageReturnsSharedSwiftGreeting() {
-    #expect(Hello.message() == "Hello from shared Swift")
+    #expect(Greeting.message() == "Hello from shared Swift")
 }

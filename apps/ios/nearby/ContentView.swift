@@ -23,7 +23,7 @@ struct ContentView: View {
             }
 
             UIButton("Say Hello") {
-                message = Hello.message()
+                message = Greeting.message()
             }
         }
         .padding()
