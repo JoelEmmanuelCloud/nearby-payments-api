@@ -57,6 +57,10 @@ func GetSession(ctx context.Context) *SessionContext {
 	return nil
 }
 
+func WithSession(ctx context.Context, sess *SessionContext) context.Context {
+	return context.WithValue(ctx, contextKeySession{}, sess)
+}
+
 func extractBearerToken(r *http.Request) string {
 	auth := r.Header.Get("Authorization")
 	if !strings.HasPrefix(auth, "Bearer ") {
