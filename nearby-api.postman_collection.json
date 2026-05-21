@@ -31,7 +31,11 @@
           "request": {
             "auth": { "type": "noauth" },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/health" }
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
           }
         }
       ]
@@ -44,7 +48,11 @@
           "request": {
             "auth": { "type": "noauth" },
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/v1/auth/server-public-key" }
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/server-public-key",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "server-public-key"]
+            }
           }
         },
         {
@@ -53,7 +61,11 @@
             "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/v1/auth/oauth/begin" },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/oauth/begin",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "oauth", "begin"]
+            },
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
@@ -84,11 +96,15 @@
             "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/v1/auth/oauth/complete" },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/oauth/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "oauth", "complete"]
+            },
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"code\": \"PASTE_GOOGLE_CODE_HERE\",\n  \"state\": \"PASTE_STATE_HERE\",\n  \"codeVerifier\": \"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk\",\n  \"platform\": \"ios\",\n  \"osVersion\": \"18.0\",\n  \"appBundleId\": \"com.nearby.test\",\n  \"deviceIntegrity\": { \"provider\": \"stub\" },\n  \"suiAddress\": \"0x0000000000000000000000000000000000000000000000000000000000000001\"\n}"
+              "raw": "{\n  \"code\": \"PASTE_GOOGLE_CODE_HERE\",\n  \"state\": \"PASTE_STATE_HERE\",\n  \"codeVerifier\": \"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk\",\n  \"platform\": \"ios\",\n  \"osVersion\": \"18.0\",\n  \"appBundleId\": \"com.nearby.test\",\n  \"suiAddress\": \"0x0000000000000000000000000000000000000000000000000000000000000001\",\n  \"deviceIntegrity\": { \"provider\": \"stub\" }\n}"
             }
           }
         },
@@ -112,7 +128,11 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/v1/auth/refresh" },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "refresh"]
+            },
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
@@ -124,7 +144,11 @@
           "name": "Revoke Session",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{baseUrl}}/v1/auth/revoke" }
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/revoke",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "revoke"]
+            }
           }
         },
         {
@@ -146,7 +170,11 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/v1/auth/integrity" },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/integrity",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "integrity"]
+            },
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
@@ -173,7 +201,11 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/v1/auth/credential" },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/credential",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "credential"]
+            },
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
@@ -190,7 +222,11 @@
           "name": "Get Deposit Options",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/v1/deposit/options" }
+            "url": {
+              "raw": "{{baseUrl}}/v1/deposit/options",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "deposit", "options"]
+            }
           }
         },
         {
@@ -199,6 +235,8 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/v1/deposit/history?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "deposit", "history"],
               "query": [
                 { "key": "limit",  "value": "20" },
                 { "key": "offset", "value": "0" }
@@ -210,7 +248,11 @@
           "name": "Get Deposit by ID",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/v1/deposit/{{depositId}}" }
+            "url": {
+              "raw": "{{baseUrl}}/v1/deposit/{{depositId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "deposit", "{{depositId}}"]
+            }
           }
         }
       ]
@@ -250,7 +292,11 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/v1/payments/intents" },
+            "url": {
+              "raw": "{{baseUrl}}/v1/payments/intents",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "payments", "intents"]
+            },
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
@@ -262,7 +308,11 @@
           "name": "Get Payment Intent",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/v1/payments/intents/{{intentId}}" }
+            "url": {
+              "raw": "{{baseUrl}}/v1/payments/intents/{{intentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "payments", "intents", "{{intentId}}"]
+            }
           }
         },
         {
@@ -270,7 +320,11 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/v1/payments/intents/{{intentId}}/submit" },
+            "url": {
+              "raw": "{{baseUrl}}/v1/payments/intents/{{intentId}}/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "payments", "intents", "{{intentId}}", "submit"]
+            },
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
@@ -282,14 +336,22 @@
           "name": "Cancel Payment Intent",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{baseUrl}}/v1/payments/intents/{{intentId}}/cancel" }
+            "url": {
+              "raw": "{{baseUrl}}/v1/payments/intents/{{intentId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "payments", "intents", "{{intentId}}", "cancel"]
+            }
           }
         },
         {
           "name": "Get Payment by ID",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/v1/payments/{{paymentId}}" }
+            "url": {
+              "raw": "{{baseUrl}}/v1/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "payments", "{{paymentId}}"]
+            }
           }
         }
       ]
@@ -328,7 +390,11 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/v1/names/leaf" },
+            "url": {
+              "raw": "{{baseUrl}}/v1/names/leaf",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "names", "leaf"]
+            },
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
@@ -354,7 +420,11 @@
           ],
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/v1/names/tasks/{{taskId}}" }
+            "url": {
+              "raw": "{{baseUrl}}/v1/names/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "names", "tasks", "{{taskId}}"]
+            }
           }
         }
       ]
@@ -393,7 +463,11 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/v1/nearby/sessions" },
+            "url": {
+              "raw": "{{baseUrl}}/v1/nearby/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "nearby", "sessions"]
+            },
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
@@ -419,7 +493,11 @@
           ],
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/v1/nearby/sessions/{{sessionId}}" }
+            "url": {
+              "raw": "{{baseUrl}}/v1/nearby/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "nearby", "sessions", "{{sessionId}}"]
+            }
           }
         },
         {
@@ -441,7 +519,11 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/v1/nearby/sessions/{{sessionId}}/acknowledge" },
+            "url": {
+              "raw": "{{baseUrl}}/v1/nearby/sessions/{{sessionId}}/acknowledge",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "nearby", "sessions", "{{sessionId}}", "acknowledge"]
+            },
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
@@ -463,7 +545,11 @@
               { "key": "Content-Type",       "value": "application/json" },
               { "key": "X-Bridge-Signature", "value": "PASTE_SIGNATURE_HERE" }
             ],
-            "url": { "raw": "{{baseUrl}}/v1/webhooks/bridge" },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhooks/bridge",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "webhooks", "bridge"]
+            },
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
