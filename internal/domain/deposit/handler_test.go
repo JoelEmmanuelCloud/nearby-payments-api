@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	dbpkg "github.com/vaariance/nearby/internal/db"
@@ -221,6 +222,26 @@ func TestStoreUpsertDeposit_StatusUpdate(t *testing.T) {
 	}
 	if got.TxHash != "0xcafe" {
 		t.Fatalf("expected txHash 0xcafe, got %s", got.TxHash)
+	}
+}
+
+func TestGetDeposit_NotFound(t *testing.T) {
+	userID := insertTestUser(t)
+	handler := newTestHandler()
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", utils.NewID())
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/deposit/some-id", nil)
+	req = req.WithContext(context.WithValue(
+		auth.WithSession(req.Context(), testSessionContext(userID)),
+		chi.RouteCtxKey, rctx,
+	))
+	rr := httptest.NewRecorder()
+	handler.GetDeposit(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d: %s", rr.Code, rr.Body.String())
 	}
 }
 
