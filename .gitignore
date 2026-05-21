@@ -6,4 +6,5 @@ architecture/
 .env
 tmp/
 bin/
+static/
 
