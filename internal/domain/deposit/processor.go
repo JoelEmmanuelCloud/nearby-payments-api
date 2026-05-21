@@ -32,6 +32,10 @@ func (p *Processor) Run(ctx context.Context) {
 	}
 }
 
+func (p *Processor) ProcessNow(ctx context.Context) {
+	p.processAll(ctx)
+}
+
 func (p *Processor) processAll(ctx context.Context) {
 	events, err := p.store.GetUnprocessedWebhookEvents(ctx, 50)
 	if err != nil {
