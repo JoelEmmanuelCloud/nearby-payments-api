@@ -47,7 +47,7 @@ type CryptoDepositRoute struct {
 }
 
 type DepositOptionsResponse struct {
-	FiatUsd interface{}        `json:"fiatUsd"`
+	FiatUsd any                `json:"fiatUsd"`
 	Crypto  CryptoDepositState `json:"crypto"`
 }
 
@@ -109,8 +109,23 @@ type BridgeVirtualAccount struct {
 }
 
 type BridgeLiquidationAddress struct {
-	ID      string
-	Address string
-	Chain   string
+	ID       string
+	Address  string
+	Chain    string
 	Currency string
+}
+
+type Deposit struct {
+	ID                string
+	UserID            string
+	RouteID           string
+	Provider          string
+	ProviderDepositID string
+	Kind              string
+	Status            string
+	Amount            string
+	Currency          string
+	TxHash            string
+	CreatedAt         int64
+	UpdatedAt         int64
 }

@@ -91,3 +91,75 @@ func (s *Store) WebhookEventExists(ctx context.Context, providerEventID string) 
 	).Scan(&exists)
 	return exists, err
 }
+
+func (s *Store) GetUnprocessedWebhookEvents(ctx context.Context, limit int) ([]*BridgeWebhookEvent, error) {
+	rows, err := s.db.Query(ctx,
+		`SELECT id, provider_event_id, event_type, raw_payload, processed, created_at
+		 FROM bridge_webhook_events
+		 WHERE processed = FALSE
+		 ORDER BY created_at ASC
+		 LIMIT $1`,
+		limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []*BridgeWebhookEvent
+	for rows.Next() {
+		ev := &BridgeWebhookEvent{}
+		if err := rows.Scan(&ev.ID, &ev.ProviderEventID, &ev.EventType, &ev.RawPayload, &ev.Processed, &ev.CreatedAt); err != nil {
+			return nil, err
+		}
+		events = append(events, ev)
+	}
+	return events, rows.Err()
+}
+
+func (s *Store) MarkWebhookEventProcessed(ctx context.Context, id string) error {
+	_, err := s.db.Exec(ctx,
+		`UPDATE bridge_webhook_events SET processed = TRUE WHERE id = $1`,
+		id,
+	)
+	return err
+}
+
+func (s *Store) GetDepositRouteByProviderRouteID(ctx context.Context, providerRouteID string) (*DepositRoute, error) {
+	dr := &DepositRoute{}
+	err := s.db.QueryRow(ctx,
+		`SELECT id, user_id, provider, provider_route_id, kind, source_rail, source_currency,
+		        destination_rail, destination_currency, destination_address_hash, state, created_at, updated_at
+		 FROM deposit_routes WHERE provider_route_id = $1 LIMIT 1`,
+		providerRouteID,
+	).Scan(&dr.ID, &dr.UserID, &dr.Provider, &dr.ProviderRouteID, &dr.Kind,
+		&dr.SourceRail, &dr.SourceCurrency, &dr.DestinationRail, &dr.DestinationCurrency,
+		&dr.DestinationAddrHash, &dr.State, &dr.CreatedAt, &dr.UpdatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return dr, err
+}
+
+func (s *Store) UpsertDeposit(ctx context.Context, d *Deposit) error {
+	_, err := s.db.Exec(ctx,
+		`INSERT INTO deposits
+		 (id, user_id, route_id, provider, provider_deposit_id, kind, status, amount, currency, tx_hash, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		 ON CONFLICT (provider, provider_deposit_id) DO UPDATE SET
+		   status = EXCLUDED.status,
+		   tx_hash = COALESCE(EXCLUDED.tx_hash, deposits.tx_hash),
+		   updated_at = EXCLUDED.updated_at`,
+		d.ID, d.UserID, d.RouteID, d.Provider, d.ProviderDepositID,
+		d.Kind, d.Status, d.Amount, d.Currency, nullableString(d.TxHash),
+		d.CreatedAt, d.UpdatedAt,
+	)
+	return err
+}
+
+func nullableString(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
+}
