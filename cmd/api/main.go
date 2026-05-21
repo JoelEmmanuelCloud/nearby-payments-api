@@ -110,7 +110,11 @@ func main() {
 		AuthStore:    authStore,
 	})
 	depositHandler := deposit.NewHandler(depositSvc)
-	webhookHandler := deposit.NewWebhookHandler(depositStore, cfg.BridgeWebhookSecret)
+	webhookHandler, err := deposit.NewWebhookHandler(depositStore, cfg.BridgeWebhookPublicKey)
+	if err != nil {
+		slog.Error("webhook handler init failed", "error", err)
+		os.Exit(1)
+	}
 
 	paymentStore := payment.NewStore(pool)
 	paymentSvc := payment.NewService(payment.ServiceDeps{

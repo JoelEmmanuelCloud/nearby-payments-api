@@ -1,10 +1,14 @@
 package deposit
 
 import (
-	"crypto/hmac"
+	"crypto"
+	"crypto/rsa"
 	"crypto/sha256"
-	"encoding/hex"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -14,12 +18,24 @@ import (
 )
 
 type WebhookHandler struct {
-	store         *Store
-	webhookSecret string
+	store  *Store
+	pubKey *rsa.PublicKey
 }
 
-func NewWebhookHandler(store *Store, webhookSecret string) *WebhookHandler {
-	return &WebhookHandler{store: store, webhookSecret: webhookSecret}
+func NewWebhookHandler(store *Store, pemPublicKey string) (*WebhookHandler, error) {
+	block, _ := pem.Decode([]byte(pemPublicKey))
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM block from BRIDGE_WEBHOOK_PUBLIC_KEY")
+	}
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse BRIDGE_WEBHOOK_PUBLIC_KEY: %w", err)
+	}
+	rsaPub, ok := pub.(*rsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("BRIDGE_WEBHOOK_PUBLIC_KEY is not an RSA public key")
+	}
+	return &WebhookHandler{store: store, pubKey: rsaPub}, nil
 }
 
 func (h *WebhookHandler) HandleBridgeWebhook(w http.ResponseWriter, r *http.Request) {
@@ -35,9 +51,9 @@ func (h *WebhookHandler) HandleBridgeWebhook(w http.ResponseWriter, r *http.Requ
 	}
 
 	var envelope struct {
-		ID        string          `json:"id"`
-		Type      string          `json:"type"`
-		Data      json.RawMessage `json:"data"`
+		ID   string          `json:"id"`
+		Type string          `json:"type"`
+		Data json.RawMessage `json:"data"`
 	}
 	if err := json.Unmarshal(body, &envelope); err != nil {
 		apperr.Write(w, apperr.ErrBadRequest)
@@ -85,10 +101,10 @@ func (h *WebhookHandler) verifySignature(r *http.Request, body []byte) bool {
 	if sig == "" {
 		return false
 	}
-
-	mac := hmac.New(sha256.New, []byte(h.webhookSecret))
-	mac.Write(body)
-	expected := hex.EncodeToString(mac.Sum(nil))
-
-	return hmac.Equal([]byte(sig), []byte(expected))
+	sigBytes, err := base64.StdEncoding.DecodeString(sig)
+	if err != nil {
+		return false
+	}
+	digest := sha256.Sum256(body)
+	return rsa.VerifyPKCS1v15(h.pubKey, crypto.SHA256, digest[:], sigBytes) == nil
 }

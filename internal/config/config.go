@@ -15,7 +15,7 @@ type Config struct {
 	SuiNetwork          string
 	BridgeAPIKey        string
 	BridgeAPIURL        string
-	BridgeWebhookSecret string
+	BridgeWebhookPublicKey string
 	AccessTokenSecret   string
 	RefreshTokenSecret  string
 	SessionEncryptionKey string
@@ -53,7 +53,7 @@ func Load() (*Config, error) {
 		SuiNetwork:           optional("SUI_NETWORK", "testnet"),
 		BridgeAPIKey:         get("BRIDGE_API_KEY"),
 		BridgeAPIURL:         optional("BRIDGE_API_URL", "https://api.sandbox.bridge.xyz"),
-		BridgeWebhookSecret:  get("BRIDGE_WEBHOOK_SECRET"),
+		BridgeWebhookPublicKey: strings.ReplaceAll(get("BRIDGE_WEBHOOK_PUBLIC_KEY"), `\n`, "\n"),
 		AccessTokenSecret:    get("ACCESS_TOKEN_SECRET"),
 		RefreshTokenSecret:   get("REFRESH_TOKEN_SECRET"),
 		SessionEncryptionKey: get("SESSION_ENCRYPTION_KEY"),
