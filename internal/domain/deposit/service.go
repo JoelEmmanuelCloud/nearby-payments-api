@@ -54,7 +54,7 @@ func (s *Service) GetOptions(ctx context.Context, userID string) (*DepositOption
 	}, nil
 }
 
-func (s *Service) getFiatUsdState(ctx context.Context, userID, suiAddress string) (interface{}, error) {
+func (s *Service) getFiatUsdState(ctx context.Context, userID, suiAddress string) (any, error) {
 	now := utils.NowUnix()
 
 	link, err := s.store.GetBridgeLinkByUserID(ctx, userID)
@@ -108,6 +108,28 @@ func (s *Service) getFiatUsdState(ctx context.Context, userID, suiAddress string
 		if err != nil {
 			return nil, ErrBridgeUnavailable
 		}
+
+		existing, _ := s.store.GetDepositRoute(ctx, userID, "virtual_account", "fiat", "usd")
+		if existing == nil {
+			dr := &DepositRoute{
+				ID:                  utils.NewID(),
+				UserID:              userID,
+				Provider:            "bridge",
+				ProviderRouteID:     va.ID,
+				Kind:                "virtual_account",
+				SourceRail:          "fiat",
+				SourceCurrency:      "usd",
+				SourceAddress:       "",
+				DestinationRail:     "sui",
+				DestinationCurrency: "usdc",
+				DestinationAddrHash: utils.SHA256HexString(suiAddress),
+				State:               "active",
+				CreatedAt:           now,
+				UpdatedAt:           now,
+			}
+			_ = s.store.CreateDepositRoute(ctx, dr)
+		}
+
 		return &AccountDetailsState{
 			Kind: "account_details",
 			Account: UsdAccount{
@@ -189,6 +211,7 @@ func (s *Service) getCryptoState(ctx context.Context, userID, suiAddress string)
 			Kind:                "liquidation_address",
 			SourceRail:          cfg.chain,
 			SourceCurrency:      cfg.currency,
+			SourceAddress:       la.Address,
 			DestinationRail:     "sui",
 			DestinationCurrency: "usdc",
 			DestinationAddrHash: utils.SHA256HexString(suiAddress),
@@ -215,9 +238,54 @@ func buildCryptoRoute(dr *DepositRoute) CryptoDepositRoute {
 	route := CryptoDepositRoute{
 		Rail:     dr.SourceRail,
 		Currency: dr.SourceCurrency,
+		Address:  dr.SourceAddress,
 	}
 	if dr.SourceRail == "evm" {
 		route.SupportedChains = []string{"ethereum", "base", "polygon", "arbitrum", "optimism", "avalanche_c_chain"}
 	}
 	return route
+}
+
+func (s *Service) GetDeposits(ctx context.Context, userID string, limit, offset int) (*ListDepositsResponse, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	deposits, err := s.store.GetDepositsByUserID(ctx, userID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("get deposits: %w", err)
+	}
+	summaries := make([]DepositSummary, 0, len(deposits))
+	for _, d := range deposits {
+		summaries = append(summaries, DepositSummary{
+			ID:        d.ID,
+			Kind:      d.Kind,
+			Status:    d.Status,
+			Amount:    d.Amount,
+			Currency:  d.Currency,
+			TxHash:    d.TxHash,
+			CreatedAt: d.CreatedAt,
+			UpdatedAt: d.UpdatedAt,
+		})
+	}
+	return &ListDepositsResponse{Deposits: summaries}, nil
+}
+
+func (s *Service) GetDeposit(ctx context.Context, id, userID string) (*DepositSummary, error) {
+	d, err := s.store.GetDepositByID(ctx, id, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get deposit: %w", err)
+	}
+	if d == nil {
+		return nil, ErrRouteNotFound
+	}
+	return &DepositSummary{
+		ID:        d.ID,
+		Kind:      d.Kind,
+		Status:    d.Status,
+		Amount:    d.Amount,
+		Currency:  d.Currency,
+		TxHash:    d.TxHash,
+		CreatedAt: d.CreatedAt,
+		UpdatedAt: d.UpdatedAt,
+	}, nil
 }
