@@ -4,4 +4,25 @@ plugins {
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.compose) apply false
+    alias(libs.plugins.spotless) apply false
+}
+
+subprojects {
+    apply(plugin = "com.diffplug.spotless")
+
+    configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+        kotlin {
+            target("src/**/*.kt")
+            ktlint("1.5.0").editorConfigOverride(
+                mapOf("ktlint_function_naming_ignore_when_annotated_with" to "Composable")
+            )
+        }
+
+        kotlinGradle {
+            target("*.gradle.kts")
+            ktlint("1.5.0").editorConfigOverride(
+                mapOf("ktlint_function_naming_ignore_when_annotated_with" to "Composable")
+            )
+        }
+    }
 }

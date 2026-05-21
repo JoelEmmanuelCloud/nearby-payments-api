@@ -1,20 +1,20 @@
 package payment
 
 type PaymentIntent struct {
-	ID             string
-	UserID         string
-	IdempotencyKey string
+	ID               string
+	UserID           string
+	IdempotencyKey   string
 	RecipientAddress string
-	RecipientName  string
-	Asset          string
-	AmountAtomic   string
-	Status         string
-	TxDigest       string
-	SponsorAddress string
-	FundingMode    string
-	CreatedAt      int64
-	UpdatedAt      int64
-	ExpiresAt      int64
+	RecipientName    string
+	Asset            string
+	AmountAtomic     string
+	Status           string
+	TxDigest         string
+	SponsorAddress   string
+	FundingMode      string
+	CreatedAt        int64
+	UpdatedAt        int64
+	ExpiresAt        int64
 }
 
 type Payment struct {
@@ -40,19 +40,19 @@ type CreateIntentRequest struct {
 }
 
 type CreateIntentResponse struct {
-	IntentID       string `json:"intentId"`
+	IntentID         string `json:"intentId"`
 	RecipientAddress string `json:"recipientAddress"`
-	Asset          string `json:"asset"`
-	AmountAtomic   string `json:"amountAtomic"`
-	FundingMode    string `json:"fundingMode"`
-	SponsorAddress string `json:"sponsorAddress,omitempty"`
-	Status         string `json:"status"`
-	ExpiresAt      int64  `json:"expiresAt"`
+	Asset            string `json:"asset"`
+	AmountAtomic     string `json:"amountAtomic"`
+	FundingMode      string `json:"fundingMode"`
+	SponsorAddress   string `json:"sponsorAddress,omitempty"`
+	Status           string `json:"status"`
+	ExpiresAt        int64  `json:"expiresAt"`
 }
 
 type SubmitIntentRequest struct {
-	TxBytes        string `json:"txBytes"`
-	UserSignature  string `json:"userSignature"`
+	TxBytes       string `json:"txBytes"`
+	UserSignature string `json:"userSignature"`
 }
 
 type SubmitIntentResponse struct {
@@ -62,14 +62,14 @@ type SubmitIntentResponse struct {
 }
 
 type GetIntentResponse struct {
-	IntentID       string `json:"intentId"`
-	Status         string `json:"status"`
+	IntentID         string `json:"intentId"`
+	Status           string `json:"status"`
 	RecipientAddress string `json:"recipientAddress"`
-	Asset          string `json:"asset"`
-	AmountAtomic   string `json:"amountAtomic"`
-	TxDigest       string `json:"txDigest,omitempty"`
-	CreatedAt      int64  `json:"createdAt"`
-	ExpiresAt      int64  `json:"expiresAt"`
+	Asset            string `json:"asset"`
+	AmountAtomic     string `json:"amountAtomic"`
+	TxDigest         string `json:"txDigest,omitempty"`
+	CreatedAt        int64  `json:"createdAt"`
+	ExpiresAt        int64  `json:"expiresAt"`
 }
 
 type GetPaymentResponse struct {

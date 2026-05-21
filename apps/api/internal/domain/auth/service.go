@@ -25,9 +25,9 @@ const (
 )
 
 type ServiceDeps struct {
-	Store            *Store
-	Redis            *redis.Client
-	GoogleClientID   string
+	Store              *Store
+	Redis              *redis.Client
+	GoogleClientID     string
 	GoogleClientSecret string
 	GoogleRedirectURI  string
 	CredentialSignKey  ed25519.PrivateKey
@@ -35,24 +35,24 @@ type ServiceDeps struct {
 }
 
 type Service struct {
-	store            *Store
-	rdb              *redis.Client
-	googleClientID   string
+	store              *Store
+	rdb                *redis.Client
+	googleClientID     string
 	googleClientSecret string
 	googleRedirectURI  string
-	credSignKey      ed25519.PrivateKey
-	credPubKey       ed25519.PublicKey
+	credSignKey        ed25519.PrivateKey
+	credPubKey         ed25519.PublicKey
 }
 
 func NewService(deps ServiceDeps) *Service {
 	return &Service{
-		store:             deps.Store,
-		rdb:               deps.Redis,
-		googleClientID:    deps.GoogleClientID,
+		store:              deps.Store,
+		rdb:                deps.Redis,
+		googleClientID:     deps.GoogleClientID,
 		googleClientSecret: deps.GoogleClientSecret,
 		googleRedirectURI:  deps.GoogleRedirectURI,
-		credSignKey:       deps.CredentialSignKey,
-		credPubKey:        deps.CredentialPubKey,
+		credSignKey:        deps.CredentialSignKey,
+		credPubKey:         deps.CredentialPubKey,
 	}
 }
 
@@ -229,13 +229,13 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 
 	integrityID := utils.NewID()
 	integrity := &DeviceIntegrityRecord{
-		ID:           integrityID,
-		DeviceID:     deviceID,
-		Provider:     req.DeviceIntegrity.Provider,
+		ID:            integrityID,
+		DeviceID:      deviceID,
+		Provider:      req.DeviceIntegrity.Provider,
 		ProviderKeyID: req.DeviceIntegrity.KeyID,
-		Status:       "active",
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		Status:        "active",
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 	if err := s.store.CreateDeviceIntegrityRecord(ctx, integrity); err != nil {
 		return nil, fmt.Errorf("create integrity record: %w", err)
@@ -337,13 +337,13 @@ func (s *Service) AssertDeviceIntegrity(ctx context.Context, sessCtx *SessionCon
 	}
 	integrityID := utils.NewID()
 	record := &DeviceIntegrityRecord{
-		ID:           integrityID,
-		DeviceID:     sessCtx.Device.ID,
-		Provider:     req.DeviceIntegrity.Provider,
+		ID:            integrityID,
+		DeviceID:      sessCtx.Device.ID,
+		Provider:      req.DeviceIntegrity.Provider,
 		ProviderKeyID: req.DeviceIntegrity.KeyID,
-		Status:       "active",
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		Status:        "active",
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 	return s.store.CreateDeviceIntegrityRecord(ctx, record)
 }

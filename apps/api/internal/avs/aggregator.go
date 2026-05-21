@@ -9,8 +9,8 @@ import (
 )
 
 type Aggregator struct {
-	operators []*Operator
-	threshold int
+	operators   []*Operator
+	threshold   int
 	signerSetID string
 }
 

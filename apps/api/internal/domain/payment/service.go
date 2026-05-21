@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	intentTTL       = 2 * 60
-	supportedAsset  = "USDsui"
+	intentTTL      = 2 * 60
+	supportedAsset = "USDsui"
 )
 
 type ServiceDeps struct {

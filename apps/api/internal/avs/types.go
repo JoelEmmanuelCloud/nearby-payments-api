@@ -28,13 +28,13 @@ type AuthorizationPayload struct {
 }
 
 type LeafRegistrationInput struct {
-	Label            string
-	ParentName       string
-	LeafName         string
-	UserAddress      string
+	Label             string
+	ParentName        string
+	LeafName          string
+	UserAddress       string
 	WalletBindingHash string
-	TargetPackage    string
-	TargetObject     string
+	TargetPackage     string
+	TargetObject      string
 }
 
 type SponsorTxInput struct {

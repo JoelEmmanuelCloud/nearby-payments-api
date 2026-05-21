@@ -12,9 +12,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/vaariance/nearby/internal/avs"
 	"github.com/vaariance/nearby/internal/config"
-	"github.com/joho/godotenv"
 	dbpkg "github.com/vaariance/nearby/internal/db"
 	"github.com/vaariance/nearby/internal/domain/auth"
 	"github.com/vaariance/nearby/internal/domain/deposit"

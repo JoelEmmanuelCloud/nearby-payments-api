@@ -30,38 +30,38 @@ type Device struct {
 }
 
 type DeviceIntegrityRecord struct {
-	ID           string
-	DeviceID     string
-	Provider     string
+	ID            string
+	DeviceID      string
+	Provider      string
 	ProviderKeyID string
-	PublicKey    string
-	SignCount    int64
-	LastVerdict  string
-	Status       string
-	CreatedAt    int64
-	UpdatedAt    int64
+	PublicKey     string
+	SignCount     int64
+	LastVerdict   string
+	Status        string
+	CreatedAt     int64
+	UpdatedAt     int64
 }
 
 type Session struct {
-	ID                 string
-	UserID             string
-	DeviceID           string
-	DeviceIntegrityID  string
-	AccessTokenHash    string
-	RefreshTokenHash   string
-	IssuedAt           int64
-	ExpiresAt          int64
-	RefreshExpiresAt   int64
-	Status             string
+	ID                string
+	UserID            string
+	DeviceID          string
+	DeviceIntegrityID string
+	AccessTokenHash   string
+	RefreshTokenHash  string
+	IssuedAt          int64
+	ExpiresAt         int64
+	RefreshExpiresAt  int64
+	Status            string
 }
 
 type ZkLoginSalt struct {
-	ID       string
-	UserID   string
-	Issuer   string
-	Subject  string
-	Audience string
-	Salt     string
+	ID        string
+	UserID    string
+	Issuer    string
+	Subject   string
+	Audience  string
+	Salt      string
 	CreatedAt int64
 }
 
@@ -76,20 +76,20 @@ type WalletBinding struct {
 }
 
 type DeviceIdentityCredential struct {
-	Version            int                          `json:"version"`
-	UserID             string                       `json:"userId"`
-	DeviceID           string                       `json:"deviceId"`
-	Platform           string                       `json:"platform"`
-	AppBundleID        string                       `json:"appBundleId"`
-	IntegrityProvider  string                       `json:"integrityProvider"`
-	LocalProofPublicKey string                      `json:"localProofPublicKey"`
-	SuiAddress         string                       `json:"suiAddress"`
-	SuinsName          string                       `json:"suinsName"`
-	Capabilities       DeviceCredentialCapabilities `json:"capabilities"`
-	IssuedAt           int64                        `json:"issuedAt"`
-	ExpiresAt          int64                        `json:"expiresAt"`
-	Issuer             string                       `json:"issuer"`
-	Signature          string                       `json:"signature"`
+	Version             int                          `json:"version"`
+	UserID              string                       `json:"userId"`
+	DeviceID            string                       `json:"deviceId"`
+	Platform            string                       `json:"platform"`
+	AppBundleID         string                       `json:"appBundleId"`
+	IntegrityProvider   string                       `json:"integrityProvider"`
+	LocalProofPublicKey string                       `json:"localProofPublicKey"`
+	SuiAddress          string                       `json:"suiAddress"`
+	SuinsName           string                       `json:"suinsName"`
+	Capabilities        DeviceCredentialCapabilities `json:"capabilities"`
+	IssuedAt            int64                        `json:"issuedAt"`
+	ExpiresAt           int64                        `json:"expiresAt"`
+	Issuer              string                       `json:"issuer"`
+	Signature           string                       `json:"signature"`
 }
 
 type DeviceCredentialCapabilities struct {
@@ -98,9 +98,9 @@ type DeviceCredentialCapabilities struct {
 }
 
 type SessionContext struct {
-	Session  *Session
-	User     *User
-	Device   *Device
+	Session   *Session
+	User      *User
+	Device    *Device
 	Integrity *DeviceIntegrityRecord
 }
 
@@ -117,12 +117,12 @@ type OAuthBeginResponse struct {
 }
 
 type DeviceIntegrityProof struct {
-	Provider     string `json:"provider"`
-	Assertion    string `json:"assertion"`
-	KeyID        string `json:"keyId,omitempty"`
-	Nonce        string `json:"nonce"`
-	TimestampMs  int64  `json:"timestampMs"`
-	RequestHash  string `json:"requestHash,omitempty"`
+	Provider       string `json:"provider"`
+	Assertion      string `json:"assertion"`
+	KeyID          string `json:"keyId,omitempty"`
+	Nonce          string `json:"nonce"`
+	TimestampMs    int64  `json:"timestampMs"`
+	RequestHash    string `json:"requestHash,omitempty"`
 	IntegrityToken string `json:"integrityToken,omitempty"`
 }
 

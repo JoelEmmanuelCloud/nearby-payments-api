@@ -6,31 +6,31 @@
 //
 
 import Hello
-import UI
-import SwiftUI
 import SwiftData
+import SwiftUI
+import UI
 
 struct ContentView: View {
-    @State private var message = ""
+  @State private var message = ""
 
-    var body: some View {
-        VStack(spacing: 16) {
-            Title("Nearby")
+  var body: some View {
+    VStack(spacing: 16) {
+      Title("Nearby")
 
-            Card {
-                Text(message.isEmpty ? "Tap the button" : message)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+      Card {
+        Text(message.isEmpty ? "Tap the button" : message)
+          .frame(maxWidth: .infinity, alignment: .leading)
+      }
 
-            UIButton("Say Hello") {
-                message = Greeting.message()
-            }
-        }
-        .padding()
+      UIButton("Say Hello") {
+        message = Greeting.message()
+      }
     }
+    .padding()
+  }
 }
 
 #Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+  ContentView()
+    .modelContainer(for: Item.self, inMemory: true)
 }

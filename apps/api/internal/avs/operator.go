@@ -27,7 +27,7 @@ func generateOperator(id string) (*Operator, error) {
 		return nil, fmt.Errorf("generate operator key: %w", err)
 	}
 	return &Operator{
-		id:        id,
+		id:         id,
 		privateKey: priv,
 		publicKey:  pub,
 	}, nil
@@ -43,7 +43,7 @@ func loadOperator(id, hexPrivKey string) (*Operator, error) {
 	}
 	priv := ed25519.PrivateKey(privBytes)
 	return &Operator{
-		id:        id,
+		id:         id,
 		privateKey: priv,
 		publicKey:  priv.Public().(ed25519.PublicKey),
 	}, nil

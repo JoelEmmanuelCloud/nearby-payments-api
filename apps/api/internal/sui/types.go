@@ -21,13 +21,13 @@ type CoinObject struct {
 }
 
 type SponsoredTxRequest struct {
-	KindBytes   []byte
-	Sender      string
-	SuiRPCURL   string
+	KindBytes []byte
+	Sender    string
+	SuiRPCURL string
 }
 
 type SponsoredTxResult struct {
-	TxBytes         []byte
-	SponsorAddress  string
+	TxBytes          []byte
+	SponsorAddress   string
 	SponsorSignature string
 }
