@@ -26,7 +26,7 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancelCtx := context.WithCancel(context.Background())
 
 	_ = godotenv.Load()
 
@@ -110,6 +110,7 @@ func main() {
 		AuthStore:    authStore,
 	})
 	depositHandler := deposit.NewHandler(depositSvc)
+	processor := deposit.NewProcessor(depositStore)
 	webhookHandler, err := deposit.NewWebhookHandler(depositStore, cfg.BridgeWebhookPublicKey)
 	if err != nil {
 		slog.Error("webhook handler init failed", "error", err)
@@ -162,6 +163,8 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
+	go processor.Run(ctx)
+
 	go func() {
 		slog.Info("server starting", "addr", addr, "env", cfg.Env)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -171,6 +174,7 @@ func main() {
 	}()
 
 	<-quit
+	cancelCtx()
 	slog.Info("server shutting down")
 
 	shutdownCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
