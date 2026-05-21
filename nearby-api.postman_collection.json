@@ -1,0 +1,477 @@
+{
+  "info": {
+    "_postman_id": "nearby-payments-api-v1",
+    "name": "Nearby Payments API",
+    "description": "Full endpoint test collection for the Nearby Payments backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{accessToken}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl",      "value": "http://localhost:8080" },
+    { "key": "accessToken",  "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "userId",       "value": "" },
+    { "key": "intentId",     "value": "" },
+    { "key": "paymentId",    "value": "" },
+    { "key": "sessionId",    "value": "" },
+    { "key": "taskId",       "value": "" },
+    { "key": "depositId",    "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/health" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get Server Public Key",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/auth/server-public-key" }
+          }
+        },
+        {
+          "name": "OAuth Begin",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/v1/auth/oauth/begin" },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"provider\": \"google\",\n  \"codeChallenge\": \"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM\",\n  \"codeChallengeMethod\": \"S256\",\n  \"zkLoginNonce\": \"test-nonce-{{$timestamp}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "OAuth Complete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', d.accessToken || '');",
+                  "  pm.collectionVariables.set('refreshToken', d.refreshToken || '');",
+                  "  pm.collectionVariables.set('userId', d.userId || '');",
+                  "  console.log('accessToken saved. userId:', d.userId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/v1/auth/oauth/complete" },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"code\": \"PASTE_GOOGLE_CODE_HERE\",\n  \"state\": \"PASTE_STATE_HERE\",\n  \"codeVerifier\": \"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk\",\n  \"platform\": \"ios\",\n  \"osVersion\": \"18.0\",\n  \"appBundleId\": \"com.nearby.test\",\n  \"deviceIntegrity\": { \"provider\": \"stub\" },\n  \"suiAddress\": \"0x0000000000000000000000000000000000000000000000000000000000000001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', d.accessToken || '');",
+                  "  pm.collectionVariables.set('refreshToken', d.refreshToken || '');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/v1/auth/refresh" },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Revoke Session",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/v1/auth/revoke" }
+          }
+        },
+        {
+          "name": "Assert Device Integrity",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const nonce = [...Array(32)].map(() => Math.floor(Math.random()*16).toString(16)).join('');",
+                  "pm.request.headers.upsert({key: 'X-Device-Provider', value: 'stub'});",
+                  "pm.request.headers.upsert({key: 'X-Request-Nonce', value: nonce});",
+                  "pm.request.headers.upsert({key: 'X-Request-Timestamp', value: Date.now().toString()});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/v1/auth/integrity" },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"deviceIntegrity\": { \"provider\": \"stub\", \"keyId\": \"\" },\n  \"timestampMs\": {{$timestamp}}000\n}"
+            }
+          }
+        },
+        {
+          "name": "Issue Device Credential",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const nonce = [...Array(32)].map(() => Math.floor(Math.random()*16).toString(16)).join('');",
+                  "pm.request.headers.upsert({key: 'X-Device-Provider', value: 'stub'});",
+                  "pm.request.headers.upsert({key: 'X-Request-Nonce', value: nonce});",
+                  "pm.request.headers.upsert({key: 'X-Request-Timestamp', value: Date.now().toString()});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/v1/auth/credential" },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"localProofPublicKey\": \"0x0000000000000000000000000000000000000000000000000000000000000001\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Deposit",
+      "item": [
+        {
+          "name": "Get Deposit Options",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/deposit/options" }
+          }
+        },
+        {
+          "name": "Get Deposit History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/deposit/history?limit=20&offset=0",
+              "query": [
+                { "key": "limit",  "value": "20" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Deposit by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/deposit/{{depositId}}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create Payment Intent",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const nonce = [...Array(32)].map(() => Math.floor(Math.random()*16).toString(16)).join('');",
+                  "pm.request.headers.upsert({key: 'X-Device-Provider', value: 'stub'});",
+                  "pm.request.headers.upsert({key: 'X-Request-Nonce', value: nonce});",
+                  "pm.request.headers.upsert({key: 'X-Request-Timestamp', value: Date.now().toString()});",
+                  "pm.request.headers.upsert({key: 'Idempotency-Key', value: 'intent-' + Date.now() + '-' + nonce.slice(0,8)});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) pm.collectionVariables.set('intentId', d.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/v1/payments/intents" },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"recipientAddress\": \"0x0000000000000000000000000000000000000000000000000000000000000002\",\n  \"recipientName\": \"alice@nearby.sui\",\n  \"asset\": \"USDC\",\n  \"amountAtomic\": \"1000000\",\n  \"fundingMode\": \"sponsored\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Payment Intent",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/payments/intents/{{intentId}}" }
+          }
+        },
+        {
+          "name": "Submit Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/v1/payments/intents/{{intentId}}/submit" },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"txDigest\": \"PASTE_TX_DIGEST_HERE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Cancel Payment Intent",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/v1/payments/intents/{{intentId}}/cancel" }
+          }
+        },
+        {
+          "name": "Get Payment by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/payments/{{paymentId}}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Names",
+      "item": [
+        {
+          "name": "Register Leaf Name",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const nonce = [...Array(32)].map(() => Math.floor(Math.random()*16).toString(16)).join('');",
+                  "pm.request.headers.upsert({key: 'X-Device-Provider', value: 'stub'});",
+                  "pm.request.headers.upsert({key: 'X-Request-Nonce', value: nonce});",
+                  "pm.request.headers.upsert({key: 'X-Request-Timestamp', value: Date.now().toString()});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.taskId) pm.collectionVariables.set('taskId', d.taskId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/v1/names/leaf" },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"leafName\": \"alice\",\n  \"parentName\": \"nearby\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Name Task",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const nonce = [...Array(32)].map(() => Math.floor(Math.random()*16).toString(16)).join('');",
+                  "pm.request.headers.upsert({key: 'X-Device-Provider', value: 'stub'});",
+                  "pm.request.headers.upsert({key: 'X-Request-Nonce', value: nonce});",
+                  "pm.request.headers.upsert({key: 'X-Request-Timestamp', value: Date.now().toString()});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/names/tasks/{{taskId}}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Nearby",
+      "item": [
+        {
+          "name": "Initiate Session",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const nonce = [...Array(32)].map(() => Math.floor(Math.random()*16).toString(16)).join('');",
+                  "pm.request.headers.upsert({key: 'X-Device-Provider', value: 'stub'});",
+                  "pm.request.headers.upsert({key: 'X-Request-Nonce', value: nonce});",
+                  "pm.request.headers.upsert({key: 'X-Request-Timestamp', value: Date.now().toString()});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) pm.collectionVariables.set('sessionId', d.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/v1/nearby/sessions" },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"recipientSuiAddress\": \"0x0000000000000000000000000000000000000000000000000000000000000002\",\n  \"payloadType\": \"payment_request\",\n  \"payloadData\": \"{\\\"amount\\\": \\\"1000000\\\"}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Session",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const nonce = [...Array(32)].map(() => Math.floor(Math.random()*16).toString(16)).join('');",
+                  "pm.request.headers.upsert({key: 'X-Device-Provider', value: 'stub'});",
+                  "pm.request.headers.upsert({key: 'X-Request-Nonce', value: nonce});",
+                  "pm.request.headers.upsert({key: 'X-Request-Timestamp', value: Date.now().toString()});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/nearby/sessions/{{sessionId}}" }
+          }
+        },
+        {
+          "name": "Acknowledge Session",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const nonce = [...Array(32)].map(() => Math.floor(Math.random()*16).toString(16)).join('');",
+                  "pm.request.headers.upsert({key: 'X-Device-Provider', value: 'stub'});",
+                  "pm.request.headers.upsert({key: 'X-Request-Nonce', value: nonce});",
+                  "pm.request.headers.upsert({key: 'X-Request-Timestamp', value: Date.now().toString()});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/v1/nearby/sessions/{{sessionId}}/acknowledge" },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"accept\": true\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "Bridge Webhook",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",       "value": "application/json" },
+              { "key": "X-Bridge-Signature", "value": "PASTE_SIGNATURE_HERE" }
+            ],
+            "url": { "raw": "{{baseUrl}}/v1/webhooks/bridge" },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"type\": \"virtual_account.activity\",\n  \"data\": {}\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
