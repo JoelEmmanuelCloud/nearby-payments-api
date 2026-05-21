@@ -40,10 +40,13 @@ func New(deps Deps) http.Handler {
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+
 	r.Route("/v1", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
 			r.Get("/server-public-key", deps.AuthHandler.GetServerPublicKey)
 			r.Post("/oauth/begin", deps.AuthHandler.OAuthBegin)
+			r.Get("/oauth/complete", deps.AuthHandler.OAuthCallbackPage)
 			r.Post("/oauth/complete", deps.AuthHandler.OAuthComplete)
 
 			r.Group(func(r chi.Router) {

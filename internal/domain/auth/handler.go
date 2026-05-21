@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
 
 	"github.com/go-chi/chi/v5"
 
@@ -164,6 +165,13 @@ func (h *Handler) GetServerPublicKey(w http.ResponseWriter, r *http.Request) {
 	resp := h.svc.GetServerPublicKey()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handler) OAuthCallbackPage(w http.ResponseWriter, r *http.Request) {
+	q := url.Values{}
+	q.Set("code", r.URL.Query().Get("code"))
+	q.Set("state", r.URL.Query().Get("state"))
+	http.Redirect(w, r, "/static/auth_test.html?"+q.Encode(), http.StatusFound)
 }
 
 var _ = chi.RouteContext
