@@ -268,10 +268,12 @@
               "script": {
                 "exec": [
                   "const nonce = [...Array(32)].map(() => Math.floor(Math.random()*16).toString(16)).join('');",
+                  "const idempKey = 'intent-' + Date.now() + '-' + nonce.slice(0,8);",
+                  "pm.collectionVariables.set('_lastIdempotencyKey', idempKey);",
                   "pm.request.headers.upsert({key: 'X-Device-Provider', value: 'stub'});",
                   "pm.request.headers.upsert({key: 'X-Request-Nonce', value: nonce});",
                   "pm.request.headers.upsert({key: 'X-Request-Timestamp', value: Date.now().toString()});",
-                  "pm.request.headers.upsert({key: 'Idempotency-Key', value: 'intent-' + Date.now() + '-' + nonce.slice(0,8)});"
+                  "pm.request.headers.upsert({key: 'Idempotency-Key', value: idempKey});"
                 ],
                 "type": "text/javascript"
               }
@@ -300,7 +302,7 @@
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"recipientAddress\": \"0x0000000000000000000000000000000000000000000000000000000000000002\",\n  \"recipientName\": \"alice@nearby.sui\",\n  \"asset\": \"USDC\",\n  \"amountAtomic\": \"1000000\",\n  \"fundingMode\": \"sponsored\"\n}"
+              "raw": "{\n  \"recipientAddress\": \"0x0000000000000000000000000000000000000000000000000000000000000002\",\n  \"recipientName\": \"alice@nearby.sui\",\n  \"asset\": \"USDsui\",\n  \"amountAtomic\": \"1000000\",\n  \"fundingMode\": \"sponsored\",\n  \"idempotencyKey\": \"PASTE_IDEMPOTENCY_KEY_HERE\"\n}"
             }
           }
         },
@@ -328,7 +330,7 @@
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"txDigest\": \"PASTE_TX_DIGEST_HERE\"\n}"
+              "raw": "{\n  \"txBytes\": \"PASTE_BASE64_TX_BYTES_HERE\",\n  \"userSignature\": \"PASTE_USER_SIGNATURE_HERE\"\n}"
             }
           }
         },
