@@ -1,4 +1,4 @@
-.PHONY: dev build test lint migrate setup
+.PHONY: dev build test lint setup
 
 setup:
 	go mod tidy
@@ -14,6 +14,3 @@ test:
 
 lint:
 	golangci-lint run ./...
-
-migrate:
-	go run ./cmd/migrate
