@@ -67,12 +67,28 @@ type DepositRoute struct {
 	Kind                 string
 	SourceRail           string
 	SourceCurrency       string
+	SourceAddress        string
 	DestinationRail      string
 	DestinationCurrency  string
 	DestinationAddrHash  string
 	State                string
 	CreatedAt            int64
 	UpdatedAt            int64
+}
+
+type DepositSummary struct {
+	ID        string `json:"id"`
+	Kind      string `json:"kind"`
+	Status    string `json:"status"`
+	Amount    string `json:"amount"`
+	Currency  string `json:"currency"`
+	TxHash    string `json:"txHash"`
+	CreatedAt int64  `json:"createdAt"`
+	UpdatedAt int64  `json:"updatedAt"`
+}
+
+type ListDepositsResponse struct {
+	Deposits []DepositSummary `json:"deposits"`
 }
 
 type BridgeWebhookEvent struct {
