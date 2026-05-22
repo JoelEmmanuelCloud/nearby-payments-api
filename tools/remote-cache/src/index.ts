@@ -12,9 +12,34 @@
  */
 
 const CACHE_PATH = /^\/cache\/(ac|cas)\/([a-f0-9]{64})$/;
+const MAVEN_PATH = /^\/maven\/(.+)$/;
 
 function text(status: number, body: string): Response {
   return new Response(body, { status });
+}
+
+function cacheObjectHeaders(object: R2Object): Headers {
+  return new Headers({
+    "content-type": "application/octet-stream",
+    "content-length": object.size.toString(),
+    etag: object.httpEtag,
+    "cache-control": "private, max-age=31536000, immutable",
+  });
+}
+
+function mavenObjectHeaders(object: R2Object): Headers {
+  const headers = new Headers();
+
+  object.writeHttpMetadata(headers);
+  headers.set("content-length", object.size.toString());
+  headers.set("etag", object.httpEtag);
+  headers.set("cache-control", "public, max-age=300");
+
+  if (!headers.get("content-type")) {
+    headers.set("content-type", "text/plain");
+  }
+
+  return headers;
 }
 
 function authorized(request: Request, env: Env): boolean {
@@ -24,70 +49,116 @@ function authorized(request: Request, env: Env): boolean {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    const mavenMatch = url.pathname.match(MAVEN_PATH);
+
+    if (mavenMatch) {
+      return handleMavenRepository(request, env, mavenMatch[1]);
+    }
+
     if (!authorized(request, env)) {
       return text(401, "Unauthorized");
     }
 
-    const url = new URL(request.url);
-    const match = url.pathname.match(CACHE_PATH);
+    const cacheMatch = url.pathname.match(CACHE_PATH);
 
-    if (!match) {
+    if (cacheMatch) {
+      return handleBazelCache(request, env, cacheMatch);
+    }
+
+    return text(404, "Not Found");
+  },
+} satisfies ExportedHandler<Env>;
+
+async function handleBazelCache(
+  request: Request,
+  env: Env,
+  match: RegExpMatchArray,
+): Promise<Response> {
+  const key = `${match[1]}/${match[2]}`;
+
+  switch (request.method) {
+    case "PUT": {
+      if (!request.body) {
+        return text(400, "Missing request body");
+      }
+
+      await env.nearby_bazel_cache.put(key, request.body, {
+        httpMetadata: {
+          contentType: "application/octet-stream",
+        },
+      });
+
+      return new Response(null, { status: 200 });
+    }
+
+    case "GET": {
+      const object = await env.nearby_bazel_cache.get(key);
+
+      if (!object) {
+        return text(404, "Not Found");
+      }
+
+      return new Response(object.body, {
+        status: 200,
+        headers: cacheObjectHeaders(object),
+      });
+    }
+
+    case "HEAD": {
+      const object = await env.nearby_bazel_cache.head(key);
+
+      if (!object) {
+        return text(404, "Not Found");
+      }
+
+      return new Response(null, {
+        status: 200,
+        headers: cacheObjectHeaders(object),
+      });
+    }
+
+    default:
+      return text(405, "Method Not Allowed");
+  }
+}
+
+async function handleMavenRepository(
+  request: Request,
+  env: Env,
+  relativePath: string,
+): Promise<Response> {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return text(405, "Method Not Allowed");
+  }
+
+  if (relativePath.includes("..")) {
+    return text(400, "Invalid Maven path");
+  }
+
+  const key = `maven/${relativePath}`;
+
+  if (request.method === "HEAD") {
+    const object = await env.nearby_bazel_cache.head(key);
+
+    if (!object) {
       return text(404, "Not Found");
     }
 
-    const key = `${match[1]}/${match[2]}`;
+    return new Response(null, {
+      status: 200,
+      headers: mavenObjectHeaders(object),
+    });
+  }
 
-    switch (request.method) {
-      case "PUT": {
-        if (!request.body) {
-          return text(400, "Missing request body");
-        }
+  const object = await env.nearby_bazel_cache.get(key);
 
-        await env.nearby_bazel_cache.put(key, request.body, {
-          httpMetadata: {
-            contentType: "application/octet-stream",
-          },
-        });
+  if (!object) {
+    return text(404, "Not Found");
+  }
 
-        return new Response(null, { status: 200 });
-      }
-
-      case "GET": {
-        const object = await env.nearby_bazel_cache.get(key);
-
-        if (!object) {
-          return text(404, "Not Found");
-        }
-
-        return new Response(object.body, {
-          status: 200,
-          headers: {
-            "content-type": "application/octet-stream",
-            "content-length": object.size.toString(),
-            etag: object.httpEtag,
-            "cache-control": "private, max-age=31536000, immutable",
-          },
-        });
-      }
-
-      case "HEAD": {
-        const object = await env.nearby_bazel_cache.head(key);
-
-        if (!object) {
-          return text(404, "Not Found");
-        }
-
-        return new Response(null, {
-          status: 200,
-          headers: {
-            "content-length": object.size.toString(),
-            etag: object.httpEtag,
-          },
-        });
-      }
-
-      default:
-        return text(405, "Method Not Allowed");
-    }
-  },
-} satisfies ExportedHandler<Env>;
+  return new Response(object.body, {
+    status: 200,
+    headers: mavenObjectHeaders(object),
+  });
+}

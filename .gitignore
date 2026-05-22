@@ -202,3 +202,5 @@ tmp/
 # swift
 .build/
 .swiftpm/
+
+tasks/

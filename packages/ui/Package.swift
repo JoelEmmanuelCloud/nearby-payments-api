@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
   name: "UI",
   platforms: [
-    .iOS(.v17),
+    .iOS(26),
     .macOS(.v14),
   ],
   products: [

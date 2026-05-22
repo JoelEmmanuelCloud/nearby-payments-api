@@ -1,0 +1,9 @@
+"""Module configuration for directory ignore rules."""
+ignore_directories([
+    "**/.build",
+    "**/node_modules",
+    "**/.git",
+    "**/out",
+    "**/build",
+    "**/gradle",
+])

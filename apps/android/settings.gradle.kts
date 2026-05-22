@@ -14,7 +14,15 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        mavenLocal()
+        val nearbyMavenUrl = providers.gradleProperty("nearby.maven.url")
+            .get()
+
+        maven {
+            url = uri(nearbyMavenUrl)
+            content {
+                includeGroup("org.swift.swiftkit")
+            }
+        }
         google()
         mavenCentral()
     }

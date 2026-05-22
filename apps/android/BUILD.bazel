@@ -1,0 +1,17 @@
+alias(
+    name = "bridge",
+    actual = "//tools/android:bridge",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "app",
+    actual = "//tools/android:app",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "apk",
+    actual = "//apps/android/app:nearby_debug",
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,23 @@
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+sh_binary(
+    name = "bridge",
+    srcs = ["gradle-build.sh"],
+    env = {
+        "NEARBY_ANDROID_GRADLE_TASKS": ":bridge:assembleDebug",
+    },
+    visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "app",
+    srcs = ["gradle-build.sh"],
+    env = {
+        "NEARBY_ANDROID_GRADLE_TASKS": ":bridge:assembleDebug :app:assembleDebug",
+    },
+    visibility = ["//visibility:public"],
+)
+
+exports_files([
+    "gradle-build.sh",
+])
