@@ -6,7 +6,7 @@ on:
     branches: [dev, staging, main]
 
 jobs:
-  bazel:
+  api:
     runs-on: ubuntu-latest
 
     steps:
@@ -33,6 +33,30 @@ jobs:
           BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
 
+      - name: Test API
+        run: |
+          REMOTE_FLAGS=()
+          if [ -n "$BAZEL_CACHE_TOKEN" ]; then
+            REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
+            REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
+          fi
+          bazel test --config=ci "${REMOTE_FLAGS[@]}" //apps/api/...
+        env:
+          BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
+          BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
+
+  apple:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: true
+
       - name: Build packages
         run: |
           REMOTE_FLAGS=()
@@ -48,22 +72,10 @@ jobs:
       - name: Build iOS app
         run: |
           bazel build \
-          --config=ci \
-          --apple_platform_type=ios \
-          --ios_multi_cpus=sim_arm64 \
-          //apps/ios:Nearby
-
-      - name: Test API
-        run: |
-          REMOTE_FLAGS=()
-          if [ -n "$BAZEL_CACHE_TOKEN" ]; then
-            REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
-            REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
-          fi
-          bazel test --config=ci "${REMOTE_FLAGS[@]}" //apps/api/...
-        env:
-          BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
-          BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
+            --config=ci \
+            --apple_platform_type=ios \
+            --ios_multi_cpus=sim_arm64 \
+            //apps/ios:Nearby
 
       - name: Test packages
         run: |
