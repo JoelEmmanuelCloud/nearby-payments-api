@@ -30,7 +30,7 @@ jobs:
           fi
           bazel build --config=ci "${REMOTE_FLAGS[@]}" //apps/api/...
         env:
-          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
+          BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
 
       - name: Build packages
@@ -42,7 +42,7 @@ jobs:
           fi
           bazel build "${REMOTE_FLAGS[@]}" //packages/...
         env:
-          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
+          BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
 
       - name: Build iOS app
@@ -62,7 +62,7 @@ jobs:
           fi
           bazel test --config=ci "${REMOTE_FLAGS[@]}" //apps/api/...
         env:
-          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
+          BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
 
       - name: Test packages
@@ -74,5 +74,5 @@ jobs:
           fi
           bazel test --config=ci "${REMOTE_FLAGS[@]}" //packages/...
         env:
-          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
+          BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
