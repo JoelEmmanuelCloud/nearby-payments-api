@@ -99,7 +99,7 @@ jobs:
   android:
     runs-on: ubuntu-latest
     env:
-      SWIFT_VERSION: "6.3"
+      SWIFT_VERSION: "6.3.0"
       SWIFT_ANDROID_SDK_VERSION: "6.3-RELEASE_android"
       ANDROID_NDK_VERSION: r29
 
@@ -143,7 +143,12 @@ jobs:
         run: |
           echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> "$GITHUB_ENV"
           echo "SWIFTLY_PATH=$(command -v swiftly)" >> "$GITHUB_ENV"
-          swiftly run swift --version
+          swift_version_output="$(swiftly run swift --version)"
+          echo "$swift_version_output"
+          if ! grep -q "Swift version 6.3 " <<< "$swift_version_output"; then
+            echo "Expected Swift 6.3.0-compatible toolchain for ${SWIFT_ANDROID_SDK_VERSION}"
+            exit 1
+          fi
 
       - name: Cache SwiftPM and Swift SDKs
         uses: actions/cache@v4
