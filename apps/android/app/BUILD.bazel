@@ -1,0 +1,48 @@
+load("@rules_android//rules:rules.bzl", "android_binary")
+load("@rules_jvm_external//:defs.bzl", "artifact")
+load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
+load("@rules_kotlin//kotlin:core.bzl", "kt_compiler_plugin")
+
+kt_compiler_plugin(
+    name = "compose_compiler_plugin",
+    id = "androidx.compose.compiler.plugins.kotlin",
+    target_embedded_compiler = True,
+    deps = [
+        artifact("org.jetbrains.kotlin:kotlin-compose-compiler-plugin-embeddable"),
+    ],
+)
+
+kt_android_library(
+    name = "main_lib",
+    srcs = glob(["src/main/java/**/*.kt"]),
+    custom_package = "com.variance.nearby",
+    manifest = "src/main/AndroidManifest.xml",
+    plugins = [":compose_compiler_plugin"],
+    resource_files = glob(["src/main/res/**"]),
+    deps = [
+        "//apps/android/bridge:bridge_aar",
+        artifact("androidx.activity:activity-compose"),
+        artifact("androidx.compose.material3:material3"),
+        artifact("androidx.compose.ui:ui"),
+        artifact("androidx.compose.ui:ui-graphics"),
+        artifact("androidx.compose.ui:ui-tooling-preview"),
+        artifact("androidx.core:core-ktx"),
+        artifact("androidx.lifecycle:lifecycle-runtime-ktx"),
+        artifact("org.swift.swiftkit:swiftkit-core"),
+    ],
+)
+
+android_binary(
+    name = "nearby_debug",
+    custom_package = "com.variance.nearby",
+    manifest = "src/main/AndroidManifest.xml",
+    manifest_values = {
+        "applicationId": "com.variance.nearby",
+        "minSdkVersion": "30",
+        "targetSdkVersion": "36",
+        "versionCode": "1",
+        "versionName": "1.0",
+    },
+    visibility = ["//visibility:public"],
+    deps = [":main_lib"],
+)

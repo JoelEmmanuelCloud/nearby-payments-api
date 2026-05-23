@@ -1,0 +1,14 @@
+load("@rules_swift//swift:swift.bzl", "swift_library", "swift_test")
+
+swift_library(
+    name = "Hello",
+    srcs = ["Sources/Hello/Hello.swift"],
+    module_name = "Hello",
+    visibility = ["//visibility:public"],
+)
+
+swift_test(
+    name = "HelloTests",
+    srcs = ["Tests/HelloTests/HelloTests.swift"],
+    deps = [":Hello"],
+)

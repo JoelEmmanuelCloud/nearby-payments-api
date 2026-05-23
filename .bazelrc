@@ -1,0 +1,49 @@
+# Use Bazel's module system instead of legacy WORKSPACE.
+common --enable_bzlmod
+
+# Keep terminal output readable.
+common --color=yes
+common --curses=yes
+
+# Show which bazelrc files were loaded.
+common --announce_rc
+
+# Forward the developer's Android SDK/NDK locations into repository rules.
+# Set ANDROID_HOME and ANDROID_NDK_HOME in the shell/IDE environment.
+common --repo_env=ANDROID_HOME
+common --repo_env=ANDROID_NDK_HOME
+
+# Lets Bazel decide parallelism automatically based on the machine.
+build --jobs=auto
+
+# Enables a local disk cache so rebuilds are faster.
+build --disk_cache=~/.cache/bazel-disk
+
+# Local development should use the installed JDK instead of fetching remote JDK
+# toolchains during normal edit/build loops.
+build --extra_toolchains=@local_jdk//:all
+build --java_runtime_version=local_jdk
+build --tool_java_runtime_version=local_jdk
+build --java_language_version=17
+build --tool_java_language_version=17
+# Define a config named "emulator"
+build:emulator --android_platforms=@rules_android//:arm64-v8a
+build:emulator --extra_toolchains=@androidndk//:all
+
+# Only print test logs on failure.
+test --test_output=errors
+test --test_summary=short
+
+# move generated symlinks to a separate directory
+# to avoid polluting the workspace.
+build --symlink_prefix=out/bazel-
+
+# rules_kotlin 2.3.20 still has an empty root glob that fails under Bazel's
+# latest incompatible flag default.
+common --noincompatible_disallow_empty_glob
+
+build:ci --verbose_failures
+build:ci --incompatible_strict_action_env
+build:ci --java_runtime_version=remotejdk_25
+build:ci --tool_java_runtime_version=remotejdk_25
+test:ci --test_output=errors

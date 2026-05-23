@@ -1,0 +1,22 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "nearby",
+    srcs = [
+        "errors.go",
+        "handler.go",
+        "service.go",
+        "store.go",
+        "types.go",
+    ],
+    importpath = "github.com/vaariance/nearby/internal/domain/nearby",
+    visibility = ["//apps/api:__subpackages__"],
+    deps = [
+        "//apps/api/internal/domain/auth",
+        "//apps/api/internal/errors",
+        "//apps/api/internal/utils",
+        "@com_github_go_chi_chi_v5//:chi",
+        "@com_github_jackc_pgx_v5//:pgx",
+        "@com_github_jackc_pgx_v5//pgxpool",
+    ],
+)

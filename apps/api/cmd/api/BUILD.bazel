@@ -1,0 +1,27 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "api_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/vaariance/nearby/cmd/api",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//apps/api/internal/avs",
+        "//apps/api/internal/config",
+        "//apps/api/internal/db",
+        "//apps/api/internal/domain/auth",
+        "//apps/api/internal/domain/deposit",
+        "//apps/api/internal/domain/names",
+        "//apps/api/internal/domain/nearby",
+        "//apps/api/internal/domain/payment",
+        "//apps/api/internal/sui",
+        "//apps/api/router",
+        "@com_github_joho_godotenv//:godotenv",
+    ],
+)
+
+go_binary(
+    name = "api",
+    embed = [":api_lib"],
+    visibility = ["//visibility:public"],
+)

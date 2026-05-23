@@ -1,0 +1,15 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "sui",
+    srcs = [
+        "blake2b.go",
+        "client.go",
+        "multisig.go",
+        "sponsor.go",
+        "types.go",
+    ],
+    importpath = "github.com/vaariance/nearby/internal/sui",
+    visibility = ["//apps/api:__subpackages__"],
+    deps = ["//apps/api/internal/avs"],
+)

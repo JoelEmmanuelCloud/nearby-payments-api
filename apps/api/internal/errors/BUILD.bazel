@@ -1,0 +1,11 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "errors",
+    srcs = [
+        "app_error.go",
+        "http.go",
+    ],
+    importpath = "github.com/vaariance/nearby/internal/errors",
+    visibility = ["//apps/api:__subpackages__"],
+)

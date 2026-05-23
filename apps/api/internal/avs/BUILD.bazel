@@ -1,0 +1,18 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "avs",
+    srcs = [
+        "aggregator.go",
+        "client.go",
+        "errors.go",
+        "operator.go",
+        "types.go",
+    ],
+    importpath = "github.com/vaariance/nearby/internal/avs",
+    visibility = ["//apps/api:__subpackages__"],
+    deps = [
+        "//apps/api/internal/errors",
+        "//apps/api/internal/utils",
+    ],
+)

@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "deposit",
+    srcs = [
+        "bridge_client.go",
+        "errors.go",
+        "handler.go",
+        "processor.go",
+        "service.go",
+        "store.go",
+        "types.go",
+        "webhook.go",
+    ],
+    importpath = "github.com/vaariance/nearby/internal/domain/deposit",
+    visibility = ["//apps/api:__subpackages__"],
+    deps = [
+        "//apps/api/internal/domain/auth",
+        "//apps/api/internal/errors",
+        "//apps/api/internal/utils",
+        "@com_github_jackc_pgx_v5//:pgx",
+        "@com_github_jackc_pgx_v5//pgxpool",
+    ],
+)
