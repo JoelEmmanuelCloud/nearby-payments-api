@@ -9,6 +9,34 @@ jobs:
   api:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nearby_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nearby_test
+      REDIS_URL: redis://localhost:6379
+
     steps:
       - uses: actions/checkout@v4
 
@@ -17,6 +45,12 @@ jobs:
           bazelisk-cache: true
           repository-cache: true
           disk-cache: true
+
+      - name: Run migrations
+        run: |
+          for f in $(ls apps/api/internal/db/migrations/*.sql | sort -V); do
+            psql "$DATABASE_URL" -f "$f"
+          done
 
       - name: Gazelle API
         run: bazel run //apps/api:gazelle
@@ -40,12 +74,14 @@ jobs:
             REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
             REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
           fi
-          bazel test --config=ci --test_env=DATABASE_URL --test_env=REDIS_URL "${REMOTE_FLAGS[@]}" //apps/api/...
+          bazel test --config=ci \
+            --test_env=DATABASE_URL \
+            --test_env=REDIS_URL \
+            "${REMOTE_FLAGS[@]}" \
+            //apps/api/...
         env:
           BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
 
   apple:
     runs-on: macos-latest
