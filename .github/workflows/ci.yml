@@ -100,6 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SWIFT_VERSION: "6.3"
+      SWIFT_TOOLCHAIN: "swift-6.3-RELEASE"
       SWIFT_ANDROID_SDK_VERSION: "6.3-RELEASE_android"
       ANDROID_NDK_VERSION: r29
 
@@ -120,9 +121,18 @@ jobs:
           add-to-path: false
           local-cache: true
 
+      - name: Cache Swiftly
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/swiftly
+            ~/.cache/swiftly
+            ~/.swiftly
+          key: swiftly-${{ runner.os }}-${{ runner.arch }}-${{ env.SWIFT_TOOLCHAIN }}
+
       - uses: vapor/swiftly-action@v0.2
         with:
-          toolchain: ${{ env.SWIFT_VERSION }}
+          toolchain: ${{ env.SWIFT_TOOLCHAIN }}
 
       - uses: bazel-contrib/setup-bazel@0.19.0
         with:
@@ -134,17 +144,35 @@ jobs:
         run: |
           echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> "$GITHUB_ENV"
           echo "SWIFTLY_PATH=$(command -v swiftly)" >> "$GITHUB_ENV"
+          swiftly run swift --version
+
+      - name: Cache SwiftPM and Swift SDKs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.swiftpm
+            ~/.config/swiftpm
+            ~/.cache/org.swift.swiftpm
+            ~/.cache/swiftpm
+          key: swiftpm-${{ runner.os }}-${{ runner.arch }}-${{ env.SWIFT_TOOLCHAIN }}-${{ env.SWIFT_ANDROID_SDK_VERSION }}
 
       - name: Install Swift Android SDK
         run: |
-          swift sdk install \
-            https://download.swift.org/swift-6.3-release/android-sdk/swift-6.3-RELEASE/swift-6.3-RELEASE_android.artifactbundle.tar.gz \
-            --checksum 2f2942c4bcea7965a08665206212c66991dabe23725aeec7c4365fc91acad088
           swift_sdk_bundle="$(find "$HOME" -type d -name "swift-${SWIFT_ANDROID_SDK_VERSION}.artifactbundle" -print -quit)"
+
+          if [ -z "$swift_sdk_bundle" ]; then
+            swift sdk install \
+              https://download.swift.org/swift-6.3-release/android-sdk/swift-6.3-RELEASE/swift-6.3-RELEASE_android.artifactbundle.tar.gz \
+              --checksum 2f2942c4bcea7965a08665206212c66991dabe23725aeec7c4365fc91acad088
+
+            swift_sdk_bundle="$(find "$HOME" -type d -name "swift-${SWIFT_ANDROID_SDK_VERSION}.artifactbundle" -print -quit)"
+          fi
+
           if [ -z "$swift_sdk_bundle" ]; then
             echo "Swift Android SDK bundle not found under $HOME"
             exit 1
           fi
+
           echo "SWIFT_SDK_PATH=$(dirname "$swift_sdk_bundle")" >> "$GITHUB_ENV"
 
       - name: Build Android bridge
