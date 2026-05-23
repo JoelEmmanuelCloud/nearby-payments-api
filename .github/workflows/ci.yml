@@ -6,8 +6,36 @@ on:
     branches: [dev, staging, main]
 
 jobs:
-  bazel:
+  api:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nearby_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nearby_test
+      REDIS_URL: redis://localhost:6379
 
     steps:
       - uses: actions/checkout@v4
@@ -18,56 +46,83 @@ jobs:
           repository-cache: true
           disk-cache: true
 
+      - name: Run migrations
+        run: |
+          for f in $(ls apps/api/internal/db/migrations/*.sql | sort -V); do
+            psql "$DATABASE_URL" -f "$f"
+          done
+
       - name: Gazelle API
         run: bazel run //apps/api:gazelle
 
       - name: Build API
         run: |
-          bazel build \
-            --config=ci \
-            --remote_cache="$BAZEL_REMOTE_CACHE_URL" \
-            --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" \
+          REMOTE_FLAGS=()
+          if [ -n "$BAZEL_CACHE_TOKEN" ]; then
+            REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
+            REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
+          fi
+          bazel build --config=ci "${REMOTE_FLAGS[@]}" //apps/api/...
+        env:
+          BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
+          BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
+
+      - name: Test API
+        run: |
+          REMOTE_FLAGS=()
+          if [ -n "$BAZEL_CACHE_TOKEN" ]; then
+            REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
+            REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
+          fi
+          bazel test --config=ci \
+            --test_env=DATABASE_URL \
+            --test_env=REDIS_URL \
+            "${REMOTE_FLAGS[@]}" \
             //apps/api/...
         env:
-          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
+          BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
+
+  apple:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: true
 
       - name: Build packages
         run: |
-          bazel build \
-            --remote_cache="$BAZEL_REMOTE_CACHE_URL" \
-            --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" \
-            //packages/...
+          REMOTE_FLAGS=()
+          if [ -n "$BAZEL_CACHE_TOKEN" ]; then
+            REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
+            REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
+          fi
+          bazel build "${REMOTE_FLAGS[@]}" //packages/...
         env:
-          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
+          BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
 
       - name: Build iOS app
         run: |
           bazel build \
-          --config=ci \
-          --apple_platform_type=ios \
-          --ios_multi_cpus=sim_arm64 \
-          //apps/ios:Nearby
-
-      - name: Test API
-        run: |
-          bazel test \
             --config=ci \
-            --remote_cache="$BAZEL_REMOTE_CACHE_URL" \
-            --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" \
-            //apps/api/...
-        env:
-          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
-          BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
+            --apple_platform_type=ios \
+            --ios_multi_cpus=sim_arm64 \
+            //apps/ios:Nearby
 
       - name: Test packages
         run: |
-          bazel test \
-            --config=ci \
-            --remote_cache="$BAZEL_REMOTE_CACHE_URL" \
-            --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" \
-            //packages/...
+          REMOTE_FLAGS=()
+          if [ -n "$BAZEL_CACHE_TOKEN" ]; then
+            REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
+            REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
+          fi
+          bazel test --config=ci "${REMOTE_FLAGS[@]}" //packages/...
         env:
-          BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
+          BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}

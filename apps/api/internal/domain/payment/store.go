@@ -31,34 +31,60 @@ func (s *Store) CreateIntent(ctx context.Context, pi *PaymentIntent) error {
 
 func (s *Store) GetIntentByID(ctx context.Context, id string) (*PaymentIntent, error) {
 	pi := &PaymentIntent{}
+	var recipientName, txDigest, sponsorAddr *string
 	err := s.db.QueryRow(ctx,
 		`SELECT id, user_id, idempotency_key, recipient_address, recipient_name, asset, amount_atomic,
 		        status, tx_digest, sponsor_address, funding_mode, created_at, updated_at, expires_at
 		 FROM payment_intents WHERE id = $1`,
 		id,
-	).Scan(&pi.ID, &pi.UserID, &pi.IdempotencyKey, &pi.RecipientAddress, &pi.RecipientName,
-		&pi.Asset, &pi.AmountAtomic, &pi.Status, &pi.TxDigest, &pi.SponsorAddress,
+	).Scan(&pi.ID, &pi.UserID, &pi.IdempotencyKey, &pi.RecipientAddress, &recipientName,
+		&pi.Asset, &pi.AmountAtomic, &pi.Status, &txDigest, &sponsorAddr,
 		&pi.FundingMode, &pi.CreatedAt, &pi.UpdatedAt, &pi.ExpiresAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
-	return pi, err
+	if err != nil {
+		return nil, err
+	}
+	if recipientName != nil {
+		pi.RecipientName = *recipientName
+	}
+	if txDigest != nil {
+		pi.TxDigest = *txDigest
+	}
+	if sponsorAddr != nil {
+		pi.SponsorAddress = *sponsorAddr
+	}
+	return pi, nil
 }
 
 func (s *Store) GetIntentByIdempotencyKey(ctx context.Context, key string) (*PaymentIntent, error) {
 	pi := &PaymentIntent{}
+	var recipientName, txDigest, sponsorAddr *string
 	err := s.db.QueryRow(ctx,
 		`SELECT id, user_id, idempotency_key, recipient_address, recipient_name, asset, amount_atomic,
 		        status, tx_digest, sponsor_address, funding_mode, created_at, updated_at, expires_at
 		 FROM payment_intents WHERE idempotency_key = $1`,
 		key,
-	).Scan(&pi.ID, &pi.UserID, &pi.IdempotencyKey, &pi.RecipientAddress, &pi.RecipientName,
-		&pi.Asset, &pi.AmountAtomic, &pi.Status, &pi.TxDigest, &pi.SponsorAddress,
+	).Scan(&pi.ID, &pi.UserID, &pi.IdempotencyKey, &pi.RecipientAddress, &recipientName,
+		&pi.Asset, &pi.AmountAtomic, &pi.Status, &txDigest, &sponsorAddr,
 		&pi.FundingMode, &pi.CreatedAt, &pi.UpdatedAt, &pi.ExpiresAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
-	return pi, err
+	if err != nil {
+		return nil, err
+	}
+	if recipientName != nil {
+		pi.RecipientName = *recipientName
+	}
+	if txDigest != nil {
+		pi.TxDigest = *txDigest
+	}
+	if sponsorAddr != nil {
+		pi.SponsorAddress = *sponsorAddr
+	}
+	return pi, nil
 }
 
 func (s *Store) UpdateIntentStatus(ctx context.Context, id, status, txDigest string, updatedAt int64) error {

@@ -1,0 +1,13 @@
+.env
+.env.*
+.git
+.gitignore
+.air.toml
+.claude/
+architecture/
+architecture.zip
+railway.toml
+README.md
+Claude.md
+tmp/
+bin/

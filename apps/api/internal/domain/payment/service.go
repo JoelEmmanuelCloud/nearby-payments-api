@@ -54,7 +54,7 @@ func (s *Service) CreateIntent(ctx context.Context, userID string, req CreateInt
 		return nil, fmt.Errorf("check idempotency: %w", err)
 	}
 	if existing != nil {
-		return toCreateIntentResponse(existing, s.sponsor.Address()), nil
+		return toCreateIntentResponse(existing, existing.SponsorAddress), nil
 	}
 
 	now := utils.NowUnix()

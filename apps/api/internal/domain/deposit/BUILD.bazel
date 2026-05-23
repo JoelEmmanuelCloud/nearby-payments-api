@@ -3,10 +3,10 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "deposit",
     srcs = [
-        "blockradar_client.go",
+        "bridge_client.go",
         "errors.go",
-        "fincra_client.go",
         "handler.go",
+        "processor.go",
         "service.go",
         "store.go",
         "types.go",

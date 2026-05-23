@@ -1,11 +1,14 @@
 package deposit
 
 import (
-	"crypto/hmac"
+	"crypto"
+	"crypto/rsa"
 	"crypto/sha256"
-	"crypto/sha512"
-	"encoding/hex"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -15,87 +18,54 @@ import (
 )
 
 type WebhookHandler struct {
-	store                   *Store
-	fincraWebhookSecret     string
-	blockradarWebhookSecret string
+	store  *Store
+	pubKey *rsa.PublicKey
 }
 
-func NewWebhookHandler(store *Store, fincraSecret, blockradarSecret string) *WebhookHandler {
-	return &WebhookHandler{
-		store:                   store,
-		fincraWebhookSecret:     fincraSecret,
-		blockradarWebhookSecret: blockradarSecret,
+func NewWebhookHandler(store *Store, pemPublicKey string) (*WebhookHandler, error) {
+	block, _ := pem.Decode([]byte(pemPublicKey))
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM block from BRIDGE_WEBHOOK_PUBLIC_KEY")
 	}
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse BRIDGE_WEBHOOK_PUBLIC_KEY: %w", err)
+	}
+	rsaPub, ok := pub.(*rsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("BRIDGE_WEBHOOK_PUBLIC_KEY is not an RSA public key")
+	}
+	return &WebhookHandler{store: store, pubKey: rsaPub}, nil
 }
 
-func (h *WebhookHandler) HandleFincraWebhook(w http.ResponseWriter, r *http.Request) {
+func (h *WebhookHandler) HandleBridgeWebhook(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		apperr.Write(w, apperr.ErrBadRequest)
 		return
 	}
 
-	if !h.verifyFincraSignature(r, body) {
+	if !h.verifySignature(r, body) {
 		apperr.Write(w, ErrWebhookSignatureInvalid)
 		return
 	}
 
 	var envelope struct {
-		Event string          `json:"event"`
-		Data  json.RawMessage `json:"data"`
+		ID   string          `json:"id"`
+		Type string          `json:"type"`
+		Data json.RawMessage `json:"data"`
 	}
-	if err := json.Unmarshal(body, &envelope); err != nil || envelope.Event == "" {
+	if err := json.Unmarshal(body, &envelope); err != nil {
 		apperr.Write(w, apperr.ErrBadRequest)
 		return
 	}
 
-	var dataID struct {
-		ID string `json:"_id"`
-	}
-	_ = json.Unmarshal(envelope.Data, &dataID)
-	providerEventID := dataID.ID
-	if providerEventID == "" {
-		providerEventID = utils.SHA256Hex(body)
-	}
-
-	h.recordEvent(w, r, "fincra", providerEventID, envelope.Event, body)
-}
-
-func (h *WebhookHandler) HandleBlockradarWebhook(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
+	if envelope.ID == "" || envelope.Type == "" {
 		apperr.Write(w, apperr.ErrBadRequest)
 		return
 	}
 
-	if !h.verifyBlockradarSignature(r, body) {
-		apperr.Write(w, ErrWebhookSignatureInvalid)
-		return
-	}
-
-	var envelope struct {
-		Event string          `json:"event"`
-		Data  json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(body, &envelope); err != nil || envelope.Event == "" {
-		apperr.Write(w, apperr.ErrBadRequest)
-		return
-	}
-
-	var dataID struct {
-		ID string `json:"id"`
-	}
-	_ = json.Unmarshal(envelope.Data, &dataID)
-	providerEventID := dataID.ID
-	if providerEventID == "" {
-		providerEventID = utils.SHA256Hex(body)
-	}
-
-	h.recordEvent(w, r, "blockradar", providerEventID, envelope.Event, body)
-}
-
-func (h *WebhookHandler) recordEvent(w http.ResponseWriter, r *http.Request, provider, providerEventID, eventType string, body []byte) {
-	exists, err := h.store.WebhookEventExists(r.Context(), providerEventID)
+	exists, err := h.store.WebhookEventExists(r.Context(), envelope.ID)
 	if err != nil {
 		apperr.Write(w, apperr.ErrInternal)
 		return
@@ -105,11 +75,10 @@ func (h *WebhookHandler) recordEvent(w http.ResponseWriter, r *http.Request, pro
 		return
 	}
 
-	ev := &WebhookEvent{
+	ev := &BridgeWebhookEvent{
 		ID:              utils.NewID(),
-		Provider:        provider,
-		ProviderEventID: providerEventID,
-		EventType:       eventType,
+		ProviderEventID: envelope.ID,
+		EventType:       envelope.Type,
 		RawPayload:      body,
 		Processed:       false,
 		CreatedAt:       utils.NowUnix(),
@@ -117,8 +86,7 @@ func (h *WebhookHandler) recordEvent(w http.ResponseWriter, r *http.Request, pro
 
 	if err := h.store.InsertWebhookEvent(r.Context(), ev); err != nil {
 		slog.Error("failed to insert webhook event",
-			"provider", provider,
-			"provider_event_id", providerEventID,
+			"provider_event_id", envelope.ID,
 			"error", err,
 		)
 		apperr.Write(w, apperr.ErrInternal)
@@ -128,24 +96,15 @@ func (h *WebhookHandler) recordEvent(w http.ResponseWriter, r *http.Request, pro
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *WebhookHandler) verifyFincraSignature(r *http.Request, body []byte) bool {
-	sig := r.Header.Get("x-webhook-signature")
+func (h *WebhookHandler) verifySignature(r *http.Request, body []byte) bool {
+	sig := r.Header.Get("X-Bridge-Signature")
 	if sig == "" {
 		return false
 	}
-	mac := hmac.New(sha512.New, []byte(h.fincraWebhookSecret))
-	mac.Write(body)
-	expected := hex.EncodeToString(mac.Sum(nil))
-	return hmac.Equal([]byte(sig), []byte(expected))
-}
-
-func (h *WebhookHandler) verifyBlockradarSignature(r *http.Request, body []byte) bool {
-	sig := r.Header.Get("x-blockradar-signature")
-	if sig == "" {
+	sigBytes, err := base64.StdEncoding.DecodeString(sig)
+	if err != nil {
 		return false
 	}
-	mac := hmac.New(sha256.New, []byte(h.blockradarWebhookSecret))
-	mac.Write(body)
-	expected := hex.EncodeToString(mac.Sum(nil))
-	return hmac.Equal([]byte(sig), []byte(expected))
+	digest := sha256.Sum256(body)
+	return rsa.VerifyPKCS1v15(h.pubKey, crypto.SHA256, digest[:], sigBytes) == nil
 }

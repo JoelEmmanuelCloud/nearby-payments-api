@@ -450,7 +450,7 @@ func (s *Service) exchangeGoogleCode(ctx context.Context, code, codeVerifier str
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("google token exchange failed: %d", resp.StatusCode)
+		return "", fmt.Errorf("google token exchange failed: status=%d body=%s", resp.StatusCode, string(body))
 	}
 
 	idToken, ok := result["id_token"].(string)
