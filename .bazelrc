@@ -47,3 +47,18 @@ build:ci --incompatible_strict_action_env
 build:ci --java_runtime_version=remotejdk_25
 build:ci --tool_java_runtime_version=remotejdk_25
 test:ci --test_output=errors
+
+# Android bridge builds consume explicit environment values instead of generated
+# Gradle properties. Local shells and CI should set these before invoking Bazel.
+build:bridge --action_env=SWIFTLY_PATH
+build:bridge --action_env=SWIFT_SDK_PATH
+build:bridge --action_env=SWIFT_VERSION
+build:bridge --action_env=SWIFT_ANDROID_SDK_VERSION
+
+build:bridge --repo_env=SWIFTLY_PATH
+build:bridge --repo_env=SWIFT_SDK_PATH
+build:bridge --repo_env=SWIFT_VERSION
+build:bridge --repo_env=SWIFT_ANDROID_SDK_VERSION
+
+build:bridge_ci --config=bridge
+build:bridge_ci --config=ci

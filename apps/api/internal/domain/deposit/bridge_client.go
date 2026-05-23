@@ -92,7 +92,7 @@ func (c *BridgeClient) CreateHostedKycLink(ctx context.Context, userID, customer
 
 func (c *BridgeClient) GetCustomerEligibility(ctx context.Context, customerID string) (*BridgeCustomerEligibility, error) {
 	var result struct {
-		KycStatus   string `json:"kyc_status"`
+		KycStatus    string `json:"kyc_status"`
 		Endorsements []struct {
 			Name   string `json:"endorsement"`
 			Status string `json:"status"`
@@ -142,12 +142,12 @@ func (c *BridgeClient) GetKycLink(ctx context.Context, kycLinkID string) (*Bridg
 func (c *BridgeClient) EnsureVirtualAccount(ctx context.Context, customerID, destinationAddress string) (*BridgeVirtualAccount, error) {
 	var listResult struct {
 		Data []struct {
-			ID       string `json:"id"`
-			Currency string `json:"currency"`
+			ID          string `json:"id"`
+			Currency    string `json:"currency"`
 			BankAccount struct {
-				BankName   string `json:"bank_name"`
-				LastFour   string `json:"last_four"`
-				Routing    string `json:"routing_number"`
+				BankName      string `json:"bank_name"`
+				LastFour      string `json:"last_four"`
+				Routing       string `json:"routing_number"`
 				AccountHolder string `json:"account_holder_name"`
 			} `json:"bank_account"`
 			Source struct {
@@ -175,23 +175,23 @@ func (c *BridgeClient) EnsureVirtualAccount(ctx context.Context, customerID, des
 
 	body := map[string]interface{}{
 		"source": map[string]interface{}{
-			"currency":      "usd",
-			"payment_rail":  []string{"ach_push", "wire"},
+			"currency":     "usd",
+			"payment_rail": []string{"ach_push", "wire"},
 		},
 		"destination": map[string]interface{}{
-			"currency":      "usdc",
-			"payment_rail":  "sui",
-			"to_address":    destinationAddress,
+			"currency":     "usdc",
+			"payment_rail": "sui",
+			"to_address":   destinationAddress,
 		},
 	}
 
 	var createResult struct {
-		ID       string `json:"id"`
-		Currency string `json:"currency"`
+		ID          string `json:"id"`
+		Currency    string `json:"currency"`
 		BankAccount struct {
-			BankName   string `json:"bank_name"`
-			LastFour   string `json:"last_four"`
-			Routing    string `json:"routing_number"`
+			BankName      string `json:"bank_name"`
+			LastFour      string `json:"last_four"`
+			Routing       string `json:"routing_number"`
 			AccountHolder string `json:"account_holder_name"`
 		} `json:"bank_account"`
 	}
@@ -247,10 +247,10 @@ func (c *BridgeClient) EnsureLiquidationAddress(ctx context.Context, customerID,
 	}
 
 	var createResult struct {
-		ID      string `json:"id"`
-		Chain   string `json:"chain"`
+		ID       string `json:"id"`
+		Chain    string `json:"chain"`
 		Currency string `json:"currency"`
-		Address string `json:"address"`
+		Address  string `json:"address"`
 	}
 
 	if err := c.do(ctx, http.MethodPost, listPath, body, &createResult); err != nil {

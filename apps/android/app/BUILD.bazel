@@ -22,12 +22,15 @@ kt_android_library(
     deps = [
         "//apps/android/bridge:bridge_aar",
         artifact("androidx.activity:activity-compose"),
+        artifact("androidx.concurrent:concurrent-futures"),
         artifact("androidx.compose.material3:material3"),
         artifact("androidx.compose.ui:ui"),
         artifact("androidx.compose.ui:ui-graphics"),
         artifact("androidx.compose.ui:ui-tooling-preview"),
         artifact("androidx.core:core-ktx"),
         artifact("androidx.lifecycle:lifecycle-runtime-ktx"),
+        artifact("androidx.profileinstaller:profileinstaller"),
+        artifact("com.google.guava:guava"),
         artifact("org.swift.swiftkit:swiftkit-core"),
     ],
 )

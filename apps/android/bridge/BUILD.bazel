@@ -9,5 +9,3 @@ aar_import(
         artifact("org.swift.swiftkit:swiftkit-core"),
     ],
 )
-
-exports_files(["gradle.properties.tmpl"])

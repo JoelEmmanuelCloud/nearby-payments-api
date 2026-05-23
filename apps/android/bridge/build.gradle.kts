@@ -20,22 +20,16 @@ dependencies {
     implementation(libs.swiftkit.core)
 }
 
-// ── Config from gradle.properties (with Environment Variable fallback) ────────
-val swiftlyPath =
-    project.findProperty("swift.swiftly.path")?.toString() ?: System.getenv("SWIFTLY_PATH")
-        ?: throw GradleException("swift.swiftly.path not set")
-val swiftSdkRoot =
-    project.findProperty("swift.sdk.path")?.toString() ?: System.getenv("SWIFT_SDK_PATH")
-        ?: throw GradleException("swift.sdk.path not set")
-val swiftVersion = project.findProperty("swift.version")?.toString() ?: "6.3"
-val androidSdkVersion = project.findProperty("swift.android.sdk.version")?.toString()
-    ?: "$swiftVersion-RELEASE_android"
+// ── Config from Bazel-forwarded environment ──────────────────────────────────
+fun env(name: String): String? = System.getenv(name)
+
+val swiftlyPath: String? = env("SWIFTLY_PATH")
+val swiftSdkRoot: String? = env("SWIFT_SDK_PATH")
+val swiftVersion: String? = env("SWIFT_VERSION")
+val androidSdkVersion: String? = env("SWIFT_ANDROID_SDK_VERSION")
 val sdkBundlePath = "$swiftSdkRoot/swift-$androidSdkVersion.artifactbundle"
 val minSdk = android.defaultConfig.minSdk ?: 30
-
-val repoRoot = project.projectDir.resolve(
-    project.findProperty("repo.root")?.toString() ?: throw GradleException("repo.root not set"),
-)
+val repoRoot = project.projectDir.resolve("../../..")
 
 // ── Swift packages to bridge ──────────────────────────────────────────────────
 // Just add the name and relative path here.
@@ -188,5 +182,11 @@ swiftPackages.forEach { pkg ->
         jniLibs.srcDir(jniOutDir.get().asFile)
     }
 
-    tasks.named("preBuild").configure { dependsOn(syncJava, copyLibs) }
+    tasks.named("preBuild").configure {
+        dependsOn(syncJava, copyLibs)
+        doFirst {
+            listOf("SWIFTLY_PATH", "SWIFT_SDK_PATH", "SWIFT_VERSION", "SWIFT_ANDROID_SDK_VERSION")
+                .forEach { System.getenv(it) ?: throw GradleException("$it is required") }
+        }
+    }
 }
