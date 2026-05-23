@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Server running locally: `go run ./cmd/api` (or `air` for live reload)
+- Server running locally: or `air` for live reload
 - Postman with `nearby-api.postman_collection.json` imported
 - `.env` loaded — all environment variables set
 - Confirm server is up: `GET http://localhost:8080/health` → `{"status":"ok"}`
