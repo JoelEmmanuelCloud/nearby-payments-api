@@ -179,8 +179,16 @@ jobs:
 
           echo "SWIFT_SDK_PATH=$(dirname "$swift_sdk_bundle")" >> "$GITHUB_ENV"
 
-      - name: Build Android bridge
-        run: bazel run --config=bridge_ci --remote_cache="$BAZEL_REMOTE_CACHE_URL" --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" //apps/android:bridge
+      - name: Cache Swift bridge build output
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/hello/.build
+          key: swift-bridge-${{ runner.os }}-${{ runner.arch }}-${{ env.SWIFT_VERSION }}-${{ env.SWIFT_ANDROID_SDK_VERSION }}-arm64-v8a-${{ hashFiles('packages/hello/Package.swift', 'packages/hello/Package.resolved', 'packages/hello/Sources/**') }}
 
-      - name: Build Android app
-        run: bazel build --config=ci --remote_cache="$BAZEL_REMOTE_CACHE_URL" --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" //apps/android:apk
+      - name: Build Android bridge + app
+        run: bazel run --config=bridge_ci --remote_cache="$BAZEL_REMOTE_CACHE_URL" --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" //apps/android:app
+
+      # !important: the app build is to expensive to run in the CI for now.
+      # - name: Build Android app
+      #   run: bazel build --config=ci --remote_cache="$BAZEL_REMOTE_CACHE_URL" --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" //apps/android:apk
