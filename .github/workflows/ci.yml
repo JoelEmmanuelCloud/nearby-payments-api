@@ -23,22 +23,24 @@ jobs:
 
       - name: Build API
         run: |
-          REMOTE_FLAGS=""
+          REMOTE_FLAGS=()
           if [ -n "$BAZEL_CACHE_TOKEN" ]; then
-            REMOTE_FLAGS="--remote_cache=$BAZEL_REMOTE_CACHE_URL --remote_header=Authorization=Bearer $BAZEL_CACHE_TOKEN"
+            REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
+            REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
           fi
-          bazel build --config=ci $REMOTE_FLAGS //apps/api/...
+          bazel build --config=ci "${REMOTE_FLAGS[@]}" //apps/api/...
         env:
           BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
 
       - name: Build packages
         run: |
-          REMOTE_FLAGS=""
+          REMOTE_FLAGS=()
           if [ -n "$BAZEL_CACHE_TOKEN" ]; then
-            REMOTE_FLAGS="--remote_cache=$BAZEL_REMOTE_CACHE_URL --remote_header=Authorization=Bearer $BAZEL_CACHE_TOKEN"
+            REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
+            REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
           fi
-          bazel build $REMOTE_FLAGS //packages/...
+          bazel build "${REMOTE_FLAGS[@]}" //packages/...
         env:
           BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
@@ -53,22 +55,24 @@ jobs:
 
       - name: Test API
         run: |
-          REMOTE_FLAGS=""
+          REMOTE_FLAGS=()
           if [ -n "$BAZEL_CACHE_TOKEN" ]; then
-            REMOTE_FLAGS="--remote_cache=$BAZEL_REMOTE_CACHE_URL --remote_header=Authorization=Bearer $BAZEL_CACHE_TOKEN"
+            REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
+            REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
           fi
-          bazel test --config=ci $REMOTE_FLAGS //apps/api/...
+          bazel test --config=ci "${REMOTE_FLAGS[@]}" //apps/api/...
         env:
           BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
 
       - name: Test packages
         run: |
-          REMOTE_FLAGS=""
+          REMOTE_FLAGS=()
           if [ -n "$BAZEL_CACHE_TOKEN" ]; then
-            REMOTE_FLAGS="--remote_cache=$BAZEL_REMOTE_CACHE_URL --remote_header=Authorization=Bearer $BAZEL_CACHE_TOKEN"
+            REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
+            REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
           fi
-          bazel test --config=ci $REMOTE_FLAGS //packages/...
+          bazel test --config=ci "${REMOTE_FLAGS[@]}" //packages/...
         env:
           BAZEL_REMOTE_CACHE_URL: nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
