@@ -173,7 +173,6 @@ CLAUDE.md
 .env
 tmp/
 bin/
-static/
 
 # OS / editor
 .DS_Store
