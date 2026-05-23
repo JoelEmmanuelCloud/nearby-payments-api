@@ -134,13 +134,18 @@ jobs:
         run: |
           echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> "$GITHUB_ENV"
           echo "SWIFTLY_PATH=$(command -v swiftly)" >> "$GITHUB_ENV"
-          echo "SWIFT_SDK_PATH=$HOME/.swiftpm/swift-sdks" >> "$GITHUB_ENV"
 
       - name: Install Swift Android SDK
         run: |
           swift sdk install \
             https://download.swift.org/swift-6.3-release/android-sdk/swift-6.3-RELEASE/swift-6.3-RELEASE_android.artifactbundle.tar.gz \
             --checksum 2f2942c4bcea7965a08665206212c66991dabe23725aeec7c4365fc91acad088
+          swift_sdk_bundle="$(find "$HOME" -type d -name "swift-${SWIFT_ANDROID_SDK_VERSION}.artifactbundle" -print -quit)"
+          if [ -z "$swift_sdk_bundle" ]; then
+            echo "Swift Android SDK bundle not found under $HOME"
+            exit 1
+          fi
+          echo "SWIFT_SDK_PATH=$(dirname "$swift_sdk_bundle")" >> "$GITHUB_ENV"
 
       - name: Build Android bridge
         run: bazel run --config=bridge_ci --remote_cache="$BAZEL_REMOTE_CACHE_URL" --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" //apps/android:bridge

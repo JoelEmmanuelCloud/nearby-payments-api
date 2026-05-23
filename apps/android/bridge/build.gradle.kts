@@ -58,6 +58,9 @@ val abiList = mapOf(
 
 // Add this outside the forEach, at the top of the file
 abstract class SyncSwiftJavaTask : DefaultTask() {
+    @get:Inject
+    abstract val fileSystemOperations: FileSystemOperations
+
     @get:InputDirectory
     @get:Optional
     abstract val extractOutput: DirectoryProperty
@@ -72,7 +75,7 @@ abstract class SyncSwiftJavaTask : DefaultTask() {
             javaOutput.get().asFile.mkdirs()
             return
         }
-        project.sync {
+        fileSystemOperations.sync {
             from(src)
             into(javaOutput)
         }

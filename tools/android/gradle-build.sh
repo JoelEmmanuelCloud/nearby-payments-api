@@ -11,6 +11,11 @@ SWIFT_SDK_BUNDLE="${SWIFT_SDK_PATH}/swift-${SWIFT_ANDROID_SDK_VERSION}.artifactb
 NDK_SYSROOT="${SWIFT_SDK_BUNDLE}/swift-android/ndk-sysroot/usr/include"
 
 if [[ ! -d "${NDK_SYSROOT}" ]]; then
+  if [[ ! -x "${SWIFT_SDK_BUNDLE}/swift-android/scripts/setup-android-sdk.sh" ]]; then
+    echo "Swift Android SDK setup script not found: ${SWIFT_SDK_BUNDLE}/swift-android/scripts/setup-android-sdk.sh" >&2
+    exit 1
+  fi
+
   ANDROID_NDK_HOME="${ANDROID_NDK_HOME}" \
     "${SWIFT_SDK_BUNDLE}/swift-android/scripts/setup-android-sdk.sh"
 fi
