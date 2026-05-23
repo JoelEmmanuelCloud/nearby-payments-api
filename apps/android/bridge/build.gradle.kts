@@ -38,23 +38,35 @@ val swiftPackages = listOf(
 )
 
 // ── ABI Configuration ────────────────────────────────────────────────────────
-val abiList = mapOf(
-    "arm64-v8a" to mapOf(
-        "triple" to "aarch64-unknown-linux-android$minSdk",
-        "libDir" to "swift-aarch64",
-        "ndkDir" to "aarch64-linux-android",
-    ),
-    "armeabi-v7a" to mapOf(
-        "triple" to "armv7-unknown-linux-android$minSdk",
-        "libDir" to "swift-armv7",
-        "ndkDir" to "arm-linux-androideabi",
-    ),
-    "x86_64" to mapOf(
-        "triple" to "x86_64-unknown-linux-android$minSdk",
-        "libDir" to "swift-x86_64",
-        "ndkDir" to "x86_64-linux-android",
-    ),
-)
+val isCi = System.getenv("CI") == "true"
+
+val abiList = if (isCi) {
+    mapOf(
+        "arm64-v8a" to mapOf(
+            "triple" to "aarch64-unknown-linux-android$minSdk",
+            "libDir" to "swift-aarch64",
+            "ndkDir" to "aarch64-linux-android",
+        ),
+    )
+} else {
+    mapOf(
+        "arm64-v8a" to mapOf(
+            "triple" to "aarch64-unknown-linux-android$minSdk",
+            "libDir" to "swift-aarch64",
+            "ndkDir" to "aarch64-linux-android",
+        ),
+        "armeabi-v7a" to mapOf(
+            "triple" to "armv7-unknown-linux-android$minSdk",
+            "libDir" to "swift-armv7",
+            "ndkDir" to "arm-linux-androideabi",
+        ),
+        "x86_64" to mapOf(
+            "triple" to "x86_64-unknown-linux-android$minSdk",
+            "libDir" to "swift-x86_64",
+            "ndkDir" to "x86_64-linux-android",
+        ),
+    )
+}
 
 // Add this outside the forEach, at the top of the file
 abstract class SyncSwiftJavaTask : DefaultTask() {

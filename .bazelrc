@@ -54,6 +54,7 @@ build:bridge --action_env=SWIFTLY_PATH
 build:bridge --action_env=SWIFT_SDK_PATH
 build:bridge --action_env=SWIFT_VERSION
 build:bridge --action_env=SWIFT_ANDROID_SDK_VERSION
+build:bridge --action_env=CI
 
 build:bridge --repo_env=SWIFTLY_PATH
 build:bridge --repo_env=SWIFT_SDK_PATH
