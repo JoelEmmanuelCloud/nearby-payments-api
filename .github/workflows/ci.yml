@@ -44,6 +44,8 @@ jobs:
         env:
           BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
 
   apple:
     runs-on: macos-latest
