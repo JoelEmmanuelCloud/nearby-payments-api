@@ -40,7 +40,7 @@ jobs:
             REMOTE_FLAGS+=(--remote_cache="$BAZEL_REMOTE_CACHE_URL")
             REMOTE_FLAGS+=(--remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN")
           fi
-          bazel test --config=ci "${REMOTE_FLAGS[@]}" //apps/api/...
+          bazel test --config=ci --test_env=DATABASE_URL --test_env=REDIS_URL "${REMOTE_FLAGS[@]}" //apps/api/...
         env:
           BAZEL_REMOTE_CACHE_URL: https://nearby-bezel-cache.variance.space/cache
           BAZEL_CACHE_TOKEN: ${{ secrets.BAZEL_CACHE_TOKEN }}
