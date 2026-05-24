@@ -1,0 +1,34 @@
+load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
+load("@rules_swift//swift:swift.bzl", "swift_library", "swift_test")
+
+swift_library(
+    name = "DeviceIntegrityShared",
+    srcs = glob(["Sources/Shared/**/*.swift"]),
+    module_name = "DeviceIntegrityShared",
+    visibility = ["//visibility:public"],
+    deps = ["//packages/gateway:Gateway"],
+)
+
+swift_library(
+    name = "DeviceIntegrity",
+    srcs = glob(["Sources/DeviceIntegrity/**/*.swift"]),
+    module_name = "DeviceIntegrity",
+    visibility = ["//visibility:public"],
+    deps = [":DeviceIntegrityShared"],
+)
+
+kt_android_library(
+    name = "DeviceIntegrityAndroid",
+    srcs = glob(["Sources/Java/**/*.kt"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "@maven//:androidx_core_core",
+        "@maven//:com_google_android_play_integrity",
+    ],
+)
+
+swift_test(
+    name = "DeviceIntegrityTests",
+    srcs = glob(["Tests/DeviceIntegrityTests/**/*.swift"]),
+    deps = [":DeviceIntegrity"],
+)
