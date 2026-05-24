@@ -1,0 +1,22 @@
+load("@rules_swift//swift:swift.bzl", "swift_library", "swift_test")
+
+swift_library(
+    name = "Gateway",
+    srcs = glob(["Sources/Gateway/**/*.swift"]),
+    module_name = "Gateway",
+    visibility = ["//visibility:public"],
+)
+
+swift_library(
+    name = "SwiftGateway",
+    srcs = glob(["Sources/Java/**/*.swift"]),
+    module_name = "SwiftGateway",
+    deps = [":Gateway"],
+    visibility = ["//visibility:public"],
+)
+
+swift_test(
+    name = "GatewayTests",
+    srcs = glob(["Tests/GatewayTests/**/*.swift"]),
+    deps = [":Gateway"],
+)
