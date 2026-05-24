@@ -110,6 +110,7 @@ maven.install(
         "org.swift.swiftkit:swiftkit-core:1.0-SNAPSHOT",
         "com.google.android.play:integrity:1.4.0",
         "com.google.android.gms:play-services-tasks:18.2.0",
+        "androidx.security:security-crypto:1.1.0-alpha06",
     ],
     boms = [
         "androidx.compose:compose-bom:2024.12.01",
