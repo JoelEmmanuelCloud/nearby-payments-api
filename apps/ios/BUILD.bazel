@@ -22,7 +22,7 @@ apple_bundle_version(
 
 ios_application(
     name = "Nearby",
-    bundle_id = "com.vaariance.nearby",
+    bundle_id = "com.variance.nearby",
     families = [
         "iphone",
     ],
