@@ -133,6 +133,7 @@ swiftPackages.forEach { pkg ->
                 triple,
                 "--build-system",
                 "native",
+                "--disable-sandbox",
             )
 
             outputs.dir(file("$packageDir/.build/$triple/debug"))

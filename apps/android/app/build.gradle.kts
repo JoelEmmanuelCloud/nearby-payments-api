@@ -35,6 +35,12 @@ android {
     buildFeatures {
         compose = true
     }
+
+    sourceSets {
+        getByName("main") {
+            kotlin.srcDir(file("../../../packages/hello/Sources/Java"))
+        }
+    }
 }
 
 dependencies {

@@ -9,39 +9,31 @@ let package = Package(
   ],
   products: [
     .library(
-      name: "Hello",
-      targets: ["Hello"]
-    ),
-    .library(
       name: "SwiftHello",
       type: .dynamic,
       targets: ["SwiftHello"]
-    ),
+    )
   ],
   dependencies: [
     .package(url: "https://github.com/swiftlang/swift-java", from: "0.3.0")
   ],
   targets: [
     .target(
-      name: "Hello"
-    ),
-    .target(
       name: "SwiftHello",
       dependencies: [
-        "Hello",
-        .product(name: "SwiftJava", package: "swift-java"),
+        .product(name: "SwiftJava", package: "swift-java")
       ],
       path: "Sources/Java",
+      exclude: [
+        "HelloAndroid.kt",
+        "swift-java.config",
+      ],
       swiftSettings: [
         .swiftLanguageMode(.v5)
       ],
       plugins: [
         .plugin(name: "JExtractSwiftPlugin", package: "swift-java")
       ]
-    ),
-    .testTarget(
-      name: "HelloTests",
-      dependencies: ["Hello"]
-    ),
+    )
   ]
 )

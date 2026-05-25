@@ -7,6 +7,12 @@ if [[ -z "${ROOT}" ]]; then
 fi
 
 ANDROID_ROOT="${ROOT}/apps/android"
+ENV="${ANDROID_ROOT}/.env"
+
+if [[ "${CI:-}" != "true" && -f "${ENV}" ]]; then
+  export $(cat ${ENV} | xargs)
+fi
+
 SWIFT_SDK_BUNDLE="${SWIFT_SDK_PATH}/swift-${SWIFT_ANDROID_SDK_VERSION}.artifactbundle"
 NDK_SYSROOT="${SWIFT_SDK_BUNDLE}/swift-android/ndk-sysroot/usr/include"
 

@@ -14,7 +14,9 @@ kt_compiler_plugin(
 
 kt_android_library(
     name = "main_lib",
-    srcs = glob(["src/main/java/**/*.kt"]),
+    srcs = glob(["src/main/java/**/*.kt"]) + [
+        "//packages/hello:android_sources",
+    ],
     custom_package = "com.variance.nearby",
     manifest = "src/main/AndroidManifest.xml",
     plugins = [":compose_compiler_plugin"],
