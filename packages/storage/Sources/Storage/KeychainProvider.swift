@@ -3,11 +3,11 @@ import Security
 import StorageShared
 
 /// An iOS/macOS implementation of `SecureStorage` backed by the Keychain.
-public final class KeychainStorage: SecureStorage {
+public final class KeychainProvider: SecureStorage {
 
   private let service: String
 
-  public init(service: String = "com.variance.nearby") {
+  public init(service: String = "com.variance.nearby.storage") {
     self.service = service
   }
 
