@@ -5,13 +5,18 @@
 //  Created by Peter Anyaogu on 5/20/26.
 //
 
-import Hello
+import Gateway
 import SwiftData
 import SwiftUI
 import UI
 
 struct ContentView: View {
   @State private var message = ""
+
+  @State private var gateway = APIGateway(
+    configuration: GatewayConfiguration(baseURL: URL(string: "http://localhost:8080")!),
+    httpClient: URLSessionHTTPClient()
+  )
 
   var body: some View {
     VStack(spacing: 16) {
@@ -23,7 +28,14 @@ struct ContentView: View {
       }
 
       UIButton("Say Hello") {
-        message = Greeting.message()
+        Task {
+          do {
+            let pubkey = try await gateway.serverPublicKey()
+            message = pubkey.publicKey
+          } catch {
+            message = "gateway unreachable"
+          }
+        }
       }
     }
     .padding()

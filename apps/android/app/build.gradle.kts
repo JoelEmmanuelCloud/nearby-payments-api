@@ -38,7 +38,7 @@ android {
 
     sourceSets {
         getByName("main") {
-            kotlin.srcDir(file("../../../packages/hello/Sources/Java"))
+            kotlin.srcDir(file("../../../packages/storage/Sources/Java"))
         }
     }
 }

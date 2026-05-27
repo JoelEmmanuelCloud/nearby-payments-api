@@ -14,15 +14,14 @@ kt_compiler_plugin(
 
 kt_android_library(
     name = "main_lib",
-    srcs = glob(["src/main/java/**/*.kt"]) + [
-        "//packages/hello:android_sources",
-    ],
+    srcs = glob(["src/main/java/**/*.kt"]),
     custom_package = "com.variance.nearby",
     manifest = "src/main/AndroidManifest.xml",
     plugins = [":compose_compiler_plugin"],
     resource_files = glob(["src/main/res/**"]),
     deps = [
         "//apps/android/bridge:bridge_aar",
+        "//packages/storage:StorageAndroid",
         artifact("androidx.activity:activity-compose"),
         artifact("androidx.concurrent:concurrent-futures"),
         artifact("androidx.compose.material3:material3"),
@@ -32,6 +31,7 @@ kt_android_library(
         artifact("androidx.core:core-ktx"),
         artifact("androidx.lifecycle:lifecycle-runtime-ktx"),
         artifact("androidx.profileinstaller:profileinstaller"),
+        artifact("androidx.security:security-crypto"),
         artifact("com.google.guava:guava"),
         artifact("org.swift.swiftkit:swiftkit-core"),
     ],

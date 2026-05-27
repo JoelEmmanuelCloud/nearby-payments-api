@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(FoundationNetworking)
+  import FoundationNetworking
+#endif
+
 /// Reusable HTTP request executor for the Gateway layer.
 ///
 /// Owns all request construction, header injection, JSON encoding/decoding,

@@ -25,6 +25,17 @@ public final class APIGateway: AuthGateway {
     )
   }
 
+  public convenience init(baseURLString: String, apiVersion: String) throws {
+    guard let baseURL = URL(string: baseURLString) else {
+      throw GatewayError.invalidURL(path: baseURLString)
+    }
+
+    self.init(
+      configuration: GatewayConfiguration(baseURL: baseURL, apiVersion: apiVersion),
+      httpClient: URLSessionHTTPClient()
+    )
+  }
+
   // MARK: - AuthGateway Conformance
 
   public func serverPublicKey() async throws -> ServerPublicKeyResponse {

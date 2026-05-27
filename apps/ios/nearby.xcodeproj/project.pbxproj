@@ -7,8 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D07F3D1B2FBE3672001B5E0B /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D07F3D1A2FBE3672001B5E0B /* UI */; };
-		D07F3D1E2FBE368A001B5E0B /* Hello in Frameworks */ = {isa = PBXBuildFile; productRef = D07F3D1D2FBE368A001B5E0B /* Hello */; };
+		D01BD4A52FC6E8EA00494550 /* Gateway in Frameworks */ = {isa = PBXBuildFile; productRef = D01BD4A42FC6E8EA00494550 /* Gateway */; };
+		D04646672FC60F4900B6B6E1 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D04646662FC60F4900B6B6E1 /* UI */; };
+		D05617CC2FC618910052C487 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D05617CB2FC618910052C487 /* UI */; };
+		D05617CF2FC61A440052C487 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D05617CE2FC61A440052C487 /* UI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,8 +59,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D07F3D1B2FBE3672001B5E0B /* UI in Frameworks */,
-				D07F3D1E2FBE368A001B5E0B /* Hello in Frameworks */,
+				D05617CC2FC618910052C487 /* UI in Frameworks */,
+				D01BD4A52FC6E8EA00494550 /* Gateway in Frameworks */,
+				D05617CF2FC61A440052C487 /* UI in Frameworks */,
+				D04646672FC60F4900B6B6E1 /* UI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,8 +123,10 @@
 			);
 			name = nearby;
 			packageProductDependencies = (
-				D07F3D1A2FBE3672001B5E0B /* UI */,
-				D07F3D1D2FBE368A001B5E0B /* Hello */,
+				D04646662FC60F4900B6B6E1 /* UI */,
+				D05617CB2FC618910052C487 /* UI */,
+				D05617CE2FC61A440052C487 /* UI */,
+				D01BD4A42FC6E8EA00494550 /* Gateway */,
 			);
 			productName = nearby;
 			productReference = D07F3CDF2FBE35C1001B5E0B /* nearby.app */;
@@ -205,8 +211,8 @@
 			mainGroup = D07F3CD62FBE35C1001B5E0B;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				D07F3D192FBE3672001B5E0B /* XCLocalSwiftPackageReference "../../packages/ui" */,
-				D07F3D1C2FBE368A001B5E0B /* XCLocalSwiftPackageReference "../../packages/hello" */,
+				D05617CD2FC61A440052C487 /* XCLocalSwiftPackageReference "../../packages/ui" */,
+				D01BD4A32FC6E8EA00494550 /* XCLocalSwiftPackageReference "../../packages/gateway/Core" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D07F3CE02FBE35C1001B5E0B /* Products */;
@@ -597,24 +603,32 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		D07F3D192FBE3672001B5E0B /* XCLocalSwiftPackageReference "../../packages/ui" */ = {
+		D01BD4A32FC6E8EA00494550 /* XCLocalSwiftPackageReference "../../packages/gateway/Core" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/gateway/Core;
+		};
+		D05617CD2FC61A440052C487 /* XCLocalSwiftPackageReference "../../packages/ui" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../packages/ui;
-		};
-		D07F3D1C2FBE368A001B5E0B /* XCLocalSwiftPackageReference "../../packages/hello" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../packages/hello;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		D07F3D1A2FBE3672001B5E0B /* UI */ = {
+		D01BD4A42FC6E8EA00494550 /* Gateway */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Gateway;
+		};
+		D04646662FC60F4900B6B6E1 /* UI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = UI;
 		};
-		D07F3D1D2FBE368A001B5E0B /* Hello */ = {
+		D05617CB2FC618910052C487 /* UI */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Hello;
+			productName = UI;
+		};
+		D05617CE2FC61A440052C487 /* UI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = UI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

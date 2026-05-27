@@ -103,40 +103,60 @@ public struct DeviceIntegrity: Codable, Sendable, Equatable {
   public static let stub = DeviceIntegrity(provider: "stub")
 }
 
+public enum AuthFlowPayload: Sendable, Equatable {
+  case web(code: String, state: String, codeVerifier: String)
+  case native(idToken: String, authorizationCode: String?)
+}
+
 /// Request body for `POST /v1/auth/oauth/complete`.
-///
-/// The client sends the OAuth authorization code received from Google's redirect,
-/// the original CSRF state, and the PKCE verifier so the backend can perform
-/// the token exchange server-to-server. Device metadata and integrity proof
-/// allow the backend to bind the session to a verified device.
-///
-/// - Note: The backend is stateless with respect to PKCE — it receives
-///   the `codeVerifier` here rather than caching it from `begin`.
-public struct OAuthCompleteRequest: Codable, Sendable, Equatable {
-  public let code: String
-  public let state: String
-  public let codeVerifier: String
+public struct OAuthCompleteRequest: Encodable, Sendable, Equatable {
   public let platform: String
   public let osVersion: String
   public let appBundleId: String
   public let deviceIntegrity: DeviceIntegrity
+  public let payload: AuthFlowPayload
 
   public init(
-    code: String,
-    state: String,
-    codeVerifier: String,
     platform: String,
     osVersion: String,
     appBundleId: String,
-    deviceIntegrity: DeviceIntegrity
+    deviceIntegrity: DeviceIntegrity,
+    payload: AuthFlowPayload
   ) {
-    self.code = code
-    self.state = state
-    self.codeVerifier = codeVerifier
     self.platform = platform
     self.osVersion = osVersion
     self.appBundleId = appBundleId
     self.deviceIntegrity = deviceIntegrity
+    self.payload = payload
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case platform, osVersion, appBundleId, deviceIntegrity
+    case flowType = "flow_type"
+    // Web keys
+    case code, state, codeVerifier
+    // Native keys
+    case idToken, authorizationCode
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(platform, forKey: .platform)
+    try container.encode(osVersion, forKey: .osVersion)
+    try container.encode(appBundleId, forKey: .appBundleId)
+    try container.encode(deviceIntegrity, forKey: .deviceIntegrity)
+
+    switch payload {
+    case .web(let code, let state, let codeVerifier):
+      try container.encode("web", forKey: .flowType)
+      try container.encode(code, forKey: .code)
+      try container.encode(state, forKey: .state)
+      try container.encode(codeVerifier, forKey: .codeVerifier)
+    case .native(let idToken, let authorizationCode):
+      try container.encode("native", forKey: .flowType)
+      try container.encode(idToken, forKey: .idToken)
+      try container.encodeIfPresent(authorizationCode, forKey: .authorizationCode)
+    }
   }
 }
 

@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(FoundationNetworking)
+  import FoundationNetworking
+#endif
+
 /// Abstraction over the HTTP transport layer.
 ///
 /// By injecting this protocol instead of depending on `URLSession` directly,
@@ -29,7 +33,11 @@ public protocol HTTPClient: Sendable {
 public struct URLSessionHTTPClient: HTTPClient {
   private let session: URLSession
 
-  public init(session: URLSession = .shared) {
+  public init() {
+    self.session = .shared
+  }
+
+  public init(session: URLSession) {
     self.session = session
   }
 
