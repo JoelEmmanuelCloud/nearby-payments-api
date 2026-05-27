@@ -64,9 +64,6 @@ jobs:
 
       - name: Test API
         run: bazel test --config=ci --remote_cache="$BAZEL_REMOTE_CACHE_URL" --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" //apps/api/...
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
 
   apple:
     runs-on: macos-latest
