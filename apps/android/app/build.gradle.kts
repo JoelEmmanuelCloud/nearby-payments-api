@@ -38,9 +38,13 @@ android {
 
     sourceSets {
         getByName("main") {
-            kotlin.srcDir(file("../../../packages/storage/Sources/Java"))
-            kotlin.srcDir(file("../../../packages/hsm/Sources/Java"))
-            kotlin.srcDir(file("../../../packages/device-integrity/Sources/Java"))
+            kotlin.directories.addAll(
+                listOf(
+                    "../../../packages/storage/Sources/Java",
+                    "../../../packages/hsm/Sources/Java",
+                    "../../../packages/device-integrity/Sources/Java",
+                ),
+            )
         }
     }
 }

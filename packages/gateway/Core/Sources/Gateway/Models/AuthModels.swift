@@ -63,7 +63,8 @@ public struct DeviceIntegrity: Codable, Sendable, Equatable {
     self.clientDataHash = clientDataHash
   }
 
-  public static let stub = DeviceIntegrity(provider: "stub")
+  /// Convenience initialiser for development/testing with the stub provider.
+  public static let stub: DeviceIntegrity = DeviceIntegrity(provider: "stub")
 }
 
 public enum AuthFlowPayload: Sendable, Equatable {
