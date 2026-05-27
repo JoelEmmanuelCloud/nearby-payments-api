@@ -113,7 +113,7 @@ type OAuthBeginRequest struct {
 
 type OAuthBeginResponse struct {
 	State   string `json:"state"`
-	AuthURL string `json:"authUrl"`
+	AuthURL string `json:"authURL"`
 }
 
 type DeviceIntegrityProof struct {
@@ -127,15 +127,18 @@ type DeviceIntegrityProof struct {
 }
 
 type OAuthCompleteRequest struct {
-	Code                string               `json:"code"`
-	State               string               `json:"state"`
-	CodeVerifier        string               `json:"codeVerifier"`
-	DeviceIntegrity     DeviceIntegrityProof `json:"deviceIntegrity"`
-	LocalProofPublicKey string               `json:"localProofPublicKey"`
-	Platform            string               `json:"platform"`
-	OsVersion           string               `json:"osVersion"`
-	AppBundleID         string               `json:"appBundleId"`
-	SuiAddress          string               `json:"suiAddress"`
+	FlowType             string               `json:"flow_type"`
+	Code                 string               `json:"code"`
+	State                string               `json:"state"`
+	CodeVerifier         string               `json:"codeVerifier"`
+	IDToken              string               `json:"idToken"`
+	AuthorizationCode    string               `json:"authorizationCode"`
+	DeviceIntegrity      DeviceIntegrityProof `json:"deviceIntegrity"`
+	LocalProofPublicKey  string               `json:"localProofPublicKey"`
+	Platform             string               `json:"platform"`
+	OsVersion            string               `json:"osVersion"`
+	AppBundleID          string               `json:"appBundleId"`
+	SuiAddress           string               `json:"suiAddress"`
 }
 
 type OAuthCompleteResponse struct {
@@ -145,12 +148,14 @@ type OAuthCompleteResponse struct {
 	RefreshExpiresAt int64  `json:"refreshExpiresAt"`
 	UserID           string `json:"userId"`
 	SuiAddress       string `json:"suiAddress"`
-	ZkLoginSalt      string `json:"zkLoginSalt"`
+	JWT              string `json:"jwt"`
+	Salt             string `json:"salt"`
 }
 
 type SessionRefreshResponse struct {
-	AccessToken string `json:"accessToken"`
-	ExpiresAt   int64  `json:"expiresAt"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+	ExpiresAt    int64  `json:"expiresAt"`
 }
 
 type AssertIntegrityRequest struct {

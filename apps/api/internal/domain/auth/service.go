@@ -103,9 +103,15 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 		return nil, ErrOAuthStateMismatch
 	}
 
-	idToken, err := s.exchangeGoogleCode(ctx, req.Code, req.CodeVerifier)
-	if err != nil {
-		return nil, ErrOAuthFailed
+	var idToken string
+	if req.FlowType == "native" {
+		idToken = req.IDToken
+	} else {
+		var exchErr error
+		idToken, exchErr = s.exchangeGoogleCode(ctx, req.Code, req.CodeVerifier)
+		if exchErr != nil {
+			return nil, ErrOAuthFailed
+		}
 	}
 
 	claims, err := s.verifyGoogleIDToken(ctx, idToken)
@@ -276,7 +282,8 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 		RefreshExpiresAt: refreshExpiresAt,
 		UserID:           userID,
 		SuiAddress:       req.SuiAddress,
-		ZkLoginSalt:      salt.Salt,
+		JWT:              idToken,
+		Salt:             salt.Salt,
 	}, nil
 }
 
@@ -318,8 +325,9 @@ func (s *Service) RefreshSession(ctx context.Context, refreshToken string) (*Ses
 	}
 
 	return &SessionRefreshResponse{
-		AccessToken: newAccess,
-		ExpiresAt:   expiresAt,
+		AccessToken:  newAccess,
+		RefreshToken: newRefresh,
+		ExpiresAt:    expiresAt,
 	}, nil
 }
 
