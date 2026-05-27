@@ -59,7 +59,7 @@ func Load() (*Config, error) {
 		SessionEncryptionKey:   get("SESSION_ENCRYPTION_KEY"),
 		CredentialSigningKey:   optional("CREDENTIAL_SIGNING_KEY", ""),
 		GoogleClientID:         get("GOOGLE_CLIENT_ID"),
-		GoogleClientSecret:     get("GOOGLE_CLIENT_SECRET"),
+		GoogleClientSecret:     optional("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURI:      optional("GOOGLE_REDIRECT_URI", ""),
 	}
 
