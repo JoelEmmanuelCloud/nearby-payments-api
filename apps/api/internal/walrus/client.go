@@ -13,7 +13,7 @@ import (
 const (
 	defaultPublisherURL  = "https://publisher.walrus-testnet.walrus.space"
 	defaultAggregatorURL = "https://aggregator.walrus-testnet.walrus.space"
-	uploadEpochs         = 90
+	uploadEpochs         = 30
 )
 
 type Client struct {
