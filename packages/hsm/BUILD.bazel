@@ -1,0 +1,25 @@
+load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
+load("@rules_swift//swift:swift.bzl", "swift_library", "swift_test")
+
+swift_library(
+    name = "HSM",
+    srcs = glob(["Sources/HSM/**/*.swift"]),
+    module_name = "HSM",
+    visibility = ["//visibility:public"],
+)
+
+kt_android_library(
+    name = "HSMAndroid",
+    srcs = glob(["Sources/Java/**/*.kt"]),
+    visibility = ["//visibility:public"],
+    target_compatible_with = ["@platforms//os:android"],
+    deps = [
+        "@maven//:androidx_core_core",
+    ],
+)
+
+swift_test(
+    name = "HSMTests",
+    srcs = glob(["Tests/HSMTests/**/*.swift"]),
+    deps = [":HSM"],
+)

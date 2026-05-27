@@ -9,7 +9,7 @@ swift_library(
     ]),
     module_name = "nearby",
     deps = [
-        "//packages/hello:Hello",
+        "//packages/gateway:Gateway",
         "//packages/ui:UI",
     ],
 )
@@ -22,7 +22,7 @@ apple_bundle_version(
 
 ios_application(
     name = "Nearby",
-    bundle_id = "com.vaariance.nearby",
+    bundle_id = "com.variance.nearby",
     families = [
         "iphone",
     ],

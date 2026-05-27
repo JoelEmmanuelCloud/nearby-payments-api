@@ -7,23 +7,25 @@ import (
 )
 
 type Config struct {
-	Port                string
-	Env                 string
-	DatabaseURL         string
-	RedisURL            string
-	SuiRPCURL           string
-	SuiNetwork          string
-	BridgeAPIKey        string
-	BridgeAPIURL        string
+	Port                   string
+	Env                    string
+	DatabaseURL            string
+	RedisURL               string
+	SuiRPCURL              string
+	SuiNetwork             string
+	BridgeAPIKey           string
+	BridgeAPIURL           string
 	BridgeWebhookPublicKey string
-	AccessTokenSecret   string
-	RefreshTokenSecret  string
-	SessionEncryptionKey string
-	CredentialSigningKey string
-	AVSOperatorKeys     []string
-	GoogleClientID      string
-	GoogleClientSecret  string
-	GoogleRedirectURI   string
+	AccessTokenSecret      string
+	RefreshTokenSecret     string
+	SessionEncryptionKey   string
+	CredentialSigningKey   string
+	AVSOperatorKeys        []string
+	GoogleClientID         string
+	GoogleClientSecret     string
+	GoogleRedirectURI      string
+	WalrusPublisherURL     string
+	WalrusAggregatorURL    string
 }
 
 func Load() (*Config, error) {
@@ -45,22 +47,24 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		Port:                 optional("PORT", "8080"),
-		Env:                  optional("ENV", "development"),
-		DatabaseURL:          get("DATABASE_URL"),
-		RedisURL:             get("REDIS_URL"),
-		SuiRPCURL:            optional("SUI_RPC_URL", "https://fullnode.testnet.sui.io:443"),
-		SuiNetwork:           optional("SUI_NETWORK", "testnet"),
-		BridgeAPIKey:         get("BRIDGE_API_KEY"),
-		BridgeAPIURL:         optional("BRIDGE_API_URL", "https://api.sandbox.bridge.xyz"),
+		Port:                   optional("PORT", "8080"),
+		Env:                    optional("ENV", "development"),
+		DatabaseURL:            get("DATABASE_URL"),
+		RedisURL:               get("REDIS_URL"),
+		SuiRPCURL:              optional("SUI_RPC_URL", "https://fullnode.testnet.sui.io:443"),
+		SuiNetwork:             optional("SUI_NETWORK", "testnet"),
+		BridgeAPIKey:           get("BRIDGE_API_KEY"),
+		BridgeAPIURL:           optional("BRIDGE_API_URL", "https://api.sandbox.bridge.xyz"),
 		BridgeWebhookPublicKey: strings.ReplaceAll(get("BRIDGE_WEBHOOK_PUBLIC_KEY"), `\n`, "\n"),
-		AccessTokenSecret:    get("ACCESS_TOKEN_SECRET"),
-		RefreshTokenSecret:   get("REFRESH_TOKEN_SECRET"),
-		SessionEncryptionKey: get("SESSION_ENCRYPTION_KEY"),
-		CredentialSigningKey: optional("CREDENTIAL_SIGNING_KEY", ""),
-		GoogleClientID:       get("GOOGLE_CLIENT_ID"),
-		GoogleClientSecret:   get("GOOGLE_CLIENT_SECRET"),
-		GoogleRedirectURI:    optional("GOOGLE_REDIRECT_URI", ""),
+		AccessTokenSecret:      get("ACCESS_TOKEN_SECRET"),
+		RefreshTokenSecret:     get("REFRESH_TOKEN_SECRET"),
+		SessionEncryptionKey:   get("SESSION_ENCRYPTION_KEY"),
+		CredentialSigningKey:   optional("CREDENTIAL_SIGNING_KEY", ""),
+		GoogleClientID:         get("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret:     optional("GOOGLE_CLIENT_SECRET", ""),
+		GoogleRedirectURI:      optional("GOOGLE_REDIRECT_URI", ""),
+		WalrusPublisherURL:     optional("WALRUS_PUBLISHER_URL", ""),
+		WalrusAggregatorURL:    optional("WALRUS_AGGREGATOR_URL", ""),
 	}
 
 	if len(missing) > 0 {

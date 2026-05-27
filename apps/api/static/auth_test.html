@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nearby API — Auth Test</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0a0a0a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; color: #4ade80; margin-bottom: 4px; }
+    .subtitle { color: #6b7280; font-size: 0.875rem; margin-bottom: 32px; }
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 16px; }
+    label { display: block; font-size: 0.875rem; color: #9ca3af; margin-bottom: 6px; }
+    select {
+      background: #1f2937;
+      color: #e2e8f0;
+      border: 1px solid #374151;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      width: 160px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #4ade80;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px;
+      margin-top: 16px;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #22c55e; }
+    .btn:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+    .btn-secondary {
+      background: #1f2937;
+      color: #e2e8f0;
+      border: 1px solid #374151;
+    }
+    .btn-secondary:hover { background: #374151; }
+    pre {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 16px;
+      font-size: 0.8rem;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 320px;
+      overflow-y: auto;
+      color: #cbd5e1;
+    }
+    .token-box {
+      background: #052e16;
+      border: 1px solid #166534;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 0.75rem;
+      font-family: monospace;
+      word-break: break-all;
+      color: #4ade80;
+      margin-bottom: 12px;
+    }
+    .status { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; margin-bottom: 16px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #6b7280; }
+    .dot.green { background: #4ade80; }
+    .dot.yellow { background: #facc15; }
+    .dot.red { background: #f87171; }
+    .hidden { display: none; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .divider { border: none; border-top: 1px solid #1f2937; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Nearby API — Auth Test</h1>
+    <p class="subtitle">Test the full OAuth + session flow against your local server.</p>
+
+    <div class="card" id="sign-in-card">
+      <div class="card-title">Step 1 — Sign in with Google</div>
+      <div class="row">
+        <div>
+          <label for="platform">Platform</label>
+          <select id="platform">
+            <option value="ios">ios</option>
+            <option value="android">android</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" id="sign-in-btn" onclick="beginAuth()">Sign in with Google</button>
+    </div>
+
+    <div class="card hidden" id="token-card">
+      <div class="card-title">Step 2 — Tokens</div>
+      <div class="status"><div class="dot green" id="status-dot"></div><span id="status-text">Signed in</span></div>
+      <label>Access Token</label>
+      <div class="token-box" id="access-token-box">—</div>
+      <div class="row">
+        <button class="btn btn-secondary" onclick="copyToken('access')">Copy Access Token</button>
+        <button class="btn btn-secondary" onclick="copyToken('refresh')">Copy Refresh Token</button>
+        <button class="btn btn-secondary" style="color:#f87171;border-color:#7f1d1d" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="response-card">
+      <div class="card-title">Raw Response</div>
+      <pre id="output">—</pre>
+    </div>
+
+    <div class="card hidden" id="error-card">
+      <div class="card-title">Error</div>
+      <pre id="error-output" style="color:#f87171">—</pre>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:8080';
+
+    function generateVerifier() {
+      const arr = new Uint8Array(32);
+      crypto.getRandomValues(arr);
+      return btoa(String.fromCharCode(...arr))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    async function generateChallenge(verifier) {
+      const data = new TextEncoder().encode(verifier);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return btoa(String.fromCharCode(...new Uint8Array(hash)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    function generateSuiAddress() {
+      const arr = new Uint8Array(32);
+      crypto.getRandomValues(arr);
+      return '0x' + Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function beginAuth() {
+      const btn = document.getElementById('sign-in-btn');
+      btn.disabled = true;
+      btn.textContent = 'Redirecting to Google...';
+
+      const verifier = generateVerifier();
+      const challenge = await generateChallenge(verifier);
+      const nonce = 'test-' + Date.now();
+      const platform = document.getElementById('platform').value;
+      const suiAddress = generateSuiAddress();
+
+      sessionStorage.setItem('codeVerifier', verifier);
+      sessionStorage.setItem('platform', platform);
+      sessionStorage.setItem('suiAddress', suiAddress);
+
+      try {
+        const res = await fetch(API + '/v1/auth/oauth/begin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider: 'google',
+            codeChallenge: challenge,
+            codeChallengeMethod: 'S256',
+            zkLoginNonce: nonce
+          })
+        });
+        const data = await res.json();
+        if (data.authURL) {
+          window.location.href = data.authURL;
+        } else {
+          showError(data);
+          btn.disabled = false;
+          btn.textContent = 'Sign in with Google';
+        }
+      } catch (e) {
+        showError({ error: e.message });
+        btn.disabled = false;
+        btn.textContent = 'Sign in with Google';
+      }
+    }
+
+    async function handleCallback() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      const state = params.get('state');
+      if (!code || !state) return;
+
+      window.history.replaceState({}, '', '/static/auth_test.html');
+
+      const verifier = sessionStorage.getItem('codeVerifier');
+      const platform = sessionStorage.getItem('platform') || 'ios';
+      const suiAddress = sessionStorage.getItem('suiAddress') || generateSuiAddress();
+
+      if (!verifier) {
+        showError({ error: 'codeVerifier missing from sessionStorage — start the flow from Step 1.' });
+        return;
+      }
+
+      try {
+        const res = await fetch(API + '/v1/auth/oauth/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code,
+            state,
+            codeVerifier: verifier,
+            platform,
+            osVersion: '1.0.0',
+            appBundleId: 'com.nearby.test',
+            suiAddress,
+            deviceIntegrity: { provider: 'stub' }
+          })
+        });
+        const data = await res.json();
+
+        document.getElementById('response-card').classList.remove('hidden');
+        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+
+        if (data.accessToken) {
+          sessionStorage.setItem('accessToken', data.accessToken);
+          sessionStorage.setItem('refreshToken', data.refreshToken || '');
+          sessionStorage.removeItem('codeVerifier');
+          sessionStorage.removeItem('platform');
+          sessionStorage.removeItem('suiAddress');
+          showTokens(data.accessToken);
+        } else {
+          showError(data);
+        }
+      } catch (e) {
+        showError({ error: e.message });
+      }
+    }
+
+    function showTokens(accessToken) {
+      document.getElementById('sign-in-card').classList.add('hidden');
+      document.getElementById('token-card').classList.remove('hidden');
+      document.getElementById('access-token-box').textContent = accessToken;
+    }
+
+    function showError(data) {
+      document.getElementById('error-card').classList.remove('hidden');
+      document.getElementById('error-output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    function copyToken(type) {
+      const key = type === 'access' ? 'accessToken' : 'refreshToken';
+      const val = sessionStorage.getItem(key) || '';
+      navigator.clipboard.writeText(val).then(() => alert(type + ' token copied!'));
+    }
+
+    function signOut() {
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('refreshToken');
+      document.getElementById('token-card').classList.add('hidden');
+      document.getElementById('sign-in-card').classList.remove('hidden');
+      document.getElementById('response-card').classList.add('hidden');
+      document.getElementById('error-card').classList.add('hidden');
+      document.getElementById('sign-in-btn').disabled = false;
+      document.getElementById('sign-in-btn').textContent = 'Sign in with Google';
+    }
+
+    window.addEventListener('load', () => {
+      const stored = sessionStorage.getItem('accessToken');
+      if (stored) {
+        showTokens(stored);
+        document.getElementById('token-card').classList.remove('hidden');
+        document.getElementById('sign-in-card').classList.add('hidden');
+      }
+      handleCallback();
+    });
+  </script>
+</body>
+</html>

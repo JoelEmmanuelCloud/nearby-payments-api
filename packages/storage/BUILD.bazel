@@ -1,0 +1,20 @@
+load("@rules_jvm_external//:defs.bzl", "artifact")
+load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
+load("@rules_swift//swift:swift.bzl", "swift_library")
+
+swift_library(
+    name = "Storage",
+    srcs = glob(["Sources/Storage/**/*.swift"]),
+    module_name = "Storage",
+    visibility = ["//visibility:public"],
+)
+
+kt_android_library(
+    name = "StorageAndroid",
+    srcs = glob(["Sources/Java/**/*.kt"]),
+    visibility = ["//visibility:public"],
+    target_compatible_with = ["@platforms//os:android"],
+    deps = [
+        artifact("androidx.security:security-crypto"),
+    ],
+)

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -54,9 +55,16 @@ func (h *Handler) OAuthComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Code == "" || req.State == "" || req.CodeVerifier == "" {
-		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "code, state, and codeVerifier are required")
-		return
+	if req.FlowType == "native" {
+		if req.IDToken == "" {
+			apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "idToken is required for native flow")
+			return
+		}
+	} else {
+		if req.Code == "" || req.State == "" || req.CodeVerifier == "" {
+			apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "code, state, and codeVerifier are required")
+			return
+		}
 	}
 	if req.Platform != "ios" && req.Platform != "android" {
 		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "platform must be ios or android")
@@ -165,6 +173,56 @@ func (h *Handler) GetServerPublicKey(w http.ResponseWriter, r *http.Request) {
 	resp := h.svc.GetServerPublicKey()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
+	sessCtx := GetSession(r.Context())
+	if sessCtx == nil {
+		apperr.Write(w, ErrUnauthorized)
+		return
+	}
+
+	ct := r.Header.Get("Content-Type")
+	switch ct {
+	case "image/jpeg", "image/png", "image/webp", "image/gif":
+	default:
+		apperr.WriteStatus(w, http.StatusUnsupportedMediaType, "unsupported_media_type", "content-type must be image/jpeg, image/png, image/webp, or image/gif")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 5<<20)
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		apperr.WriteStatus(w, http.StatusRequestEntityTooLarge, "payload_too_large", "image must be 5MB or less")
+		return
+	}
+
+	avatarURL, err := h.svc.UploadAvatar(r.Context(), sessCtx.User.ID, ct, data)
+	if err != nil {
+		apperr.Write(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"avatarUrl": avatarURL})
+}
+
+func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
+	sessCtx := GetSession(r.Context())
+	if sessCtx == nil {
+		apperr.Write(w, ErrUnauthorized)
+		return
+	}
+
+	profile, err := h.svc.GetProfile(r.Context(), sessCtx.User.ID)
+	if err != nil {
+		apperr.Write(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(profile)
 }
 
 func (h *Handler) OAuthCallbackPage(w http.ResponseWriter, r *http.Request) {

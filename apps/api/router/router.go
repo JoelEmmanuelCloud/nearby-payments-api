@@ -91,6 +91,12 @@ func New(deps Deps) http.Handler {
 			r.Get("/tasks/{id}", deps.NamesHandler.GetTask)
 		})
 
+		r.Route("/me", func(r chi.Router) {
+			r.Use(auth.Middleware(deps.AuthService, "low"))
+			r.Get("/profile", deps.AuthHandler.GetProfile)
+			r.Put("/avatar", deps.AuthHandler.UploadAvatar)
+		})
+
 		r.Route("/nearby", func(r chi.Router) {
 			r.Use(auth.Middleware(deps.AuthService, "high"))
 			r.Post("/sessions", deps.NearbyHandler.InitiateSession)
