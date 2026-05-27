@@ -18,6 +18,7 @@ kt_android_library(
     deps = [
         "@maven//:androidx_core_core",
         "@maven//:com_google_android_play_integrity",
+        "@maven//:com_google_android_gms_play_services_tasks",
     ],
 )
 
