@@ -24,8 +24,8 @@ build --disk_cache=~/.cache/bazel-disk
 build --extra_toolchains=@local_jdk//:all
 build --java_runtime_version=local_jdk
 build --tool_java_runtime_version=local_jdk
-build --java_language_version=17
-build --tool_java_language_version=17
+build --java_language_version=17 --java_runtime_version=17
+build --tool_java_language_version=17 --tool_java_runtime_version=17
 # Define a config named "emulator"
 build:emulator --android_platforms=@rules_android//:arm64-v8a
 build:emulator --extra_toolchains=@androidndk//:all

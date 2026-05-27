@@ -34,7 +34,12 @@ val repoRoot = project.projectDir.resolve("../../..")
 // ── Swift packages to bridge ──────────────────────────────────────────────────
 // Just add the name and relative path here.
 val swiftPackages = listOf(
-    mapOf("target" to "SwiftHello", "dir" to "packages/hello", "sourcePath" to "Sources/Java"),
+    mapOf("target" to "Gateway", "dir" to "packages/gateway", "sourcePath" to "Core/Sources/Gateway"),
+)
+val swiftRuntimePackage = swiftPackages.first()
+val swiftRuntimeTarget = swiftRuntimePackage["target"] ?: error("Swift runtime package target is required")
+val swiftRuntimePackageDir = repoRoot.resolve(
+    swiftRuntimePackage["dir"] ?: error("Swift runtime package dir is required"),
 )
 
 // ── ABI Configuration ────────────────────────────────────────────────────────
@@ -94,6 +99,12 @@ abstract class SyncSwiftJavaTask : DefaultTask() {
     }
 }
 
+fun requiredFile(description: String, vararg candidates: File): File = candidates.firstOrNull { it.isFile }
+    ?: error("$description not found. Checked: ${candidates.joinToString { it.absolutePath }}")
+
+fun requiredDirectory(description: String, vararg candidates: File): File = candidates.firstOrNull { it.isDirectory }
+    ?: error("$description not found. Checked: ${candidates.joinToString { it.absolutePath }}")
+
 // ── Build & Wire Logic ───────────────────────────────────────────────────────
 swiftPackages.forEach { pkg ->
     val target = pkg["target"] ?: return@forEach
@@ -124,16 +135,19 @@ swiftPackages.forEach { pkg ->
             group = "bridge"
             workingDir = packageDir
             executable = swiftlyPath
+            inputs.file(File(packageDir, "Package.swift"))
+            inputs.dir(File(packageDir, sourcePath))
             args(
                 "run",
                 "swift",
                 "build",
                 "+$swiftVersion",
+                "--product",
+                target,
                 "--swift-sdk",
                 triple,
                 "--build-system",
                 "native",
-                "--disable-sandbox",
             )
 
             outputs.dir(file("$packageDir/.build/$triple/debug"))
@@ -141,13 +155,7 @@ swiftPackages.forEach { pkg ->
         buildAll.configure { dependsOn(abiTask) }
     }
 
-    fun requiredFile(description: String, vararg candidates: File): File = candidates.firstOrNull { it.isFile }
-        ?: error("$description not found. Checked: ${candidates.joinToString { it.absolutePath }}")
-
-    fun requiredDirectory(description: String, vararg candidates: File): File = candidates.firstOrNull { it.isDirectory }
-        ?: error("$description not found. Checked: ${candidates.joinToString { it.absolutePath }}")
-
-    val copyLibs = tasks.register<Copy>("copyJniLibs_$target") {
+    val copyLibs = tasks.register<Sync>("copyJniLibs_$target") {
         group = "bridge"
         dependsOn(buildAll)
 
@@ -158,29 +166,7 @@ swiftPackages.forEach { pkg ->
 
             // 1. Built Swift binaries
             from(file("$packageDir/.build/$triple/debug")) {
-                include("*.so")
-                into(abi)
-            }
-
-            // 2. NDK C++ shared library
-            from(
-                requiredFile(
-                    "Swift Android C++ runtime",
-                    file("$sdkBundlePath/swift-android/ndk-sysroot/usr/lib/$ndkDir/libc++_shared.so"),
-                    file("$sdkBundlePath/swift-android/ndk-sysroot/usr/lib/$ndkDir/$minSdk/libc++_shared.so"),
-                ),
-            ) {
-                into(abi)
-            }
-
-            // 3. Swift runtime libraries
-            from(
-                requiredDirectory(
-                    "Swift Android runtime",
-                    file("$sdkBundlePath/swift-android/swift-resources/usr/lib/$libDir/android"),
-                ),
-            ) {
-                include("*.so")
+                include("lib$target.so")
                 into(abi)
             }
         }
@@ -205,4 +191,52 @@ swiftPackages.forEach { pkg ->
                 .forEach { System.getenv(it) ?: throw GradleException("$it is required") }
         }
     }
+}
+
+val swiftRuntimeJniOutDir = layout.buildDirectory.dir("generated/jniLibs/swiftruntime")
+val copySwiftRuntimeLibs = tasks.register<Sync>("copySwiftRuntimeLibs") {
+    group = "bridge"
+    description = "Copies shared Swift Android runtime libraries once for all bridged packages"
+    dependsOn("buildSwiftAll_$swiftRuntimeTarget")
+
+    abiList.forEach { (abi, info) ->
+        val triple = info["triple"] ?: ""
+        val ndkDir = info["ndkDir"] ?: ""
+        val libDir = info["libDir"] ?: ""
+
+        from(file("$swiftRuntimePackageDir/.build/$triple/debug")) {
+            include("libSwiftJava.so")
+            into(abi)
+        }
+
+        from(
+            requiredFile(
+                "Swift Android C++ runtime",
+                file("$sdkBundlePath/swift-android/ndk-sysroot/usr/lib/$ndkDir/libc++_shared.so"),
+                file("$sdkBundlePath/swift-android/ndk-sysroot/usr/lib/$ndkDir/$minSdk/libc++_shared.so"),
+            ),
+        ) {
+            into(abi)
+        }
+
+        from(
+            requiredDirectory(
+                "Swift Android runtime",
+                file("$sdkBundlePath/swift-android/swift-resources/usr/lib/$libDir/android"),
+            ),
+        ) {
+            include("*.so")
+            into(abi)
+        }
+    }
+
+    into(swiftRuntimeJniOutDir)
+}
+
+android.sourceSets.getByName("main") {
+    jniLibs.srcDir(swiftRuntimeJniOutDir.get().asFile)
+}
+
+tasks.named("preBuild").configure {
+    dependsOn(copySwiftRuntimeLibs)
 }

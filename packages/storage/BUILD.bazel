@@ -7,7 +7,6 @@ swift_library(
     srcs = glob(["Sources/Storage/**/*.swift"]),
     module_name = "Storage",
     visibility = ["//visibility:public"],
-    deps = [":StorageShared"],
 )
 
 kt_android_library(

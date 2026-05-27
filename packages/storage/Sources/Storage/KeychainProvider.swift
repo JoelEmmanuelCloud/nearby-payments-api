@@ -1,6 +1,5 @@
 import Foundation
 import Security
-import StorageShared
 
 /// An iOS/macOS implementation of `SecureStorage` backed by the Keychain.
 public final class KeychainProvider: SecureStorage {

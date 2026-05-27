@@ -9,7 +9,7 @@ swift_library(
     ]),
     module_name = "nearby",
     deps = [
-        "//packages/hello:Hello",
+        "//packages/gateway:Gateway",
         "//packages/ui:UI",
     ],
 )

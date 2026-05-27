@@ -90,22 +90,27 @@ struct AuthGatewayTests {
     let gateway = APIGateway(configuration: .test, httpClient: mock)
 
     let request = OAuthCompleteRequest(
-      code: "google-auth-code",
-      state: "csrf-state-abc",
-      codeVerifier: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
       platform: "ios",
       osVersion: "18.0",
       appBundleId: "com.nearby.test",
-      deviceIntegrity: .stub
+      deviceIntegrity: .stub,
+      payload: .web(
+        code: "google-auth-code",
+        state: "csrf-state-abc",
+        codeVerifier: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+      )
     )
     let result = try await gateway.completeOAuth(request: request)
 
     #expect(result == expectedResponse)
     #expect(result.userId == "user-123")
 
-    // Verify the full payload shape was sent.
+    struct DecodedBody: Decodable {
+      let platform: String
+      let deviceIntegrity: DeviceIntegrity
+    }
     let sentBody = try JSONCoders.decoder.decode(
-      OAuthCompleteRequest.self,
+      DecodedBody.self,
       from: mock.capturedRequest!.httpBody!
     )
     #expect(sentBody.platform == "ios")
