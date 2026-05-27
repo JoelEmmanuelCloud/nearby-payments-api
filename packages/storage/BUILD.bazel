@@ -13,6 +13,7 @@ kt_android_library(
     name = "StorageAndroid",
     srcs = glob(["Sources/Java/**/*.kt"]),
     visibility = ["//visibility:public"],
+    target_compatible_with = ["@platforms//os:android"],
     deps = [
         artifact("androidx.security:security-crypto"),
     ],

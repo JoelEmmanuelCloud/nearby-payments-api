@@ -2,10 +2,10 @@ package com.variance.nearby.deviceintegrity
 
 import android.content.Context
 import com.google.android.gms.tasks.Tasks
-import com.google.android.play.integrity.IntegrityManagerFactory
-import com.google.android.play.integrity.StandardIntegrityManager
-import com.google.android.play.integrity.StandardIntegrityManager.StandardIntegrityTokenRequest
-import com.google.android.play.integrity.StandardIntegrityManager.PrepareIntegrityTokenRequest
+import com.google.android.play.core.integrity.IntegrityManagerFactory
+import com.google.android.play.core.integrity.StandardIntegrityManager
+import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityTokenRequest
+import com.google.android.play.core.integrity.StandardIntegrityManager.PrepareIntegrityTokenRequest
 
 class PlayIntegrityProvider(private val context: Context, private val cloudProjectNumber: Long) {
 
