@@ -76,6 +76,7 @@ public struct OAuthCompleteRequest: Encodable, Sendable, Equatable {
   public let osVersion: String
   public let appBundleId: String
   public let deviceIntegrity: DeviceIntegrity
+  public let suiAddress: String?
   public let payload: AuthFlowPayload
 
   public init(
@@ -83,17 +84,19 @@ public struct OAuthCompleteRequest: Encodable, Sendable, Equatable {
     osVersion: String,
     appBundleId: String,
     deviceIntegrity: DeviceIntegrity,
+    suiAddress: String? = nil,
     payload: AuthFlowPayload
   ) {
     self.platform = platform
     self.osVersion = osVersion
     self.appBundleId = appBundleId
     self.deviceIntegrity = deviceIntegrity
+    self.suiAddress = suiAddress
     self.payload = payload
   }
 
   enum CodingKeys: String, CodingKey {
-    case platform, osVersion, appBundleId, deviceIntegrity
+    case platform, osVersion, appBundleId, deviceIntegrity, suiAddress
     case flowType = "flow_type"
     case code, state, codeVerifier
     case idToken, authorizationCode
@@ -105,6 +108,7 @@ public struct OAuthCompleteRequest: Encodable, Sendable, Equatable {
     try container.encode(osVersion, forKey: .osVersion)
     try container.encode(appBundleId, forKey: .appBundleId)
     try container.encode(deviceIntegrity, forKey: .deviceIntegrity)
+    try container.encodeIfPresent(suiAddress, forKey: .suiAddress)
 
     switch payload {
     case .web(let code, let state, let codeVerifier):

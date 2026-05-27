@@ -12,29 +12,22 @@ class PlayIntegrityProvider(private val context: Context, private val cloudProje
     private val manager = IntegrityManagerFactory.createStandard(context)
     private var tokenProvider: StandardIntegrityManager.StandardIntegrityTokenProvider? = null
 
-    /**
-     * Warms up the integrity token provider.
-     * Call this as early as possible in your app's lifecycle to reduce latency during login.
-     */
     fun prepare() {
         val request = PrepareIntegrityTokenRequest.builder()
             .setCloudProjectNumber(cloudProjectNumber)
             .build()
-            
+
         val task = manager.prepareIntegrityToken(request)
         tokenProvider = Tasks.await(task)
     }
 
-    /**
-     * Generates the integrity token bound to the provided nonce string (usually SHA-256 hash in hex or base64).
-     */
     fun attest(requestHash: String): String {
         val provider = tokenProvider ?: throw Exception("PlayIntegrityProvider was not prepared.")
-        
+
         val request = StandardIntegrityTokenRequest.builder()
             .setRequestHash(requestHash)
             .build()
-            
+
         val tokenResponse = Tasks.await(provider.request(request))
         return tokenResponse.token()
     }

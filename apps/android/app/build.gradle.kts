@@ -55,6 +55,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.swiftkit.core)
+    implementation(libs.play.integrity)
+    implementation(libs.play.services.tasks)
     implementation(project(":bridge"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -71,11 +71,13 @@ struct AuthGatewayTests {
     )
     let gateway = APIGateway(configuration: .test, httpClient: mock)
 
+    let suiAddress = "0x0000000000000000000000000000000000000000000000000000000000000001"
     let request = OAuthCompleteRequest(
       platform: "ios",
       osVersion: "18.0",
       appBundleId: "com.nearby.test",
       deviceIntegrity: .stub,
+      suiAddress: suiAddress,
       payload: .web(
         code: "google-auth-code",
         state: "csrf-state-abc",
@@ -90,6 +92,7 @@ struct AuthGatewayTests {
     let json = try JSONSerialization.jsonObject(with: mock.capturedRequest!.httpBody!) as? [String: Any]
     #expect(json?["platform"] as? String == "ios")
     #expect(json?["flow_type"] as? String == "web")
+    #expect(json?["suiAddress"] as? String == suiAddress)
     #expect((json?["deviceIntegrity"] as? [String: Any])?["provider"] as? String == "stub")
   }
 

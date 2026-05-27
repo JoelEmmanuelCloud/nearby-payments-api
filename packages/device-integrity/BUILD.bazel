@@ -15,9 +15,11 @@ kt_android_library(
     name = "DeviceIntegrityAndroid",
     srcs = glob(["Sources/Java/**/*.kt"]),
     visibility = ["//visibility:public"],
+    target_compatible_with = ["@platforms//os:android"],
     deps = [
         "@maven//:androidx_core_core",
         "@maven//:com_google_android_play_integrity",
+        "@maven//:com_google_android_gms_play_services_tasks",
     ],
 )
 
