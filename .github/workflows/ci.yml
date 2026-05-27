@@ -63,13 +63,18 @@ jobs:
         run: bazel build --config=ci --remote_cache="$BAZEL_REMOTE_CACHE_URL" --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" //apps/api/...
 
       - name: Test API
-        run: bazel test --config=ci --remote_cache="$BAZEL_REMOTE_CACHE_URL" --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" //apps/api/...
+        run: bazel test --config=ci --remote_cache="$BAZEL_REMOTE_CACHE_URL" --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" --test_env=DATABASE_URL --test_env=REDIS_URL //apps/api/...
 
   apple:
     runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
 
       - uses: bazel-contrib/setup-bazel@0.19.0
         with:
