@@ -22,6 +22,7 @@ import (
 	"github.com/vaariance/nearby/internal/domain/nearby"
 	"github.com/vaariance/nearby/internal/domain/payment"
 	"github.com/vaariance/nearby/internal/sui"
+	"github.com/vaariance/nearby/internal/walrus"
 	"github.com/vaariance/nearby/router"
 )
 
@@ -90,10 +91,13 @@ func main() {
 		}
 	}
 
+	walrusClient := walrus.NewClient(cfg.WalrusPublisherURL, cfg.WalrusAggregatorURL)
+
 	authStore := auth.NewStore(pool)
 	authSvc := auth.NewService(auth.ServiceDeps{
 		Store:              authStore,
 		Redis:              rdb,
+		Walrus:             walrusClient,
 		GoogleClientID:     cfg.GoogleClientID,
 		GoogleClientSecret: cfg.GoogleClientSecret,
 		GoogleRedirectURI:  cfg.GoogleRedirectURI,
