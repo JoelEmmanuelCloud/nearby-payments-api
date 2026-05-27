@@ -4,22 +4,11 @@ import Foundation
   import FoundationNetworking
 #endif
 
-/// Reusable HTTP request executor for the Gateway layer.
-///
-/// Owns all request construction, header injection, JSON encoding/decoding,
-/// and error wrapping. Gateway endpoint methods delegate here so they remain
-/// thin one-liners that map protocol requirements to HTTP calls.
-///
-/// This type is internal — consumers interact through ``AuthGateway``,
-/// never with the executor directly.
 struct HTTPRequestExecutor: Sendable {
 
   let configuration: GatewayConfiguration
   let httpClient: HTTPClient
 
-  // MARK: - High-Level Verbs
-
-  /// Executes a GET request and decodes the JSON response.
   func get<Response: Decodable>(
     path: String,
     accessToken: String? = nil
@@ -32,7 +21,6 @@ struct HTTPRequestExecutor: Sendable {
     return try await execute(urlRequest)
   }
 
-  /// Executes a POST request with a JSON body and decodes the response.
   func post<Body: Encodable, Response: Decodable>(
     path: String,
     body: Body,
@@ -49,7 +37,6 @@ struct HTTPRequestExecutor: Sendable {
     return try await execute(urlRequest)
   }
 
-  /// Executes a POST request where the response body is discarded (e.g. revoke).
   func postVoid(
     path: String,
     body: (any Encodable)? = nil,
@@ -68,14 +55,6 @@ struct HTTPRequestExecutor: Sendable {
     try await executeVoid(urlRequest)
   }
 
-  // MARK: - Request Construction
-
-  /// Constructs a `URLRequest` with method, path, and layered headers.
-  ///
-  /// Header injection order:
-  /// 1. Content-Type (JSON for POST)
-  /// 2. Authorization bearer token
-  /// 3. Device integrity headers
   private func buildRequest(
     method: String,
     path: String,
@@ -121,7 +100,6 @@ struct HTTPRequestExecutor: Sendable {
     return request
   }
 
-  /// Executes and decodes a JSON response. Non-2xx → ``GatewayError/serverError``.
   private func execute<Response: Decodable>(
     _ request: URLRequest
   ) async throws -> Response {
@@ -138,7 +116,6 @@ struct HTTPRequestExecutor: Sendable {
     return try JSONCoders.decode(type: Response.self, from: data)
   }
 
-  /// Executes a request where the response body is ignored.
   private func executeVoid(_ request: URLRequest) async throws {
     let (data, httpResponse) = try await performRequest(request)
 
@@ -151,8 +128,6 @@ struct HTTPRequestExecutor: Sendable {
     }
   }
 
-  /// Single delegation point to the injected ``HTTPClient``.
-  /// Wraps transport errors into ``GatewayError/networkFailure``.
   private func performRequest(
     _ request: URLRequest
   ) async throws -> (Data, HTTPURLResponse) {
@@ -166,7 +141,6 @@ struct HTTPRequestExecutor: Sendable {
   }
 }
 
-/// Bundles device-integrity header values to avoid parameter bloat.
 struct DeviceHeaders: Sendable {
   let provider: String
   let nonce: String

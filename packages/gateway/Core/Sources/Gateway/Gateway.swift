@@ -1,16 +1,5 @@
 import Foundation
 
-/// Concrete implementation of ``AuthGateway``.
-///
-/// Each method is a thin mapping from the protocol contract to an HTTP call
-/// via ``HTTPRequestExecutor``. No request construction, encoding, or
-/// error wrapping logic lives here — that is all in the executor.
-///
-/// ## Dependency Injection
-///
-/// The ``HTTPClient`` protocol is the primary DI seam. In production, inject
-/// ``URLSessionHTTPClient``; in tests, inject a mock that returns canned
-/// responses. This makes every endpoint testable without network access.
 public final class APIGateway: AuthGateway {
 
   private let executor: HTTPRequestExecutor
@@ -35,8 +24,6 @@ public final class APIGateway: AuthGateway {
       httpClient: URLSessionHTTPClient()
     )
   }
-
-  // MARK: - AuthGateway Conformance
 
   public func serverPublicKey() async throws -> ServerPublicKeyResponse {
     try await executor.get(path: APIConstants.Auth.serverPublicKey)
@@ -93,8 +80,8 @@ public final class APIGateway: AuthGateway {
     deviceProvider: String,
     requestNonce: String,
     requestTimestamp: String
-  ) async throws {
-    try await executor.postVoid(
+  ) async throws -> DeviceCredential {
+    try await executor.post(
       path: APIConstants.Auth.credential,
       body: request,
       accessToken: accessToken,

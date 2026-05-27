@@ -3,20 +3,8 @@ import Testing
 
 @testable import Gateway
 
-/// Tests for the auth endpoints exposed by ``APIGateway``.
-///
-/// Each test follows the same pattern:
-/// 1. Configure a ``MockHTTPClient`` with a canned response.
-/// 2. Invoke the Gateway method under test.
-/// 3. Assert the captured request (URL, method, headers, body).
-/// 4. Assert the decoded response matches expectations.
-///
-/// This validates the full request-construction and response-decoding pipeline
-/// without any network access.
 @Suite("Auth Gateway")
 struct AuthGatewayTests {
-
-  // MARK: - Server Public Key
 
   @Test("serverPublicKey sends GET to the correct path")
   func serverPublicKey() async throws {
@@ -32,11 +20,8 @@ struct AuthGatewayTests {
     #expect(result == expected)
     #expect(mock.capturedRequest?.httpMethod == "GET")
     #expect(mock.capturedRequest?.url?.path.contains("server-public-key") == true)
-    // Unauthenticated — no Authorization header.
     #expect(mock.capturedRequest?.value(forHTTPHeaderField: "Authorization") == nil)
   }
-
-  // MARK: - OAuth Begin
 
   @Test("beginOAuth sends correct payload and parses response")
   func beginOAuth() async throws {
@@ -61,7 +46,6 @@ struct AuthGatewayTests {
     #expect(mock.capturedRequest?.httpMethod == "POST")
     #expect(mock.capturedRequest?.url?.path.contains("oauth/begin") == true)
 
-    // Verify the request body was encoded correctly.
     let sentBody = try JSONCoders.decoder.decode(
       OAuthBeginRequest.self,
       from: mock.capturedRequest!.httpBody!
@@ -70,8 +54,6 @@ struct AuthGatewayTests {
     #expect(sentBody.codeChallengeMethod == "S256")
     #expect(sentBody.zkLoginNonce == "zklogin-nonce-123")
   }
-
-  // MARK: - OAuth Complete
 
   @Test("completeOAuth sends device metadata and returns session tokens")
   func completeOAuth() async throws {
@@ -105,19 +87,11 @@ struct AuthGatewayTests {
     #expect(result == expectedResponse)
     #expect(result.userId == "user-123")
 
-    struct DecodedBody: Decodable {
-      let platform: String
-      let deviceIntegrity: DeviceIntegrity
-    }
-    let sentBody = try JSONCoders.decoder.decode(
-      DecodedBody.self,
-      from: mock.capturedRequest!.httpBody!
-    )
-    #expect(sentBody.platform == "ios")
-    #expect(sentBody.deviceIntegrity.provider == "stub")
+    let json = try JSONSerialization.jsonObject(with: mock.capturedRequest!.httpBody!) as? [String: Any]
+    #expect(json?["platform"] as? String == "ios")
+    #expect(json?["flow_type"] as? String == "web")
+    #expect((json?["deviceIntegrity"] as? [String: Any])?["provider"] as? String == "stub")
   }
-
-  // MARK: - Refresh
 
   @Test("refresh sends bearer token and returns rotated token pair")
   func refresh() async throws {
@@ -143,8 +117,6 @@ struct AuthGatewayTests {
     )
   }
 
-  // MARK: - Revoke
-
   @Test("revoke sends bearer token with no body")
   func revoke() async throws {
     let mock = MockHTTPClient(statusCode: 200)
@@ -159,8 +131,6 @@ struct AuthGatewayTests {
         == "Bearer token-to-revoke"
     )
   }
-
-  // MARK: - Assert Integrity
 
   @Test("assertIntegrity injects device headers alongside bearer token")
   func assertIntegrity() async throws {
@@ -185,14 +155,31 @@ struct AuthGatewayTests {
     #expect(req.value(forHTTPHeaderField: "X-Request-Timestamp") == "1700000000000")
   }
 
-  // MARK: - Issue Credential
-
-  @Test("issueCredential sends public key with device headers")
+  @Test("issueCredential sends public key with device headers and returns signed credential")
   func issueCredential() async throws {
-    let mock = MockHTTPClient(statusCode: 200)
+    let expected = DeviceCredential(
+      version: 1,
+      userId: "user-123",
+      deviceId: "device-456",
+      platform: "ios",
+      appBundleId: "com.variance.nearby",
+      integrityProvider: "stub",
+      localProofPublicKey: "0xpubkey",
+      suiAddress: "0x0000000000000000000000000000000000000000000000000000000000000001",
+      suinsName: "",
+      capabilities: DeviceCredentialCapabilities(nearbyPayments: true, nearbyAssist: false),
+      issuedAt: 1_700_000_000,
+      expiresAt: 1_700_086_400,
+      issuer: "nearby-payments-api",
+      signature: "base64url-sig"
+    )
+    let mock = MockHTTPClient(
+      responseBody: try JSONCoders.encoder.encode(expected),
+      statusCode: 200
+    )
     let gateway = APIGateway(configuration: .test, httpClient: mock)
 
-    try await gateway.issueCredential(
+    let credential = try await gateway.issueCredential(
       request: CredentialRequest(localProofPublicKey: "0xpubkey"),
       accessToken: "access-token",
       deviceProvider: "stub",
@@ -200,6 +187,8 @@ struct AuthGatewayTests {
       requestTimestamp: "12345"
     )
 
+    #expect(credential == expected)
+    #expect(credential.signature == "base64url-sig")
     let sentBody = try JSONCoders.decoder.decode(
       CredentialRequest.self,
       from: mock.capturedRequest!.httpBody!
@@ -207,8 +196,6 @@ struct AuthGatewayTests {
     #expect(sentBody.localProofPublicKey == "0xpubkey")
     #expect(mock.capturedRequest?.value(forHTTPHeaderField: "X-Device-Provider") == "stub")
   }
-
-  // MARK: - Error Handling
 
   @Test("server error is surfaced with status code and body")
   func serverErrorHandling() async throws {
@@ -244,7 +231,6 @@ struct AuthGatewayTests {
 
   @Test("decoding failure is wrapped into GatewayError.decodingFailed")
   func decodingFailureHandling() async throws {
-    // Return valid JSON that doesn't match the expected schema.
     let mock = MockHTTPClient(
       responseBody: #"{"unexpected":"shape"}"#.data(using: .utf8)!,
       statusCode: 200
@@ -255,8 +241,6 @@ struct AuthGatewayTests {
       _ = try await gateway.serverPublicKey()
     }
   }
-
-  // MARK: - URL Construction
 
   @Test("requests target the correct versioned path")
   func urlConstruction() async throws {
