@@ -216,6 +216,71 @@
       ]
     },
     {
+      "name": "Me",
+      "item": [
+        {
+          "name": "Get Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  console.log('avatarUrl:', d.avatarUrl || '(none)');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/me/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "me", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Upload Avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  console.log('avatarUrl:', d.avatarUrl);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "image/jpeg" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/me/avatar",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "me", "avatar"]
+            },
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "description": "Upload a profile picture (JPEG, PNG, WebP, or GIF — max 5 MB). Set Content-Type to match the file type and select the file in the Body tab."
+          }
+        }
+      ]
+    },
+    {
       "name": "Deposit",
       "item": [
         {

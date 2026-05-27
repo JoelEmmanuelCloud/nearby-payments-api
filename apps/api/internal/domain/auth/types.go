@@ -1,10 +1,18 @@
 package auth
 
 type User struct {
-	ID        string
-	Status    string
-	CreatedAt int64
-	UpdatedAt int64
+	ID             string
+	Status         string
+	AvatarBlobID   string
+	CreatedAt      int64
+	UpdatedAt      int64
+}
+
+type UserProfileResponse struct {
+	UserID    string `json:"userId"`
+	Status    string `json:"status"`
+	AvatarURL string `json:"avatarUrl,omitempty"`
+	CreatedAt int64  `json:"createdAt"`
 }
 
 type OAuthIdentity struct {

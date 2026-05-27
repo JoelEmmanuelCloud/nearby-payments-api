@@ -15,6 +15,7 @@ import (
 
 	apperr "github.com/vaariance/nearby/internal/errors"
 	"github.com/vaariance/nearby/internal/utils"
+	"github.com/vaariance/nearby/internal/walrus"
 )
 
 const (
@@ -27,6 +28,7 @@ const (
 type ServiceDeps struct {
 	Store              *Store
 	Redis              *redis.Client
+	Walrus             *walrus.Client
 	GoogleClientID     string
 	GoogleClientSecret string
 	GoogleRedirectURI  string
@@ -37,6 +39,7 @@ type ServiceDeps struct {
 type Service struct {
 	store              *Store
 	rdb                *redis.Client
+	walrus             *walrus.Client
 	googleClientID     string
 	googleClientSecret string
 	googleRedirectURI  string
@@ -48,6 +51,7 @@ func NewService(deps ServiceDeps) *Service {
 	return &Service{
 		store:              deps.Store,
 		rdb:                deps.Redis,
+		walrus:             deps.Walrus,
 		googleClientID:     deps.GoogleClientID,
 		googleClientSecret: deps.GoogleClientSecret,
 		googleRedirectURI:  deps.GoogleRedirectURI,
@@ -398,6 +402,36 @@ func (s *Service) IssueDeviceCredential(ctx context.Context, sessCtx *SessionCon
 	cred.Signature = sig
 
 	return cred, nil
+}
+
+func (s *Service) UploadAvatar(ctx context.Context, userID, contentType string, data []byte) (string, error) {
+	blobID, err := s.walrus.UploadBlob(ctx, contentType, data)
+	if err != nil {
+		return "", fmt.Errorf("walrus upload: %w", err)
+	}
+	if err := s.store.UpdateUserAvatar(ctx, userID, blobID, utils.NowUnix()); err != nil {
+		return "", fmt.Errorf("update user avatar: %w", err)
+	}
+	return s.walrus.AggregatorURL(blobID), nil
+}
+
+func (s *Service) GetProfile(ctx context.Context, userID string) (*UserProfileResponse, error) {
+	user, err := s.store.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get user: %w", err)
+	}
+	if user == nil {
+		return nil, ErrUnauthorized
+	}
+	resp := &UserProfileResponse{
+		UserID:    user.ID,
+		Status:    user.Status,
+		CreatedAt: user.CreatedAt,
+	}
+	if user.AvatarBlobID != "" {
+		resp.AvatarURL = s.walrus.AggregatorURL(user.AvatarBlobID)
+	}
+	return resp, nil
 }
 
 func (s *Service) GetServerPublicKey() ServerPublicKeyResponse {

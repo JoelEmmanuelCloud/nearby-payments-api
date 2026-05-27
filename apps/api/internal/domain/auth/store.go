@@ -28,13 +28,21 @@ func (s *Store) CreateUser(ctx context.Context, u *User) error {
 func (s *Store) GetUserByID(ctx context.Context, id string) (*User, error) {
 	u := &User{}
 	err := s.db.QueryRow(ctx,
-		`SELECT id, status, created_at, updated_at FROM users WHERE id = $1`,
+		`SELECT id, status, COALESCE(walrus_avatar_blob_id, ''), created_at, updated_at FROM users WHERE id = $1`,
 		id,
-	).Scan(&u.ID, &u.Status, &u.CreatedAt, &u.UpdatedAt)
+	).Scan(&u.ID, &u.Status, &u.AvatarBlobID, &u.CreatedAt, &u.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	return u, err
+}
+
+func (s *Store) UpdateUserAvatar(ctx context.Context, userID, blobID string, updatedAt int64) error {
+	_, err := s.db.Exec(ctx,
+		`UPDATE users SET walrus_avatar_blob_id = $1, updated_at = $2 WHERE id = $3`,
+		blobID, updatedAt, userID,
+	)
+	return err
 }
 
 func (s *Store) GetOAuthIdentity(ctx context.Context, issuer, subject, audience string) (*OAuthIdentity, error) {
