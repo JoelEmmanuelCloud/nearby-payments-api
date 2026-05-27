@@ -2,8 +2,6 @@ import CryptoKit
 import Foundation
 import Security
 
-@testable import HSMShared
-
 /// An implementation of `HardwareSecurityModule` backed by the Apple Secure Enclave.
 ///
 /// This implementation generates and stores a NIST P-256 private key inside the

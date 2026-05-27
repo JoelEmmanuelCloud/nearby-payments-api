@@ -21,6 +21,8 @@ kt_android_library(
     resource_files = glob(["src/main/res/**"]),
     deps = [
         "//apps/android/bridge:bridge_aar",
+        "//packages/device-integrity:DeviceIntegrityAndroid",
+        "//packages/hsm:HSMAndroid",
         "//packages/storage:StorageAndroid",
         artifact("androidx.activity:activity-compose"),
         artifact("androidx.concurrent:concurrent-futures"),

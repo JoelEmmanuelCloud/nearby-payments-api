@@ -2,18 +2,10 @@ load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
 load("@rules_swift//swift:swift.bzl", "swift_library", "swift_test")
 
 swift_library(
-    name = "HSMShared",
-    srcs = glob(["Sources/Shared/**/*.swift"]),
-    module_name = "HSMShared",
-    visibility = ["//visibility:public"],
-)
-
-swift_library(
     name = "HSM",
     srcs = glob(["Sources/HSM/**/*.swift"]),
     module_name = "HSM",
     visibility = ["//visibility:public"],
-    deps = [":HSMShared"],
 )
 
 kt_android_library(

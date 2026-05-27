@@ -1,4 +1,3 @@
-import DeviceIntegrityShared
 import Foundation
 import Gateway
 import Testing

@@ -1,5 +1,4 @@
 import DeviceCheck
-import DeviceIntegrityShared
 import Foundation
 import Gateway
 
@@ -52,7 +51,8 @@ public actor AppAttestProvider: IntegrityProvider {
     }
   }
 
-  private func generateNewAttestation(clientDataHash: Data) async throws -> Gateway.DeviceIntegrity
+  private func generateNewAttestation(clientDataHash: Data) async throws
+    -> Gateway.DeviceIntegrity
   {
     let keyId = try await service.generateKey()
     UserDefaults.standard.set(keyId, forKey: keyIdDefaultsKey)
