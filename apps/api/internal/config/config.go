@@ -24,6 +24,8 @@ type Config struct {
 	GoogleClientID         string
 	GoogleClientSecret     string
 	GoogleRedirectURI      string
+	WalrusPublisherURL     string
+	WalrusAggregatorURL    string
 }
 
 func Load() (*Config, error) {
@@ -61,6 +63,8 @@ func Load() (*Config, error) {
 		GoogleClientID:         get("GOOGLE_CLIENT_ID"),
 		GoogleClientSecret:     optional("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURI:      optional("GOOGLE_REDIRECT_URI", ""),
+		WalrusPublisherURL:     optional("WALRUS_PUBLISHER_URL", ""),
+		WalrusAggregatorURL:    optional("WALRUS_AGGREGATOR_URL", ""),
 	}
 
 	if len(missing) > 0 {
