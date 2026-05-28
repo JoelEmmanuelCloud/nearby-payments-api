@@ -1,4 +1,4 @@
-// swift-tools-version: 6.23
+// swift-tools-version: 6.3
 import PackageDescription
 
 let package = Package(
@@ -14,7 +14,7 @@ let package = Package(
     )
   ],
   dependencies: [
-    .package(path: "../gateway/core")
+    .package(name: "gateway", path: "../gateway/Core")
   ],
   targets: [
     .target(

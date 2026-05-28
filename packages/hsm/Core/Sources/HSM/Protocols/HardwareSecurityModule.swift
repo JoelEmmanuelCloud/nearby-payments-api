@@ -14,13 +14,13 @@ public protocol HardwareSecurityModule: Sendable {
   /// Any existing key for the application should be replaced or rotated.
   ///
   /// - Returns: The DER-encoded X.509 SubjectPublicKeyInfo representation of the public key.
-  func generateKey() async throws -> Data
+  func generateKey() throws -> DEREncodedItem
 
   /// Returns the public key of the existing hardware key, if one exists.
   ///
   /// - Returns: The DER-encoded X.509 SubjectPublicKeyInfo representation of the public key,
   ///            or `nil` if no key has been generated yet.
-  func getPublicKey() async throws -> Data?
+  func getPublicKey() throws -> DEREncodedItem?
 
   /// Signs the provided payload using the hardware-backed private key.
   ///
@@ -29,8 +29,8 @@ public protocol HardwareSecurityModule: Sendable {
   ///
   /// - Parameter data: The raw data payload to be signed.
   /// - Returns: The DER-encoded ECDSA signature.
-  func sign(_ data: Data) async throws -> Data
+  func sign(_ data: [Int8]) throws -> DEREncodedItem
 
   /// Deletes the hardware-backed key from the secure storage.
-  func deleteKey() async throws
+  func deleteKey() throws
 }

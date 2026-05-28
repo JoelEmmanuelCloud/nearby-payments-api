@@ -13,13 +13,13 @@ swift_library(
 
 kt_android_library(
     name = "DeviceIntegrityAndroid",
-    srcs = glob(["Sources/Java/**/*.kt"]),
-    visibility = ["//visibility:public"],
+    srcs = glob(["Java/**/*.kt"]),
     target_compatible_with = ["@platforms//os:android"],
+    visibility = ["//visibility:public"],
     deps = [
         "@maven//:androidx_core_core",
-        "@maven//:com_google_android_play_integrity",
         "@maven//:com_google_android_gms_play_services_tasks",
+        "@maven//:com_google_android_play_integrity",
     ],
 )
 

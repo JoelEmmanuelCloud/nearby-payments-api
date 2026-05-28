@@ -10,7 +10,9 @@ public final class KeychainProvider: SecureStorage {
     self.service = service
   }
 
-  public func set(_ value: Data, forKey key: String) async throws {
+  public func set(_ item: StorageItem, forKey key: String) throws {
+    let data = Data(item.value.map { UInt8(bitPattern: $0) })
+
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
@@ -18,14 +20,14 @@ public final class KeychainProvider: SecureStorage {
     ]
 
     let attributes: [String: Any] = [
-      kSecValueData as String: value
+      kSecValueData as String: data
     ]
 
     let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
 
     if status == errSecItemNotFound {
       var newQuery = query
-      newQuery[kSecValueData as String] = value
+      newQuery[kSecValueData as String] = data
       let addStatus = SecItemAdd(newQuery as CFDictionary, nil)
       guard addStatus == errSecSuccess else {
         throw StorageError.unhandledError(status: Int(addStatus))
@@ -35,7 +37,7 @@ public final class KeychainProvider: SecureStorage {
     }
   }
 
-  public func get(forKey key: String) async throws -> Data? {
+  public func get(forKey key: String) throws -> StorageItem? {
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
@@ -59,10 +61,10 @@ public final class KeychainProvider: SecureStorage {
       throw StorageError.unexpectedDataFormat
     }
 
-    return data
+    return StorageItem(value: data.map { Int8(bitPattern: $0) })
   }
 
-  public func delete(forKey key: String) async throws {
+  public func delete(forKey key: String) throws {
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
@@ -75,7 +77,7 @@ public final class KeychainProvider: SecureStorage {
     }
   }
 
-  public func clearAll() async throws {
+  public func clearAll() throws {
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
@@ -85,5 +87,17 @@ public final class KeychainProvider: SecureStorage {
     guard status == errSecSuccess || status == errSecItemNotFound else {
       throw StorageError.unhandledError(status: Int(status))
     }
+  }
+
+  public func setData(_ value: Data, forKey key: String) throws {
+    try set(StorageItem(value: value.map { Int8(bitPattern: $0) }), forKey: key)
+  }
+
+  public func getData(forKey key: String) throws -> Data? {
+    guard let item = try get(forKey: key) else {
+      return nil
+    }
+
+    return Data(item.value.map { UInt8(bitPattern: $0) })
   }
 }

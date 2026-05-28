@@ -4,17 +4,19 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import org.swift.swiftkit.core.SwiftArena
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
+import java.util.Optional
 
-class StrongBoxHSM(private val context: Context) {
+class StrongBoxHSM(private val context: Context): HardwareSecurityModule {
 
     private val keyAlias = "com.variance.nearby.hsm.key"
     private val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
 
-    fun generateKey(): ByteArray {
+    override fun generateKey(swiftArena: SwiftArena): DEREncodedItem {
         deleteKey()
 
         val kpg = KeyPairGenerator.getInstance(
@@ -36,15 +38,15 @@ class StrongBoxHSM(private val context: Context) {
         }
 
         kpg.initialize(specBuilder.build())
-        return kpg.generateKeyPair().public.encoded
+        return DEREncodedItem.init(kpg.generateKeyPair().public.encoded, swiftArena)
     }
 
-    fun getPublicKey(): ByteArray? {
-        val entry = keyStore.getEntry(keyAlias, null) as? KeyStore.PrivateKeyEntry ?: return null
-        return entry.certificate.publicKey.encoded
+    override fun getPublicKey(swiftArena: SwiftArena): Optional<DEREncodedItem> {
+        val entry = keyStore.getEntry(keyAlias, null) as? KeyStore.PrivateKeyEntry ?: return Optional.empty()
+        return Optional.of(DEREncodedItem.init(entry.certificate.publicKey.encoded, swiftArena))
     }
 
-    fun sign(data: ByteArray): ByteArray {
+    override fun sign(data: ByteArray, swiftArena: SwiftArena): DEREncodedItem {
         val entry = keyStore.getEntry(keyAlias, null) as? KeyStore.PrivateKeyEntry
             ?: throw Exception("Key not found")
 
@@ -52,11 +54,10 @@ class StrongBoxHSM(private val context: Context) {
             initSign(entry.privateKey)
             update(data)
         }
-        
-        return signature.sign()
+        return DEREncodedItem.init(signature.sign(), swiftArena)
     }
 
-    fun deleteKey() {
+    override fun deleteKey() {
         if (keyStore.containsAlias(keyAlias)) {
             keyStore.deleteEntry(keyAlias)
         }

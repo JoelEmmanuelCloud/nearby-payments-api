@@ -3,16 +3,16 @@ load("@rules_swift//swift:swift.bzl", "swift_library", "swift_test")
 
 swift_library(
     name = "HSM",
-    srcs = glob(["Sources/HSM/**/*.swift"]),
+    srcs = glob(["Core/Sources/HSM/**/*.swift"]),
     module_name = "HSM",
     visibility = ["//visibility:public"],
 )
 
 kt_android_library(
     name = "HSMAndroid",
-    srcs = glob(["Sources/Java/**/*.kt"]),
-    visibility = ["//visibility:public"],
+    srcs = glob(["Java/**/*.kt"]),
     target_compatible_with = ["@platforms//os:android"],
+    visibility = ["//visibility:public"],
     deps = [
         "@maven//:androidx_core_core",
     ],
@@ -20,6 +20,6 @@ kt_android_library(
 
 swift_test(
     name = "HSMTests",
-    srcs = glob(["Tests/HSMTests/**/*.swift"]),
+    srcs = glob(["Core/Tests/HSMTests/**/*.swift"]),
     deps = [":HSM"],
 )

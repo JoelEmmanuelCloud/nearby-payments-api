@@ -4,17 +4,19 @@ load("@rules_swift//swift:swift.bzl", "swift_library")
 
 swift_library(
     name = "Storage",
-    srcs = glob(["Sources/Storage/**/*.swift"]),
+    srcs = glob(["Core/Sources/Storage/**/*.swift"]),
     module_name = "Storage",
     visibility = ["//visibility:public"],
 )
 
 kt_android_library(
     name = "StorageAndroid",
-    srcs = glob(["Sources/Java/**/*.kt"]),
-    visibility = ["//visibility:public"],
+    srcs = glob(["Java/**/*.kt"]),
     target_compatible_with = ["@platforms//os:android"],
+    visibility = ["//visibility:public"],
     deps = [
+        "//apps/android/bridge:bridge_aar",
         artifact("androidx.security:security-crypto"),
+        artifact("org.swift.swiftkit:swiftkit-core"),
     ],
 )

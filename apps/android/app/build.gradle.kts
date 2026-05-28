@@ -40,9 +40,9 @@ android {
         getByName("main") {
             kotlin.directories.addAll(
                 listOf(
-                    "../../../packages/storage/Sources/Java",
-                    "../../../packages/hsm/Sources/Java",
-                    "../../../packages/device-integrity/Sources/Java",
+                    "../../../packages/storage/Java",
+                    "../../../packages/hsm/Java",
+                    "../../../packages/device-integrity/Java",
                 ),
             )
         }

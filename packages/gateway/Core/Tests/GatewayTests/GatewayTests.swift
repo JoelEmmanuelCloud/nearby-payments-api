@@ -89,7 +89,8 @@ struct AuthGatewayTests {
     #expect(result == expectedResponse)
     #expect(result.userId == "user-123")
 
-    let json = try JSONSerialization.jsonObject(with: mock.capturedRequest!.httpBody!) as? [String: Any]
+    let json =
+      try JSONSerialization.jsonObject(with: mock.capturedRequest!.httpBody!) as? [String: Any]
     #expect(json?["platform"] as? String == "ios")
     #expect(json?["flow_type"] as? String == "web")
     #expect(json?["suiAddress"] as? String == suiAddress)

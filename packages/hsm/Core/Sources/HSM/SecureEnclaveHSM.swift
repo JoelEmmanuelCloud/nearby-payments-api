@@ -7,15 +7,15 @@ import Security
 /// This implementation generates and stores a NIST P-256 private key inside the
 /// Secure Enclave. The private key cannot be extracted into application memory.
 /// All cryptographic operations (signing) occur within the Secure Enclave itself.
-public actor SecureEnclaveHSM: HardwareSecurityModule {
+public final class SecureEnclaveHSM: HardwareSecurityModule {
 
   /// The Keychain label used to uniquely identify this key.
   private let keyTag = "com.variance.nearby.hsm.key".data(using: .utf8)!
 
   public init() {}
 
-  public func generateKey() async throws -> Data {
-    try await deleteKey()
+  public func generateKey() throws -> DEREncodedItem {
+    try deleteKey()
 
     let privateKey = try SecureEnclave.P256.Signing.PrivateKey()
 
@@ -27,30 +27,41 @@ public actor SecureEnclaveHSM: HardwareSecurityModule {
 
     let status = SecItemAdd(query as CFDictionary, nil)
     guard status == errSecSuccess else {
-      throw HSMError.keyGenerationFailed(status)
+      throw HSMError.keyGenerationFailed(status: Int(status))
     }
 
-    return privateKey.publicKey.derRepresentation
+    return DEREncodedItem(
+      value: privateKey.publicKey.derRepresentation.map { Int8(bitPattern: $0) })
   }
 
-  public func getPublicKey() async throws -> Data? {
+  public func getPublicKey() throws -> DEREncodedItem? {
     guard let privateKey = try getPrivateKeyReference() else {
       return nil
     }
-    return privateKey.publicKey.derRepresentation
+    return DEREncodedItem(
+      value: privateKey.publicKey.derRepresentation.map { Int8(bitPattern: $0) })
   }
 
-  public func sign(_ data: Data) async throws -> Data {
+  private func signData(_ value: Data) throws -> Data {
     guard let privateKey = try getPrivateKeyReference() else {
       throw HSMError.keyNotFound
     }
 
-    let digest = SHA256.hash(data: data)
+    let digest = SHA256.hash(data: value)
     let signature = try privateKey.signature(for: digest)
+
     return signature.derRepresentation
   }
 
-  public func deleteKey() async throws {
+  public func sign(_ data: [Int8]) throws -> DEREncodedItem {
+    let value = Data(data.map { UInt8(bitPattern: $0) })
+
+    let sig = try signData(value)
+
+    return DEREncodedItem(value: sig.map { Int8(bitPattern: $0) })
+  }
+
+  public func deleteKey() throws {
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrAccount as String: keyTag,
@@ -58,7 +69,7 @@ public actor SecureEnclaveHSM: HardwareSecurityModule {
 
     let status = SecItemDelete(query as CFDictionary)
     guard status == errSecSuccess || status == errSecItemNotFound else {
-      throw HSMError.keyDeletionFailed(status)
+      throw HSMError.keyDeletionFailed(status: Int(status))
     }
   }
 
@@ -80,7 +91,7 @@ public actor SecureEnclaveHSM: HardwareSecurityModule {
     }
 
     guard status == errSecSuccess, let data = item as? Data else {
-      throw HSMError.keyRetrievalFailed(status)
+      throw HSMError.keyRetrievalFailed(status: Int(status))
     }
 
     return try SecureEnclave.P256.Signing.PrivateKey(dataRepresentation: data)

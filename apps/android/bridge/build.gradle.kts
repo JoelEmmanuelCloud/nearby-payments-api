@@ -35,6 +35,8 @@ val repoRoot = project.projectDir.resolve("../../..")
 // Just add the name and relative path here.
 val swiftPackages = listOf(
     mapOf("target" to "Gateway", "dir" to "packages/gateway", "sourcePath" to "Core/Sources/Gateway"),
+    mapOf("target" to "Storage", "dir" to "packages/storage", "sourcePath" to "Core/Sources/Storage"),
+    mapOf("target" to "HSM", "dir" to "packages/hsm", "sourcePath" to "Core/Sources/HSM"),
 )
 val swiftRuntimePackage = swiftPackages.first()
 val swiftRuntimeTarget = swiftRuntimePackage["target"] ?: error("Swift runtime package target is required")
@@ -117,6 +119,7 @@ swiftPackages.forEach { pkg ->
     val packageIdentity = packageDir.name.lowercase()
 
     val jniOutDir = layout.buildDirectory.dir("generated/jniLibs/$targetLow")
+    val javaOutDir = layout.buildDirectory.dir("generated/java/$targetLow")
     val extractOutputDir =
         file("$packageDir/.build/plugins/outputs/$packageIdentity/$target/destination/JExtractSwiftPlugin/src/generated/java")
 
@@ -148,6 +151,7 @@ swiftPackages.forEach { pkg ->
                 triple,
                 "--build-system",
                 "native",
+                "--disable-sandbox",
             )
 
             outputs.dir(file("$packageDir/.build/$triple/debug"))
@@ -176,11 +180,11 @@ swiftPackages.forEach { pkg ->
     val syncJava = tasks.register<SyncSwiftJavaTask>("syncSwiftJava_$target") {
         dependsOn(buildAll)
         extractOutput.set(extractOutputDir)
-        javaOutput.set(layout.buildDirectory.dir("generated/java/$targetLow"))
+        javaOutput.set(javaOutDir)
     }
 
     android.sourceSets.getByName("main") {
-        java.srcDir(layout.buildDirectory.dir("generated/java/$targetLow").get().asFile)
+        java.srcDir(javaOutDir.get().asFile)
         jniLibs.srcDir(jniOutDir.get().asFile)
     }
 

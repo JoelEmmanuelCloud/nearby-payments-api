@@ -4,25 +4,36 @@ import PackageDescription
 let package = Package(
   name: "HSM",
   platforms: [
-    .iOS(.v26),
     .macOS(.v15),
+    .iOS(.v26),
   ],
   products: [
     .library(
       name: "HSM",
+      type: .dynamic,
       targets: ["HSM"]
     )
   ],
-  dependencies: [],
+  dependencies: [
+    .package(url: "https://github.com/swiftlang/swift-java", exact: "0.4.0")
+  ],
   targets: [
     .target(
       name: "HSM",
-      path: "Sources/HSM"
-    ),
-    .testTarget(
-      name: "HSMTests",
-      dependencies: ["HSM"],
-      path: "Tests/HSMTests"
-    ),
+      dependencies: [
+        .product(name: "SwiftJava", package: "swift-java")
+      ],
+      path: "Core/Sources/HSM",
+      exclude: [
+        "SecureEnclaveHSM.swift",
+        "swift-java.config",
+      ],
+      swiftSettings: [
+        .swiftLanguageMode(.v5)
+      ],
+      plugins: [
+        .plugin(name: "JExtractSwiftPlugin", package: "swift-java")
+      ]
+    )
   ]
 )
