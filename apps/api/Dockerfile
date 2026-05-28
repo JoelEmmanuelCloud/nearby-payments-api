@@ -9,6 +9,7 @@ FROM alpine:3.21
 RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
 COPY --from=builder /app/bin/api ./api
+COPY --from=builder /app/static ./static
 COPY --from=builder /app/internal/db/migrations ./internal/db/migrations
 EXPOSE 8080
 CMD ["./api"]
