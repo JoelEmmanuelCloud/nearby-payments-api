@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "nearby-payments-api-v1",
     "name": "Nearby Payments API",
-    "description": "Full endpoint test collection for the Nearby Payments backend.",
+    "description": "Full endpoint test collection for the Nearby Payments backend.\n\nEnvironments:\n- Local: http://localhost:8080\n- Production: https://nearby-api-565533426961.us-central1.run.app",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -12,7 +12,8 @@
     ]
   },
   "variable": [
-    { "key": "baseUrl",      "value": "http://localhost:8080" },
+    { "key": "baseUrl",      "value": "https://nearby-api-565533426961.us-central1.run.app" },
+    { "key": "localUrl",     "value": "http://localhost:8080" },
     { "key": "accessToken",  "value": "" },
     { "key": "refreshToken", "value": "" },
     { "key": "userId",       "value": "" },
