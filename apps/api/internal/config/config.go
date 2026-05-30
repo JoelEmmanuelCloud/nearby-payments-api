@@ -26,6 +26,7 @@ type Config struct {
 	GoogleRedirectURI      string
 	WalrusPublisherURL     string
 	WalrusAggregatorURL    string
+	ZkLoginProverURL       string
 }
 
 func Load() (*Config, error) {
@@ -65,6 +66,7 @@ func Load() (*Config, error) {
 		GoogleRedirectURI:      optional("GOOGLE_REDIRECT_URI", ""),
 		WalrusPublisherURL:     optional("WALRUS_PUBLISHER_URL", ""),
 		WalrusAggregatorURL:    optional("WALRUS_AGGREGATOR_URL", ""),
+		ZkLoginProverURL:       optional("ZKLOGIN_PROVER_URL", "https://prover.mystenlabs.com/v1"),
 	}
 
 	if len(missing) > 0 {

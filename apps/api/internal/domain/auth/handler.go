@@ -225,6 +225,28 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(profile)
 }
 
+func (h *Handler) ProveZkLogin(w http.ResponseWriter, r *http.Request) {
+	var req ZkLoginProveRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apperr.Write(w, apperr.ErrBadRequest)
+		return
+	}
+	if req.JWT == "" || req.ExtendedEphemeralPublicKey == "" || req.Salt == "" || req.MaxEpoch == 0 {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "jwt, extendedEphemeralPublicKey, maxEpoch, and salt are required")
+		return
+	}
+
+	proof, err := h.svc.ProveZkLogin(r.Context(), req)
+	if err != nil {
+		apperr.Write(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(proof)
+}
+
 func (h *Handler) OAuthCallbackPage(w http.ResponseWriter, r *http.Request) {
 	q := url.Values{}
 	q.Set("code", r.URL.Query().Get("code"))

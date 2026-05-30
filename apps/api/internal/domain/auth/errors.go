@@ -20,4 +20,5 @@ var (
 	ErrOAuthProviderUnsupported   = apperr.New("oauth_provider_unsupported", "OAuth provider is not supported", http.StatusBadRequest)
 	ErrTimestampOutOfWindow       = apperr.New("timestamp_out_of_window", "Request timestamp is outside allowed window", http.StatusBadRequest)
 	ErrBodyHashMismatch           = apperr.New("body_hash_mismatch", "Request body hash does not match", http.StatusBadRequest)
+	ErrProverUnavailable          = apperr.New("prover_unavailable", "ZK prover is unavailable", http.StatusServiceUnavailable)
 )

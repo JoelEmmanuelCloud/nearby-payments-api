@@ -103,6 +103,7 @@ func main() {
 		GoogleRedirectURI:  cfg.GoogleRedirectURI,
 		CredentialSignKey:  credSignKey,
 		CredentialPubKey:   credPubKey,
+		ProverURL:          cfg.ZkLoginProverURL,
 	})
 	authHandler := auth.NewHandler(authSvc)
 
