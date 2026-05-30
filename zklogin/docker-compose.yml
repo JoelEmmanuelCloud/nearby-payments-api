@@ -1,0 +1,20 @@
+services:
+  backend:
+    image: mysten/zklogin:prover-stable
+    volumes:
+      - ./zkeys/zkLogin-main.zkey:/app/binaries/zkLogin.zkey:ro
+    environment:
+      - ZKEY=/app/binaries/zkLogin.zkey
+      - WITNESS_BINARIES=/app/binaries
+
+  frontend:
+    image: mysten/zklogin:prover-fe-stable
+    command: "8080"
+    ports:
+      - "${PROVER_PORT:-8003}:8080"
+    environment:
+      - PROVER_URI=http://backend:8080/input
+      - NODE_ENV=production
+      - DEBUG=zkLogin:info,jwks
+    depends_on:
+      - backend
