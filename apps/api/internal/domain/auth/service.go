@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"crypto/ed25519"
 	"encoding/json"
@@ -34,6 +35,7 @@ type ServiceDeps struct {
 	GoogleRedirectURI  string
 	CredentialSignKey  ed25519.PrivateKey
 	CredentialPubKey   ed25519.PublicKey
+	ProverURL          string
 }
 
 type Service struct {
@@ -45,6 +47,8 @@ type Service struct {
 	googleRedirectURI  string
 	credSignKey        ed25519.PrivateKey
 	credPubKey         ed25519.PublicKey
+	proverURL          string
+	proverClient       *http.Client
 }
 
 func NewService(deps ServiceDeps) *Service {
@@ -57,6 +61,8 @@ func NewService(deps ServiceDeps) *Service {
 		googleRedirectURI:  deps.GoogleRedirectURI,
 		credSignKey:        deps.CredentialSignKey,
 		credPubKey:         deps.CredentialPubKey,
+		proverURL:          deps.ProverURL,
+		proverClient:       &http.Client{Timeout: 60 * time.Second},
 	}
 }
 
@@ -501,6 +507,40 @@ func (s *Service) exchangeGoogleCode(ctx context.Context, code, codeVerifier str
 	}
 
 	return idToken, nil
+}
+
+func (s *Service) ProveZkLogin(ctx context.Context, req ZkLoginProveRequest) ([]byte, error) {
+	if req.KeyClaimName == "" {
+		req.KeyClaimName = "sub"
+	}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, apperr.ErrInternal
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, s.proverURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, apperr.ErrInternal
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.proverClient.Do(httpReq)
+	if err != nil {
+		return nil, ErrProverUnavailable
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, apperr.ErrInternal
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, ErrProverUnavailable
+	}
+
+	return respBody, nil
 }
 
 func (s *Service) verifyGoogleIDToken(ctx context.Context, idToken string) (map[string]interface{}, error) {

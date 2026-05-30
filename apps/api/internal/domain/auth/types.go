@@ -181,3 +181,12 @@ type ServerPublicKeyResponse struct {
 	PublicKey string `json:"publicKey"`
 	Format    string `json:"format"`
 }
+
+type ZkLoginProveRequest struct {
+	JWT                        string `json:"jwt"`
+	ExtendedEphemeralPublicKey string `json:"extendedEphemeralPublicKey"`
+	MaxEpoch                   uint64 `json:"maxEpoch"`
+	JwtRandomness              string `json:"jwtRandomness"`
+	Salt                       string `json:"salt"`
+	KeyClaimName               string `json:"keyClaimName"`
+}
