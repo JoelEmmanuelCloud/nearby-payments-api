@@ -35,7 +35,7 @@ val repoRoot = project.projectDir.resolve("../../..")
 // Just add the name and relative path here.
 val swiftPackages = listOf(
     mapOf("target" to "Gateway", "dir" to "packages/gateway", "sourcePath" to "GatewayCore/Sources/Gateway"),
-    mapOf("target" to "Storage", "dir" to "packages/storage", "sourcePath" to "Core/Sources/Storage"),
+    mapOf("target" to "Storage", "dir" to "packages/storage", "sourcePath" to "StorageCore/Sources/Storage"),
     mapOf("target" to "HSM", "dir" to "packages/hsm", "sourcePath" to "Core/Sources/HSM"),
 )
 val swiftRuntimePackage = swiftPackages.first()
