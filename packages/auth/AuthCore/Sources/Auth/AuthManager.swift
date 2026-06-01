@@ -53,8 +53,8 @@ public final class AuthManager: @unchecked Sendable {
     zkLoginNonce: String
   ) async throws -> OAuthBeginResponse {
     let verifier: String
-    let challenge: String
-    let codeChallengeMethod: String
+    var challenge: String? = nil
+    var codeChallengeMethod: String? = nil
 
     switch authType {
     case .web:
@@ -64,11 +64,10 @@ public final class AuthManager: @unchecked Sendable {
 
     case .native:
       verifier = ""
-      challenge = ""
-      codeChallengeMethod = "Exclude"
     }
 
     let request = OAuthBeginRequest(
+      flowType: authType,
       provider: provider,
       codeChallenge: challenge,
       codeChallengeMethod: codeChallengeMethod,

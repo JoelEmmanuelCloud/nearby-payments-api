@@ -1,5 +1,14 @@
 import Foundation
 
+/// Represents the authentication type used to begin the OAuth flow.
+public enum AuthType: String, Codable, Sendable, CaseIterable {
+  /// Web-based OAuth flow using a browser or custom tab redirect.
+  case web = "web"
+
+  /// Native platform-based OAuth flow (e.g., native Google Sign-In or Sign in with Apple).
+  case native = "native"
+}
+
 /// Supported OAuth 2.0 identity providers.
 public enum OAuthProvider: String, Codable, Sendable, CaseIterable {
   /// Google Identity Service provider.
@@ -21,22 +30,25 @@ public struct ServerPublicKeyResponse: Codable, Sendable, Equatable {
 
 /// Request parameters submitted to begin the authentication flow.
 public struct OAuthBeginRequest: Codable, Sendable, Equatable {
+  public let flowType: AuthType
   /// The selected authentication provider.
   public let provider: OAuthProvider
   /// The cryptographic code challenge derived from client PKCE verifier.
-  public let codeChallenge: String
-  /// The method utilized to hash the verifier (typically "S256" or "Exclude").
-  public let codeChallengeMethod: String
+  public let codeChallenge: String?
+  /// The method utilized to hash the verifier (typically "S256" or nil).
+  public let codeChallengeMethod: String?
   /// The zkLogin nonce parameter verifying signature proof constraints.
   public let zkLoginNonce: String
 
   /// Initializes a begin OAuth request.
   public init(
+    flowType: AuthType,
     provider: OAuthProvider,
-    codeChallenge: String,
-    codeChallengeMethod: String = "S256",
+    codeChallenge: String? = nil,
+    codeChallengeMethod: String? = nil,
     zkLoginNonce: String
   ) {
+    self.flowType = flowType
     self.provider = provider
     self.codeChallenge = codeChallenge
     self.codeChallengeMethod = codeChallengeMethod
@@ -132,7 +144,7 @@ public struct OAuthCompleteRequest: Encodable, Sendable, Equatable {
   /// Coding keys map custom JSON properties for server endpoint compatibility.
   enum CodingKeys: String, CodingKey {
     case platform, osVersion, appBundleId, deviceIntegrity
-    case flowType = "flow_type"
+    case flowType = "flowType"
     case code, state, codeVerifier, idToken, authorizationCode
   }
 
