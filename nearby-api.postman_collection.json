@@ -547,7 +547,7 @@
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"leafName\": \"alice\",\n  \"parentName\": \"nearby\"\n}"
+              "raw": "{\n  \"leafName\": \"alice\"\n}"
             }
           }
         },
