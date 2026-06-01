@@ -12,8 +12,13 @@ public final class SecureEnclaveHSM: HardwareSecurityModule {
   /// The Keychain label used to uniquely identify this key.
   private let keyTag = "com.variance.nearby.hsm.key".data(using: .utf8)!
 
+  /// Initializes a new `SecureEnclaveHSM`.
   public init() {}
 
+  /// Generates a new EC P-256 keypair inside the Secure Enclave and persists the reference in the iOS Keychain.
+  ///
+  /// - Returns: A `DEREncodedItem` wrapping the public key's DER-encoded X.509 representation.
+  /// - Throws: `HSMError.keyGenerationFailed` if creation fails.
   public func generateKey() throws -> DEREncodedItem {
     try deleteKey()
 
@@ -34,6 +39,10 @@ public final class SecureEnclaveHSM: HardwareSecurityModule {
       value: privateKey.publicKey.derRepresentation.map { Int8(bitPattern: $0) })
   }
 
+  /// Retrieves the public key of the active Secure Enclave key reference.
+  ///
+  /// - Returns: A `DEREncodedItem` containing the public key DER, or `nil` if no key exists.
+  /// - Throws: `HSMError.keyRetrievalFailed` if the query fails.
   public func getPublicKey() throws -> DEREncodedItem? {
     guard let privateKey = try getPrivateKeyReference() else {
       return nil
@@ -42,6 +51,7 @@ public final class SecureEnclaveHSM: HardwareSecurityModule {
       value: privateKey.publicKey.derRepresentation.map { Int8(bitPattern: $0) })
   }
 
+  /// Helper to hash the input data using SHA-256 and sign it inside the Secure Enclave.
   private func signData(_ value: Data) throws -> Data {
     guard let privateKey = try getPrivateKeyReference() else {
       throw HSMError.keyNotFound
@@ -53,6 +63,11 @@ public final class SecureEnclaveHSM: HardwareSecurityModule {
     return signature.derRepresentation
   }
 
+  /// Signs the provided payload using the Secure Enclave private key.
+  ///
+  /// - Parameter data: The raw signed byte array to sign.
+  /// - Returns: A `DEREncodedItem` wrapping the DER-encoded ECDSA signature.
+  /// - Throws: `HSMError.keyNotFound` if no active key exists.
   public func sign(_ data: [Int8]) throws -> DEREncodedItem {
     let value = Data(data.map { UInt8(bitPattern: $0) })
 
@@ -61,6 +76,9 @@ public final class SecureEnclaveHSM: HardwareSecurityModule {
     return DEREncodedItem(value: sig.map { Int8(bitPattern: $0) })
   }
 
+  /// Deletes the private key reference from the iOS Keychain.
+  ///
+  /// - Throws: `HSMError.keyDeletionFailed` if Keychain deletion fails.
   public func deleteKey() throws {
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
@@ -75,6 +93,7 @@ public final class SecureEnclaveHSM: HardwareSecurityModule {
 
   // MARK: - Private Helpers
 
+  /// Queries the Keychain to load the Secure Enclave P-256 private key reference.
   private func getPrivateKeyReference() throws -> SecureEnclave.P256.Signing.PrivateKey? {
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,

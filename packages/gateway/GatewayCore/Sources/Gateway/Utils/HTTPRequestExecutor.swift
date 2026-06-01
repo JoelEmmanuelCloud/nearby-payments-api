@@ -4,11 +4,22 @@ import Foundation
   import FoundationNetworking
 #endif
 
+/// An internal helper structure that executes HTTP GET and POST requests, configures
+/// headers and authorization tokens, and decodes JSON responses.
 struct HTTPRequestExecutor: Sendable {
 
+  /// The configuration containing base URL and target API version.
   let configuration: GatewayConfiguration
+  /// The underlying HTTP request execution transport client.
   let httpClient: HTTPClient
 
+  /// Executes a GET request to a relative path and decodes the JSON response.
+  ///
+  /// - Parameters:
+  ///   - path: The target relative subpath.
+  ///   - accessToken: An optional bearer token to authorize the request.
+  /// - Returns: A decoded model of the generic `Response` type.
+  /// - Throws: `GatewayError` if URL construction, network transport, or decoding fails.
   func get<Response: Decodable>(
     path: String,
     accessToken: String? = nil
@@ -21,6 +32,15 @@ struct HTTPRequestExecutor: Sendable {
     return try await execute(urlRequest)
   }
 
+  /// Executes a POST request to a relative path, encoding the JSON body and decoding the response.
+  ///
+  /// - Parameters:
+  ///   - path: The target relative subpath.
+  ///   - body: The model payload to serialize into the request body.
+  ///   - accessToken: Optional bearer authorization token.
+  ///   - deviceHeaders: Optional platform-specific device integrity headers.
+  /// - Returns: A decoded model of the generic `Response` type.
+  /// - Throws: `GatewayError` if encoding, execution, or decoding fails.
   func post<Body: Encodable, Response: Decodable>(
     path: String,
     body: Body,
@@ -37,6 +57,14 @@ struct HTTPRequestExecutor: Sendable {
     return try await execute(urlRequest)
   }
 
+  /// Executes a POST request with no returned response body.
+  ///
+  /// - Parameters:
+  ///   - path: The target relative subpath.
+  ///   - body: Optional body payload to serialize.
+  ///   - accessToken: Optional bearer authorization token.
+  ///   - deviceHeaders: Optional device integrity headers.
+  /// - Throws: `GatewayError` if execution fails.
   func postVoid(
     path: String,
     body: (any Encodable)? = nil,
@@ -55,6 +83,7 @@ struct HTTPRequestExecutor: Sendable {
     try await executeVoid(urlRequest)
   }
 
+  /// Helper to construct a URLRequest and set HTTP headers.
   private func buildRequest(
     method: String,
     path: String,
@@ -100,6 +129,7 @@ struct HTTPRequestExecutor: Sendable {
     return request
   }
 
+  /// Performs network execution and decodes the response body into JSON.
   private func execute<Response: Decodable>(
     _ request: URLRequest
   ) async throws -> Response {
@@ -116,6 +146,7 @@ struct HTTPRequestExecutor: Sendable {
     return try JSONCoders.decode(type: Response.self, from: data)
   }
 
+  /// Performs network execution and verifies HTTP success status codes.
   private func executeVoid(_ request: URLRequest) async throws {
     let (data, httpResponse) = try await performRequest(request)
 
@@ -128,6 +159,7 @@ struct HTTPRequestExecutor: Sendable {
     }
   }
 
+  /// Executes request with retry or generic network error conversion.
   private func performRequest(
     _ request: URLRequest
   ) async throws -> (Data, HTTPURLResponse) {
@@ -141,8 +173,12 @@ struct HTTPRequestExecutor: Sendable {
   }
 }
 
+/// Structured representation of headers submitted during device integrity checks.
 struct DeviceHeaders: Sendable {
+  /// The integrity provider used (e.g. apple_app_attest, play_integrity).
   let provider: String
+  /// The verification challenge nonce.
   let nonce: String
+  /// Request timestamp.
   let timestamp: String
 }

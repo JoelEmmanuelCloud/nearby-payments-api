@@ -7,6 +7,14 @@ import com.google.android.play.core.integrity.StandardIntegrityManager
 import com.google.android.play.core.integrity.StandardIntegrityManager.PrepareIntegrityTokenRequest
 import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityTokenRequest
 
+/**
+ * Android-specific device integrity provider implementing Play Integrity API checks.
+ * Uses Google Play Services' Standard Integrity API to prepare an integrity token provider
+ * and retrieve attestation tokens bound to client request hashes.
+ *
+ * @property context Application context to initialize IntegrityManager.
+ * @property cloudProjectNumber Google Cloud Project Number linked to Play Console integrity checks.
+ */
 class PlayIntegrityProvider(
     private val context: Context,
     private val cloudProjectNumber: Long,
@@ -14,6 +22,10 @@ class PlayIntegrityProvider(
     private val manager = IntegrityManagerFactory.createStandard(context)
     private var tokenProvider: StandardIntegrityManager.StandardIntegrityTokenProvider? = null
 
+    /**
+     * Warms up the Play Integrity API client and retrieves standard token provider.
+     * This is a blocking call and should be run on a background thread.
+     */
     fun prepare() {
         val request =
             PrepareIntegrityTokenRequest
@@ -25,6 +37,13 @@ class PlayIntegrityProvider(
         tokenProvider = Tasks.await(task)
     }
 
+    /**
+     * Generates a device integrity token bound to the provided request hash.
+     *
+     * @param requestHash Base64url-encoded SHA-256 hash representing client verification nonce payload.
+     * @return The raw Play Integrity JWT token string returned by Google services.
+     * @throws Exception if [prepare] was not called successfully prior to attestation.
+     */
     fun attest(requestHash: String): String {
         val provider = tokenProvider ?: throw Exception("PlayIntegrityProvider was not prepared.")
 
@@ -39,6 +58,7 @@ class PlayIntegrityProvider(
     }
 
     companion object {
+        /** The identifier name identifying the Play Integrity provider platform. */
         const val provider = "play_integrity"
     }
 }

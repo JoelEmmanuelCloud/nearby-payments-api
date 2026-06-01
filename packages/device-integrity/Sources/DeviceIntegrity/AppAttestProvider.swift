@@ -13,14 +13,24 @@ public actor AppAttestProvider: IntegrityProvider {
   /// A UserDefaults key to store the generated App Attest key identifier.
   private let keyIdDefaultsKey = "com.variance.nearby.appattest.keyId"
 
+  /// Initializes a new instance of `AppAttestProvider`.
   public init() {}
 
+  /// Prepares the App Attest service, checking whether hardware attestation is supported.
+  ///
+  /// - Throws: `AttestError.notSupported` if running on simulators or older hardware.
   public func prepare() async throws {
     guard service.isSupported else {
       throw AttestError.notSupported
     }
   }
 
+  /// Generates a device integrity token bound to the provided nonce.
+  /// Generates a new hardware attestation statement if no key exists, or an assertion if a key already exists.
+  ///
+  /// - Parameter nonce: The client session verification challenge.
+  /// - Returns: A `DeviceIntegrity` structure indicating provider and key assertions.
+  /// - Throws: `AttestError` or native Apple service errors on execution failure.
   public func attest(nonce: Data) async throws -> Gateway.DeviceIntegrity {
     guard service.isSupported else {
       throw AttestError.notSupported
@@ -51,6 +61,7 @@ public actor AppAttestProvider: IntegrityProvider {
     }
   }
 
+  /// Generates a brand new hardware attestation key and gets key validation statements.
   private func generateNewAttestation(clientDataHash: Data) async throws
     -> Gateway.DeviceIntegrity
   {
