@@ -220,21 +220,6 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 		}
 	}
 
-	if req.SuiAddress != "" {
-		wb := &WalletBinding{
-			UserID:     userID,
-			SuiAddress: req.SuiAddress,
-			AuthScheme: "zklogin",
-			Issuer:     iss,
-			Audience:   aud,
-			CreatedAt:  now,
-			UpdatedAt:  now,
-		}
-		if err := s.store.UpsertWalletBinding(ctx, wb); err != nil {
-			return nil, fmt.Errorf("upsert wallet binding: %w", err)
-		}
-	}
-
 	deviceID := utils.NewID()
 	device := &Device{
 		ID:          deviceID,
@@ -298,7 +283,6 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 		ExpiresAt:        expiresAt,
 		RefreshExpiresAt: refreshExpiresAt,
 		UserID:           userID,
-		SuiAddress:       req.SuiAddress,
 		JWT:              idToken,
 		Salt:             salt.Salt,
 	}, nil

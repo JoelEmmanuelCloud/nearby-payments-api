@@ -127,16 +127,17 @@ type OAuthBeginResponse struct {
 
 type DeviceIntegrityProof struct {
 	Provider       string `json:"provider"`
-	Assertion      string `json:"assertion"`
+	Assertion      string `json:"assertion,omitempty"`
 	KeyID          string `json:"keyId,omitempty"`
-	Nonce          string `json:"nonce"`
-	TimestampMs    int64  `json:"timestampMs"`
+	Token          string `json:"token,omitempty"`
+	ClientDataHash string `json:"clientDataHash,omitempty"`
+	Nonce          string `json:"nonce,omitempty"`
+	TimestampMs    int64  `json:"timestampMs,omitempty"`
 	RequestHash    string `json:"requestHash,omitempty"`
-	IntegrityToken string `json:"integrityToken,omitempty"`
 }
 
 type OAuthCompleteRequest struct {
-	FlowType            string               `json:"flow_type"`
+	FlowType            string               `json:"flowType"`
 	Code                string               `json:"code"`
 	State               string               `json:"state"`
 	CodeVerifier        string               `json:"codeVerifier"`
@@ -147,7 +148,6 @@ type OAuthCompleteRequest struct {
 	Platform            string               `json:"platform"`
 	OsVersion           string               `json:"osVersion"`
 	AppBundleID         string               `json:"appBundleId"`
-	SuiAddress          string               `json:"suiAddress"`
 }
 
 type OAuthCompleteResponse struct {

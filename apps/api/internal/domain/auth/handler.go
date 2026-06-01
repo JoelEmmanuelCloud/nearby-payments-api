@@ -66,14 +66,18 @@ func (h *Handler) OAuthComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.State == "" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "state is required")
+		return
+	}
 	if req.FlowType == "native" {
 		if req.IDToken == "" {
 			apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "idToken is required for native flow")
 			return
 		}
 	} else {
-		if req.Code == "" || req.State == "" || req.CodeVerifier == "" {
-			apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "code, state, and codeVerifier are required")
+		if req.Code == "" || req.CodeVerifier == "" {
+			apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "code and codeVerifier are required for web flow")
 			return
 		}
 	}
