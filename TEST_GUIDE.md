@@ -431,7 +431,7 @@ Registers an on-chain SuiNS name (e.g. `alice.nearby`). Registration is async â€
 
 ```
 POST /v1/names/leaf
-Body: { "leafName": "alice", "parentName": "nearby" }
+Body: { "leafName": "alice" }
 ```
 Expected: `202 Accepted` with `taskId` â€” test script saves it to `{{taskId}}`
 
