@@ -12,8 +12,19 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.565533426961-poghio0agdknm6tegge7kpqk8hacv82m</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>GIDClientID</key>
+	<string>565533426961-poghio0agdknm6tegge7kpqk8hacv82m.apps.googleusercontent.com</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Scan QR codes to capture wallet addresses for Send Money.</string>
 	<key>NSFaceIDUsageDescription</key>

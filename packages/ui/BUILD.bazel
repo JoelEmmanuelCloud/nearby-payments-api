@@ -1,3 +1,6 @@
+load("@rules_jvm_external//:defs.bzl", "artifact")
+load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
+load("@rules_kotlin//kotlin:core.bzl", "kt_compiler_plugin")
 load("@rules_swift//swift:swift.bzl", "swift_library", "swift_test")
 
 swift_library(
@@ -11,4 +14,28 @@ swift_test(
     name = "UITests",
     srcs = glob(["Tests/UITests/**/*.swift"]),
     deps = [":UI"],
+)
+
+kt_compiler_plugin(
+    name = "compose_compiler_plugin",
+    id = "androidx.compose.compiler.plugins.kotlin",
+    target_embedded_compiler = True,
+    deps = [
+        artifact("org.jetbrains.kotlin:kotlin-compose-compiler-plugin-embeddable"),
+    ],
+)
+
+kt_android_library(
+    name = "UIAndroid",
+    srcs = glob(["Java/**/*.kt"]),
+    custom_package = "com.variance.nearby.ui",
+    plugins = [":compose_compiler_plugin"],
+    visibility = ["//visibility:public"],
+    deps = [
+        artifact("androidx.compose.material3:material3"),
+        artifact("androidx.compose.ui:ui"),
+        artifact("androidx.compose.ui:ui-graphics"),
+        artifact("androidx.compose.ui:ui-tooling-preview"),
+        artifact("androidx.core:core-ktx"),
+    ],
 )

@@ -43,6 +43,8 @@ android {
                     "../../../packages/storage/Java",
                     "../../../packages/hsm/Java",
                     "../../../packages/device-integrity/Java",
+                    "../../../packages/auth/Java",
+                    "../../../packages/ui/Java",
                 ),
             )
         }
@@ -61,6 +63,9 @@ dependencies {
     implementation(libs.swiftkit.core)
     implementation(libs.play.integrity)
     implementation(libs.play.services.tasks)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
     implementation(project(":bridge"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

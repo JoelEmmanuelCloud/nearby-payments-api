@@ -42,3 +42,22 @@ class PlayIntegrityProvider(
         const val provider = "play_integrity"
     }
 }
+
+/**
+ * A stub integrity provider for development and testing on emulators or sandbox environments.
+ * It mimics the interface of [PlayIntegrityProvider] but does not interact with Google Play Services.
+ */
+class StubIntegrityProvider {
+    /** No-op preparation. */
+    fun prepare() {
+        // No-op
+    }
+
+    /**
+     * Returns a mock integrity token without contacting Google Play Services.
+     *
+     * @param requestHash Unused request hash parameter.
+     * @return A static mock token string.
+     */
+    fun attest(requestHash: String): String = "mock_integrity_token"
+}
