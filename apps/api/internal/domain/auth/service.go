@@ -77,13 +77,20 @@ func (s *Service) OAuthBegin(ctx context.Context, req OAuthBeginRequest) (*OAuth
 	}
 
 	stateData := map[string]string{
-		"code_challenge":        req.CodeChallenge,
-		"code_challenge_method": req.CodeChallengeMethod,
-		"zklogin_nonce":         req.ZkLoginNonce,
+		"flow_type":     req.FlowType,
+		"zklogin_nonce": req.ZkLoginNonce,
+	}
+	if req.FlowType == "web" {
+		stateData["code_challenge"] = req.CodeChallenge
+		stateData["code_challenge_method"] = req.CodeChallengeMethod
 	}
 	stateJSON, _ := json.Marshal(stateData)
 	if err := s.rdb.Set(ctx, "oauth:state:"+state, stateJSON, oauthStateTTL).Err(); err != nil {
 		return nil, apperr.ErrInternal
+	}
+
+	if req.FlowType == "native" {
+		return &OAuthBeginResponse{State: state}, nil
 	}
 
 	params := url.Values{
@@ -213,21 +220,6 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 		}
 	}
 
-	if req.SuiAddress != "" {
-		wb := &WalletBinding{
-			UserID:     userID,
-			SuiAddress: req.SuiAddress,
-			AuthScheme: "zklogin",
-			Issuer:     iss,
-			Audience:   aud,
-			CreatedAt:  now,
-			UpdatedAt:  now,
-		}
-		if err := s.store.UpsertWalletBinding(ctx, wb); err != nil {
-			return nil, fmt.Errorf("upsert wallet binding: %w", err)
-		}
-	}
-
 	deviceID := utils.NewID()
 	device := &Device{
 		ID:          deviceID,
@@ -291,10 +283,34 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 		ExpiresAt:        expiresAt,
 		RefreshExpiresAt: refreshExpiresAt,
 		UserID:           userID,
-		SuiAddress:       req.SuiAddress,
 		JWT:              idToken,
 		Salt:             salt.Salt,
 	}, nil
+}
+
+func (s *Service) BindWallet(ctx context.Context, sessCtx *SessionContext, req BindWalletRequest) error {
+	oi, err := s.store.GetOAuthIdentityByUserID(ctx, sessCtx.User.ID)
+	if err != nil {
+		return fmt.Errorf("get oauth identity: %w", err)
+	}
+	if oi == nil {
+		return ErrUnauthorized
+	}
+
+	now := utils.NowUnix()
+	wb := &WalletBinding{
+		UserID:     sessCtx.User.ID,
+		SuiAddress: req.SuiAddress,
+		AuthScheme: "zklogin",
+		Issuer:     oi.Issuer,
+		Audience:   oi.Audience,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+	if err := s.store.UpsertWalletBinding(ctx, wb); err != nil {
+		return fmt.Errorf("upsert wallet binding: %w", err)
+	}
+	return nil
 }
 
 func (s *Service) RefreshSession(ctx context.Context, refreshToken string) (*SessionRefreshResponse, error) {

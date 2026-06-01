@@ -96,6 +96,7 @@ func New(deps Deps) http.Handler {
 			r.Use(auth.Middleware(deps.AuthService, "low"))
 			r.Get("/profile", deps.AuthHandler.GetProfile)
 			r.Put("/avatar", deps.AuthHandler.UploadAvatar)
+			r.Put("/wallet", deps.AuthHandler.BindWallet)
 		})
 
 		r.Route("/nearby", func(r chi.Router) {

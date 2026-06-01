@@ -58,6 +58,19 @@ func (s *Store) GetOAuthIdentity(ctx context.Context, issuer, subject, audience 
 	return oi, err
 }
 
+func (s *Store) GetOAuthIdentityByUserID(ctx context.Context, userID string) (*OAuthIdentity, error) {
+	oi := &OAuthIdentity{}
+	err := s.db.QueryRow(ctx,
+		`SELECT id, user_id, issuer, subject, audience, email, email_verified, created_at
+		 FROM oauth_identities WHERE user_id = $1 LIMIT 1`,
+		userID,
+	).Scan(&oi.ID, &oi.UserID, &oi.Issuer, &oi.Subject, &oi.Audience, &oi.Email, &oi.EmailVerified, &oi.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return oi, err
+}
+
 func (s *Store) CreateOAuthIdentity(ctx context.Context, oi *OAuthIdentity) error {
 	_, err := s.db.Exec(ctx,
 		`INSERT INTO oauth_identities (id, user_id, issuer, subject, audience, email, email_verified, created_at)

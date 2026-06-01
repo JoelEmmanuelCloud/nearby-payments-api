@@ -17,6 +17,8 @@
     { "key": "accessToken",  "value": "" },
     { "key": "refreshToken", "value": "" },
     { "key": "userId",       "value": "" },
+    { "key": "jwt",          "value": "" },
+    { "key": "salt",         "value": "" },
     { "key": "intentId",     "value": "" },
     { "key": "paymentId",    "value": "" },
     { "key": "sessionId",    "value": "" },
@@ -57,7 +59,7 @@
           }
         },
         {
-          "name": "OAuth Begin",
+          "name": "OAuth Begin (Web)",
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
@@ -70,12 +72,32 @@
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"provider\": \"google\",\n  \"codeChallenge\": \"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM\",\n  \"codeChallengeMethod\": \"S256\",\n  \"zkLoginNonce\": \"test-nonce-{{$timestamp}}\"\n}"
-            }
+              "raw": "{\n  \"provider\": \"google\",\n  \"flowType\": \"web\",\n  \"codeChallenge\": \"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM\",\n  \"codeChallengeMethod\": \"S256\",\n  \"zkLoginNonce\": \"test-nonce-{{$timestamp}}\"\n}"
+            },
+            "description": "Start web OAuth flow. Returns state and authURL. Redirect the user to authURL; Google returns code + state to the redirect URI."
           }
         },
         {
-          "name": "OAuth Complete",
+          "name": "OAuth Begin (Native)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/oauth/begin",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "oauth", "begin"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"provider\": \"google\",\n  \"flowType\": \"native\",\n  \"zkLoginNonce\": \"test-nonce-{{$timestamp}}\"\n}"
+            },
+            "description": "Start native OAuth flow (iOS/Android SDK). Returns only state — no authURL. The SDK handles sign-in and produces an idToken directly."
+          }
+        },
+        {
+          "name": "OAuth Complete (Web)",
           "event": [
             {
               "listen": "test",
@@ -86,7 +108,9 @@
                   "  pm.collectionVariables.set('accessToken', d.accessToken || '');",
                   "  pm.collectionVariables.set('refreshToken', d.refreshToken || '');",
                   "  pm.collectionVariables.set('userId', d.userId || '');",
-                  "  console.log('accessToken saved. userId:', d.userId);",
+                  "  pm.collectionVariables.set('jwt', d.jwt || '');",
+                  "  pm.collectionVariables.set('salt', d.salt || '');",
+                  "  console.log('accessToken saved. userId:', d.userId, 'salt:', d.salt);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -105,8 +129,47 @@
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"code\": \"PASTE_GOOGLE_CODE_HERE\",\n  \"state\": \"PASTE_STATE_HERE\",\n  \"codeVerifier\": \"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk\",\n  \"platform\": \"ios\",\n  \"osVersion\": \"18.0\",\n  \"appBundleId\": \"com.nearby.test\",\n  \"suiAddress\": \"0x0000000000000000000000000000000000000000000000000000000000000001\",\n  \"deviceIntegrity\": { \"provider\": \"stub\" }\n}"
+              "raw": "{\n  \"flowType\": \"web\",\n  \"code\": \"PASTE_GOOGLE_CODE_HERE\",\n  \"state\": \"PASTE_STATE_HERE\",\n  \"codeVerifier\": \"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk\",\n  \"platform\": \"ios\",\n  \"osVersion\": \"18.0\",\n  \"appBundleId\": \"com.nearby.test\",\n  \"deviceIntegrity\": { \"provider\": \"stub\" }\n}"
+            },
+            "description": "Complete web OAuth flow. Returns accessToken, refreshToken, jwt, and salt. After this call, compute suiAddress = jwtToAddress(jwt, salt) using the Sui SDK, then call PUT /v1/me/wallet."
+          }
+        },
+        {
+          "name": "OAuth Complete (Native)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', d.accessToken || '');",
+                  "  pm.collectionVariables.set('refreshToken', d.refreshToken || '');",
+                  "  pm.collectionVariables.set('userId', d.userId || '');",
+                  "  pm.collectionVariables.set('jwt', d.jwt || '');",
+                  "  pm.collectionVariables.set('salt', d.salt || '');",
+                  "  console.log('accessToken saved. userId:', d.userId, 'salt:', d.salt);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
             }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/oauth/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "oauth", "complete"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"flowType\": \"native\",\n  \"idToken\": \"PASTE_ID_TOKEN_HERE\",\n  \"state\": \"PASTE_STATE_HERE\",\n  \"authorizationCode\": \"\",\n  \"platform\": \"ios\",\n  \"osVersion\": \"18.0\",\n  \"appBundleId\": \"com.nearby.app\",\n  \"deviceIntegrity\": {\n    \"provider\": \"apple_dcapp_attest\",\n    \"keyId\": \"PASTE_KEY_ID_HERE\",\n    \"assertion\": \"PASTE_ASSERTION_HERE\",\n    \"clientDataHash\": \"PASTE_CLIENT_DATA_HASH_HERE\"\n  }\n}"
+            },
+            "description": "Complete native OAuth flow. idToken comes directly from the Google/Apple SDK. state must match the value from OAuth Begin. authorizationCode is optional (iOS only)."
           }
         },
         {
@@ -219,6 +282,24 @@
     {
       "name": "Me",
       "item": [
+        {
+          "name": "Bind Wallet",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/me/wallet",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "me", "wallet"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"suiAddress\": \"0x0000000000000000000000000000000000000000000000000000000000000001\"\n}"
+            },
+            "description": "Bind a zkLogin-derived Sui address to the authenticated user. Call this after OAuth Complete once suiAddress = jwtToAddress(jwt, salt) has been computed using the Sui SDK. Re-calling with a new address updates the binding. Required before deposit endpoints will work."
+          }
+        },
         {
           "name": "Get Profile",
           "event": [
