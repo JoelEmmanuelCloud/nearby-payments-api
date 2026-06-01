@@ -95,15 +95,18 @@ func main() {
 
 	authStore := auth.NewStore(pool)
 	authSvc := auth.NewService(auth.ServiceDeps{
-		Store:              authStore,
-		Redis:              rdb,
-		Walrus:             walrusClient,
-		GoogleClientID:     cfg.GoogleClientID,
-		GoogleClientSecret: cfg.GoogleClientSecret,
-		GoogleRedirectURI:  cfg.GoogleRedirectURI,
-		CredentialSignKey:  credSignKey,
-		CredentialPubKey:   credPubKey,
-		ProverURL:          cfg.ZkLoginProverURL,
+		Store:                 authStore,
+		Redis:                 rdb,
+		Walrus:                walrusClient,
+		GoogleClientID:        cfg.GoogleClientID,
+		GoogleClientSecret:    cfg.GoogleClientSecret,
+		GoogleRedirectURI:     cfg.GoogleRedirectURI,
+		GoogleIOSClientID:     cfg.GoogleIOSClientID,
+		GoogleAndroidClientID: cfg.GoogleAndroidClientID,
+		AppleBundleID:         cfg.AppleBundleID,
+		CredentialSignKey:     credSignKey,
+		CredentialPubKey:      credPubKey,
+		ProverURL:             cfg.ZkLoginProverURL,
 	})
 	authHandler := auth.NewHandler(authSvc)
 

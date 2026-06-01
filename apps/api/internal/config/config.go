@@ -24,6 +24,9 @@ type Config struct {
 	GoogleClientID         string
 	GoogleClientSecret     string
 	GoogleRedirectURI      string
+	GoogleIOSClientID      string
+	GoogleAndroidClientID  string
+	AppleBundleID          string
 	WalrusPublisherURL     string
 	WalrusAggregatorURL    string
 	ZkLoginProverURL       string
@@ -64,6 +67,9 @@ func Load() (*Config, error) {
 		GoogleClientID:         get("GOOGLE_CLIENT_ID"),
 		GoogleClientSecret:     optional("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURI:      optional("GOOGLE_REDIRECT_URI", ""),
+		GoogleIOSClientID:      optional("GOOGLE_IOS_CLIENT_ID", ""),
+		GoogleAndroidClientID:  optional("GOOGLE_ANDROID_CLIENT_ID", ""),
+		AppleBundleID:          optional("APPLE_BUNDLE_ID", ""),
 		WalrusPublisherURL:     optional("WALRUS_PUBLISHER_URL", ""),
 		WalrusAggregatorURL:    optional("WALRUS_AGGREGATOR_URL", ""),
 		ZkLoginProverURL:       optional("ZKLOGIN_PROVER_URL", "https://prover.mystenlabs.com/v1"),
