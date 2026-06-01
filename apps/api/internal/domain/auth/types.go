@@ -150,6 +150,10 @@ type OAuthCompleteRequest struct {
 	AppBundleID         string               `json:"appBundleId"`
 }
 
+type BindWalletRequest struct {
+	SuiAddress string `json:"suiAddress"`
+}
+
 type OAuthCompleteResponse struct {
 	AccessToken      string `json:"accessToken"`
 	RefreshToken     string `json:"refreshToken"`

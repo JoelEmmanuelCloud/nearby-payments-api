@@ -288,6 +288,31 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 	}, nil
 }
 
+func (s *Service) BindWallet(ctx context.Context, sessCtx *SessionContext, req BindWalletRequest) error {
+	oi, err := s.store.GetOAuthIdentityByUserID(ctx, sessCtx.User.ID)
+	if err != nil {
+		return fmt.Errorf("get oauth identity: %w", err)
+	}
+	if oi == nil {
+		return ErrUnauthorized
+	}
+
+	now := utils.NowUnix()
+	wb := &WalletBinding{
+		UserID:     sessCtx.User.ID,
+		SuiAddress: req.SuiAddress,
+		AuthScheme: "zklogin",
+		Issuer:     oi.Issuer,
+		Audience:   oi.Audience,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+	if err := s.store.UpsertWalletBinding(ctx, wb); err != nil {
+		return fmt.Errorf("upsert wallet binding: %w", err)
+	}
+	return nil
+}
+
 func (s *Service) RefreshSession(ctx context.Context, refreshToken string) (*SessionRefreshResponse, error) {
 	hash := utils.SHA256HexString(refreshToken)
 	sess, err := s.store.GetSessionByRefreshTokenHash(ctx, hash)

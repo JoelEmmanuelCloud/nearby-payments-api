@@ -97,6 +97,31 @@ func (h *Handler) OAuthComplete(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+func (h *Handler) BindWallet(w http.ResponseWriter, r *http.Request) {
+	sessCtx := GetSession(r.Context())
+	if sessCtx == nil {
+		apperr.Write(w, ErrUnauthorized)
+		return
+	}
+
+	var req BindWalletRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apperr.Write(w, apperr.ErrBadRequest)
+		return
+	}
+	if req.SuiAddress == "" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "suiAddress is required")
+		return
+	}
+
+	if err := h.svc.BindWallet(r.Context(), sessCtx, req); err != nil {
+		apperr.Write(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *Handler) RefreshSession(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		RefreshToken string `json:"refreshToken"`
