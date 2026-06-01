@@ -1,13 +1,13 @@
 {
-  "originHash" : "23ea76ec92271f3e0f26a0278f5ab8017119318eb6af739e5a4237a91848499c",
+  "originHash" : "71629ab68255d7911d5a973c0c229b5d60cae576ec286e371c55b79256433df9",
   "pins" : [
     {
       "identity" : "swift-argument-parser",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "5e0406d68a4937f21ae5f670b8f89dad1d156a1c",
-        "version" : "1.8.0"
+        "revision" : "ca37474853a4b5f59a22c74bfdd449b1f6bc4cc2",
+        "version" : "1.8.1"
       }
     },
     {
@@ -22,10 +22,10 @@
     {
       "identity" : "swift-java",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-java",
+      "location" : "https://github.com/vaariance/swift-java.git",
       "state" : {
-        "revision" : "bb53878752dfcd0c3ee7bd630661ddb348d9b939",
-        "version" : "0.4.0"
+        "branch" : "peter/swift-java-callbackdeps",
+        "revision" : "c68bb27d2ea9c541a618ffc3a148384feac1ac7b"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log",
       "state" : {
-        "revision" : "7dc6101ae4dbe95cd3bc9cebad3b7cf8e49a7a63",
-        "version" : "1.13.0"
+        "revision" : "2aed77ae5ec9a86d8fe42c12275e4c2653a286ee",
+        "version" : "1.13.1"
       }
     },
     {

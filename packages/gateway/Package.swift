@@ -15,7 +15,8 @@ let package = Package(
     )
   ],
   dependencies: [
-    .package(url: "https://github.com/swiftlang/swift-java", exact: "0.4.0")
+    .package(
+      url: "https://github.com/vaariance/swift-java.git", branch: "peter/swift-java-callbackdeps")
   ],
   targets: [
     .target(
@@ -23,7 +24,7 @@ let package = Package(
       dependencies: [
         .product(name: "SwiftJava", package: "swift-java")
       ],
-      path: "Core/Sources/Gateway",
+      path: "GatewayCore/Sources/Gateway",
       exclude: [
         "swift-java.config"
       ],

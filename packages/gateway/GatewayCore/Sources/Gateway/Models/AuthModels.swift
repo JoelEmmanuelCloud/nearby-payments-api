@@ -69,7 +69,7 @@ public struct DeviceIntegrity: Codable, Sendable, Equatable {
 
 public enum AuthFlowPayload: Sendable, Equatable {
   case web(code: String, state: String, codeVerifier: String)
-  case native(idToken: String, authorizationCode: String?)
+  case native(idToken: String, state: String, authorizationCode: String?)
 }
 
 public struct OAuthCompleteRequest: Encodable, Sendable, Equatable {
@@ -77,7 +77,6 @@ public struct OAuthCompleteRequest: Encodable, Sendable, Equatable {
   public let osVersion: String
   public let appBundleId: String
   public let deviceIntegrity: DeviceIntegrity
-  public let suiAddress: String?
   public let payload: AuthFlowPayload
 
   public init(
@@ -85,22 +84,19 @@ public struct OAuthCompleteRequest: Encodable, Sendable, Equatable {
     osVersion: String,
     appBundleId: String,
     deviceIntegrity: DeviceIntegrity,
-    suiAddress: String? = nil,
     payload: AuthFlowPayload
   ) {
     self.platform = platform
     self.osVersion = osVersion
     self.appBundleId = appBundleId
     self.deviceIntegrity = deviceIntegrity
-    self.suiAddress = suiAddress
     self.payload = payload
   }
 
   enum CodingKeys: String, CodingKey {
-    case platform, osVersion, appBundleId, deviceIntegrity, suiAddress
+    case platform, osVersion, appBundleId, deviceIntegrity
     case flowType = "flow_type"
-    case code, state, codeVerifier
-    case idToken, authorizationCode
+    case code, state, codeVerifier, idToken, authorizationCode
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -109,7 +105,6 @@ public struct OAuthCompleteRequest: Encodable, Sendable, Equatable {
     try container.encode(osVersion, forKey: .osVersion)
     try container.encode(appBundleId, forKey: .appBundleId)
     try container.encode(deviceIntegrity, forKey: .deviceIntegrity)
-    try container.encodeIfPresent(suiAddress, forKey: .suiAddress)
 
     switch payload {
     case .web(let code, let state, let codeVerifier):
@@ -117,9 +112,10 @@ public struct OAuthCompleteRequest: Encodable, Sendable, Equatable {
       try container.encode(code, forKey: .code)
       try container.encode(state, forKey: .state)
       try container.encode(codeVerifier, forKey: .codeVerifier)
-    case .native(let idToken, let authorizationCode):
+    case .native(let idToken, let state, let authorizationCode):
       try container.encode("native", forKey: .flowType)
       try container.encode(idToken, forKey: .idToken)
+      try container.encode(state, forKey: .state)
       try container.encodeIfPresent(authorizationCode, forKey: .authorizationCode)
     }
   }
@@ -129,7 +125,6 @@ public struct OAuthCompleteResponse: Codable, Sendable, Equatable {
   public let accessToken: String
   public let refreshToken: String
   public let userId: String
-  public let suiAddress: String
   public let jwt: String
   public let salt: String
 
@@ -137,14 +132,12 @@ public struct OAuthCompleteResponse: Codable, Sendable, Equatable {
     accessToken: String,
     refreshToken: String,
     userId: String,
-    suiAddress: String,
     jwt: String,
     salt: String
   ) {
     self.accessToken = accessToken
     self.refreshToken = refreshToken
     self.userId = userId
-    self.suiAddress = suiAddress
     self.jwt = jwt
     self.salt = salt
   }

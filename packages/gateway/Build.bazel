@@ -4,10 +4,10 @@ swift_library(
     name = "Gateway",
     srcs = glob(
         [
-            "Core/Sources/Gateway/**/*.swift",
+            "GatewayCore/Sources/Gateway/**/*.swift",
         ],
         exclude = [
-            "Core/Sources/Gateway/swift-java.config",
+            "GatewayCore/Sources/Gateway/swift-java.config",
         ],
     ),
     module_name = "Gateway",
@@ -17,7 +17,7 @@ swift_library(
 swift_test(
     name = "GatewayTests",
     srcs = glob([
-        "Core/Tests/GatewayTests/**/*.swift",
+        "GatewayCore/Tests/GatewayTests/**/*.swift",
     ]),
     deps = [":Gateway"],
 )
