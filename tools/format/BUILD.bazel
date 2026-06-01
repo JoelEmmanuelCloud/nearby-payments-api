@@ -3,11 +3,13 @@ load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 sh_binary(
     name = "format",
     srcs = ["format.sh"],
+    data = ["package_ktlint.sh"],
     visibility = ["//visibility:public"],
 )
 
 sh_binary(
     name = "format_check",
     srcs = ["format_check.sh"],
+    data = ["package_ktlint.sh"],
     visibility = ["//visibility:public"],
 )
