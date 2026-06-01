@@ -1,5 +1,5 @@
 {
-  "originHash" : "90a7ef6c1987b1fdac91f238a3107006826153a42d641ed8e8718b36e3da6c49",
+  "originHash" : "e1dbbc9770c5a6418ca5d3900941d2ab151ea301ccaa793d8bddf96922881fb4",
   "pins" : [
     {
       "identity" : "swift-argument-parser",
@@ -22,10 +22,10 @@
     {
       "identity" : "swift-java",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-java",
+      "location" : "https://github.com/vaariance/swift-java.git",
       "state" : {
-        "revision" : "bb53878752dfcd0c3ee7bd630661ddb348d9b939",
-        "version" : "0.4.0"
+        "branch" : "peter/swift-java-callbackdeps",
+        "revision" : "c68bb27d2ea9c541a618ffc3a148384feac1ac7b"
       }
     },
     {

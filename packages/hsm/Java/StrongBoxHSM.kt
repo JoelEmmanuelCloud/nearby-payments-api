@@ -11,28 +11,31 @@ import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import java.util.Optional
 
-class StrongBoxHSM(private val context: Context): HardwareSecurityModule {
-
+class StrongBoxHSM(
+    private val context: Context,
+) : HardwareSecurityModule {
     private val keyAlias = "com.variance.nearby.hsm.key"
     private val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
 
     override fun generateKey(swiftArena: SwiftArena): DEREncodedItem {
         deleteKey()
 
-        val kpg = KeyPairGenerator.getInstance(
-            KeyProperties.KEY_ALGORITHM_EC,
-            "AndroidKeyStore"
-        )
-        
+        val kpg =
+            KeyPairGenerator.getInstance(
+                KeyProperties.KEY_ALGORITHM_EC,
+                "AndroidKeyStore",
+            )
+
         val hasStrongBox = context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
-        
-        val specBuilder = KeyGenParameterSpec.Builder(
-            keyAlias,
-            KeyProperties.PURPOSE_SIGN
-        )
-            .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
-            .setDigests(KeyProperties.DIGEST_SHA256)
-            
+
+        val specBuilder =
+            KeyGenParameterSpec
+                .Builder(
+                    keyAlias,
+                    KeyProperties.PURPOSE_SIGN,
+                ).setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
+                .setDigests(KeyProperties.DIGEST_SHA256)
+
         if (hasStrongBox) {
             specBuilder.setIsStrongBoxBacked(true)
         }
@@ -46,14 +49,19 @@ class StrongBoxHSM(private val context: Context): HardwareSecurityModule {
         return Optional.of(DEREncodedItem.init(entry.certificate.publicKey.encoded, swiftArena))
     }
 
-    override fun sign(data: ByteArray, swiftArena: SwiftArena): DEREncodedItem {
-        val entry = keyStore.getEntry(keyAlias, null) as? KeyStore.PrivateKeyEntry
-            ?: throw Exception("Key not found")
+    override fun sign(
+        data: ByteArray,
+        swiftArena: SwiftArena,
+    ): DEREncodedItem {
+        val entry =
+            keyStore.getEntry(keyAlias, null) as? KeyStore.PrivateKeyEntry
+                ?: throw Exception("Key not found")
 
-        val signature = Signature.getInstance("SHA256withECDSA").apply {
-            initSign(entry.privateKey)
-            update(data)
-        }
+        val signature =
+            Signature.getInstance("SHA256withECDSA").apply {
+                initSign(entry.privateKey)
+                update(data)
+            }
         return DEREncodedItem.init(signature.sign(), swiftArena)
     }
 

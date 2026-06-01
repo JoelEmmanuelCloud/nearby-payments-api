@@ -1,4 +1,4 @@
-// packages/hsm/Core/Tests/HSMTests/HSMTests.swift
+// packages/hsm/HSMCore/Tests/HSMTests/HSMTests.swift
 import Foundation
 import Testing
 
