@@ -37,6 +37,7 @@ val swiftPackages = listOf(
     mapOf("target" to "Gateway", "dir" to "packages/gateway", "sourcePath" to "GatewayCore/Sources/Gateway"),
     mapOf("target" to "Storage", "dir" to "packages/storage", "sourcePath" to "StorageCore/Sources/Storage"),
     mapOf("target" to "HSM", "dir" to "packages/hsm", "sourcePath" to "HSMCore/Sources/HSM"),
+    mapOf("target" to "Auth", "dir" to "packages/auth", "sourcePath" to "AuthCore/Sources/Auth"),
 )
 val swiftRuntimePackage = swiftPackages.first()
 val swiftRuntimeTarget = swiftRuntimePackage["target"] ?: error("Swift runtime package target is required")
