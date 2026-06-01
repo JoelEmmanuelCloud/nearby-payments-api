@@ -93,7 +93,7 @@ Body:
 ```
 Expected: `200` — redirect the user to `authURL`. Google returns `code` + `state` to the redirect URI.
 
-**Native flow** (iOS / Android SDK — already has `idToken`):
+**Google native** (iOS / Android SDK):
 ```
 POST /v1/auth/oauth/begin
 Body:
@@ -103,9 +103,21 @@ Body:
   "zkLoginNonce": "<ephemeral public key nonce>"
 }
 ```
-Expected: `200` — only `state` is returned. `authURL` is omitted; the native SDK handles sign-in.
+Expected: `200` — only `state` is returned. The Google Sign-In SDK handles auth and produces an `idToken`.
 
-> `flowType` defaults to `"web"` if omitted.
+**Apple native** (iOS only — Sign in with Apple):
+```
+POST /v1/auth/oauth/begin
+Body:
+{
+  "provider": "apple",
+  "flowType": "native",
+  "zkLoginNonce": "<ephemeral public key nonce>"
+}
+```
+Expected: `200` — only `state` is returned. `ASAuthorizationAppleIDProvider` handles auth and produces an `identityToken`.
+
+> `flowType` defaults to `"web"` if omitted. Supported providers: `google`, `apple`.
 
 ---
 
@@ -128,18 +140,38 @@ Body:
 }
 ```
 
-**Native flow:**
+**Google native:**
 ```
 POST /v1/auth/oauth/complete
 Body:
 {
   "flowType": "native",
-  "idToken": "<id_token from Google SDK>",
+  "idToken": "<id_token from Google Sign-In SDK>",
   "state": "<state from oauth/begin>",
-  "authorizationCode": "<optional, iOS only>",
   "platform": "ios",
   "osVersion": "18.0",
-  "appBundleId": "com.nearby.app",
+  "appBundleId": "com.variance.nearby",
+  "deviceIntegrity": {
+    "provider": "apple_dcapp_attest",
+    "keyId": "<key id>",
+    "assertion": "<assertion>",
+    "clientDataHash": "<client data hash>"
+  }
+}
+```
+
+**Apple native:**
+```
+POST /v1/auth/oauth/complete
+Body:
+{
+  "flowType": "native",
+  "idToken": "<identityToken from ASAuthorizationAppleIDCredential>",
+  "authorizationCode": "<authorizationCode from ASAuthorizationAppleIDCredential>",
+  "state": "<state from oauth/begin>",
+  "platform": "ios",
+  "osVersion": "18.0",
+  "appBundleId": "com.variance.nearby",
   "deviceIntegrity": {
     "provider": "apple_dcapp_attest",
     "keyId": "<key id>",
