@@ -14,7 +14,7 @@ let package = Package(
     )
   ],
   dependencies: [
-    .package(name: "gateway", path: "../gateway/Core")
+    .package(name: "gateway", path: "../gateway/GatewayCore")
   ],
   targets: [
     .target(
