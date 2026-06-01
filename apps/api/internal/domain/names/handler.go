@@ -30,8 +30,8 @@ func (h *Handler) RegisterLeaf(w http.ResponseWriter, r *http.Request) {
 		apperr.Write(w, apperr.ErrBadRequest)
 		return
 	}
-	if req.LeafName == "" || req.ParentName == "" {
-		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "leafName and parentName are required")
+	if req.LeafName == "" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "leafName is required")
 		return
 	}
 

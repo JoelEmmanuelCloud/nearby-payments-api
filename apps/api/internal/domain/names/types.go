@@ -14,8 +14,7 @@ type NameOperationTask struct {
 }
 
 type RegisterLeafRequest struct {
-	LeafName   string `json:"leafName"`
-	ParentName string `json:"parentName"`
+	LeafName string `json:"leafName"`
 }
 
 type RegisterLeafResponse struct {
