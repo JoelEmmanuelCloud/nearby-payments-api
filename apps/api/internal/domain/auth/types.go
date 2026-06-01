@@ -114,6 +114,7 @@ type SessionContext struct {
 
 type OAuthBeginRequest struct {
 	Provider            string `json:"provider"`
+	FlowType            string `json:"flowType"`
 	CodeChallenge       string `json:"codeChallenge"`
 	CodeChallengeMethod string `json:"codeChallengeMethod"`
 	ZkLoginNonce        string `json:"zkLoginNonce"`

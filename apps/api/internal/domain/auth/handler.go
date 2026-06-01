@@ -29,11 +29,22 @@ func (h *Handler) OAuthBegin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Provider == "" || req.CodeChallenge == "" || req.ZkLoginNonce == "" {
-		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "provider, codeChallenge, and zkLoginNonce are required")
+	if req.FlowType == "" {
+		req.FlowType = "web"
+	}
+	if req.Provider == "" || req.ZkLoginNonce == "" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "provider and zkLoginNonce are required")
 		return
 	}
-	if req.CodeChallengeMethod == "" {
+	if req.FlowType != "web" && req.FlowType != "native" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "flowType must be web or native")
+		return
+	}
+	if req.FlowType == "web" && req.CodeChallenge == "" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "codeChallenge is required for web flow")
+		return
+	}
+	if req.FlowType == "web" && req.CodeChallengeMethod == "" {
 		req.CodeChallengeMethod = "S256"
 	}
 

@@ -77,13 +77,20 @@ func (s *Service) OAuthBegin(ctx context.Context, req OAuthBeginRequest) (*OAuth
 	}
 
 	stateData := map[string]string{
-		"code_challenge":        req.CodeChallenge,
-		"code_challenge_method": req.CodeChallengeMethod,
-		"zklogin_nonce":         req.ZkLoginNonce,
+		"flow_type":     req.FlowType,
+		"zklogin_nonce": req.ZkLoginNonce,
+	}
+	if req.FlowType == "web" {
+		stateData["code_challenge"] = req.CodeChallenge
+		stateData["code_challenge_method"] = req.CodeChallengeMethod
 	}
 	stateJSON, _ := json.Marshal(stateData)
 	if err := s.rdb.Set(ctx, "oauth:state:"+state, stateJSON, oauthStateTTL).Err(); err != nil {
 		return nil, apperr.ErrInternal
+	}
+
+	if req.FlowType == "native" {
+		return &OAuthBeginResponse{State: state}, nil
 	}
 
 	params := url.Values{
