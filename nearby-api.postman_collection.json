@@ -258,7 +258,8 @@
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
               "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-            }
+            },
+            "description": "Exchange a refresh token for a new access + refresh token pair. Access token lasts 15 minutes. Refresh token lasts 30 days. Each refresh token is single-use — the old one is invalidated immediately on success."
           }
         },
         {
