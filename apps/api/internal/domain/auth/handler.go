@@ -70,6 +70,10 @@ func (h *Handler) OAuthComplete(w http.ResponseWriter, r *http.Request) {
 		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "state is required")
 		return
 	}
+	if req.FlowType != "native" && req.FlowType != "web" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "flowType must be web or native")
+		return
+	}
 	if req.FlowType == "native" {
 		if req.IDToken == "" {
 			apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "idToken is required for native flow")
@@ -83,6 +87,14 @@ func (h *Handler) OAuthComplete(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Platform != "ios" && req.Platform != "android" {
 		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "platform must be ios or android")
+		return
+	}
+	if req.AppBundleID == "" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "appBundleId is required")
+		return
+	}
+	if req.DeviceIntegrity.Provider == "" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "deviceIntegrity.provider is required")
 		return
 	}
 

@@ -172,9 +172,16 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 
 	sub, _ := claims["sub"].(string)
 	email, _ := claims["email"].(string)
-	emailVerified, _ := claims["email_verified"].(bool)
 	iss, _ := claims["iss"].(string)
 	aud, _ := claims["aud"].(string)
+
+	emailVerified := false
+	switch v := claims["email_verified"].(type) {
+	case bool:
+		emailVerified = v
+	case string:
+		emailVerified = v == "true"
+	}
 
 	if sub == "" || iss == "" || aud == "" {
 		return nil, ErrOAuthFailed

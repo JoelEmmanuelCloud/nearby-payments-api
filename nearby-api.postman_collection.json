@@ -186,7 +186,7 @@
             "body": {
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
-              "raw": "{\n  \"flowType\": \"native\",\n  \"idToken\": \"PASTE_GOOGLE_ID_TOKEN_HERE\",\n  \"state\": \"PASTE_STATE_HERE\",\n  \"platform\": \"ios\",\n  \"osVersion\": \"18.0\",\n  \"appBundleId\": \"com.variance.nearby\",\n  \"deviceIntegrity\": {\n    \"provider\": \"apple_dcapp_attest\",\n    \"keyId\": \"PASTE_KEY_ID_HERE\",\n    \"assertion\": \"PASTE_ASSERTION_HERE\",\n    \"clientDataHash\": \"PASTE_CLIENT_DATA_HASH_HERE\"\n  }\n}"
+              "raw": "{\n  \"flowType\": \"native\",\n  \"idToken\": \"PASTE_GOOGLE_ID_TOKEN_HERE\",\n  \"state\": \"PASTE_STATE_HERE\",\n  \"platform\": \"android\",\n  \"osVersion\": \"16\",\n  \"appBundleId\": \"com.variance.nearby\",\n  \"deviceIntegrity\": {\n    \"provider\": \"play_integrity\",\n    \"token\": \"PASTE_PLAY_INTEGRITY_TOKEN_HERE\"\n  }\n}"
             },
             "description": "Complete Google native flow. idToken comes from the Google Sign-In SDK (aud = iOS or Android client ID). state must match value from OAuth Begin (Google Native)."
           }
