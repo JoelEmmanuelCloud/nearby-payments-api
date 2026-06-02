@@ -199,7 +199,7 @@ Expected: `200`
 ---
 
 ### Refresh Session
-Auth level: **low**
+No auth required. The refresh token in the body is the credential — no `Authorization` header needed.
 
 The `refreshToken` variable is auto-populated after sign-in. Send as-is — the test script saves the new tokens automatically.
 
@@ -207,9 +207,17 @@ The `refreshToken` variable is auto-populated after sign-in. Send as-is — the 
 POST /v1/auth/refresh
 Body: { "refreshToken": "{{refreshToken}}" }
 ```
-Expected: `200` with new `accessToken` and `refreshToken`
+Expected: `200`
+```json
+{
+  "accessToken": "...",
+  "refreshToken": "...",
+  "expiresAt": 1234567890,
+  "refreshExpiresAt": 1234597890
+}
+```
 
-> Each refresh token is single-use. After a successful refresh the old token is invalid. Update `accessToken` in collection variables if you use it again.
+> Each refresh token is single-use — the old one is invalidated immediately on success. `refreshExpiresAt` is the Unix timestamp when the new refresh token itself expires (30 days from now).
 
 ### Revoke Session
 Auth level: **low**

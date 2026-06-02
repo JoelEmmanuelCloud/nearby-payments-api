@@ -240,6 +240,7 @@
                   "  const d = pm.response.json();",
                   "  pm.collectionVariables.set('accessToken', d.accessToken || '');",
                   "  pm.collectionVariables.set('refreshToken', d.refreshToken || '');",
+                  "  console.log('tokens refreshed. expiresAt:', d.expiresAt, 'refreshExpiresAt:', d.refreshExpiresAt);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -247,6 +248,7 @@
             }
           ],
           "request": {
+            "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": {
@@ -259,7 +261,7 @@
               "options": { "raw": { "language": "json" } },
               "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
             },
-            "description": "Exchange a refresh token for a new access + refresh token pair. Access token lasts 15 minutes. Refresh token lasts 30 days. Each refresh token is single-use — the old one is invalidated immediately on success."
+            "description": "No auth header required — the refresh token is the credential. Returns new accessToken (15 min), refreshToken (30 days), expiresAt, and refreshExpiresAt. Each refresh token is single-use — the old one is invalidated immediately."
           }
         },
         {
