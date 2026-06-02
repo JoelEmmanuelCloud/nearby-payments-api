@@ -456,9 +456,24 @@ Expected: `200` with full payment details including `txDigest` and `confirmedAt`
 
 ## Step 7 — Names Endpoints
 
-Both require **high** auth (headers auto-generated).
+### Check Name Availability
+Auth level: **low**
+
+Check whether a leaf name is already registered under `nearby` before attempting registration.
+
+```
+GET /v1/names/leaf/{leafName}/available
+```
+Expected: `200`
+```json
+{ "name": "alice.nearby", "available": true }
+```
+
+Returns `400` for an invalid name format, `503` if the Sui node is unreachable.
 
 ### Register Leaf Name
+Auth level: **high** (headers auto-generated)
+
 Registers an on-chain SuiNS name (e.g. `alice.nearby`). Registration is async — returns a task ID.
 
 ```
@@ -470,6 +485,8 @@ Expected: `202 Accepted` with `taskId` — test script saves it to `{{taskId}}`
 > Triggers a real on-chain transaction. Requires SuiNS configuration in `.env`.
 
 ### Get Name Task
+Auth level: **high** (headers auto-generated)
+
 Poll to check registration status.
 
 ```
@@ -590,7 +607,8 @@ go test ./internal/domain/deposit/... -run TestHandleBridgeWebhook -v
 19. Initiate Nearby Session
 20. Get Nearby Session
 21. Acknowledge Nearby Session
-22. Register Leaf Name              (requires SuiNS config)
-23. Get Name Task                   (poll until confirmed)
-24. Revoke Session
+22. Check Name Availability         (GET /v1/names/leaf/alice/available)
+23. Register Leaf Name              (requires SuiNS config; check available first)
+24. Get Name Task                   (poll until confirmed)
+25. Revoke Session
 ```

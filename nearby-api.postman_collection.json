@@ -566,6 +566,18 @@
       "name": "Names",
       "item": [
         {
+          "name": "Check Name Availability",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/names/leaf/alice/available",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "names", "leaf", "alice", "available"]
+            },
+            "description": "Check whether a leaf name is available under nearby. Returns { name: 'alice.nearby', available: true/false }. Low auth. Call before registering to avoid wasting a high-auth request on a taken name."
+          }
+        },
+        {
           "name": "Register Leaf Name",
           "event": [
             {
