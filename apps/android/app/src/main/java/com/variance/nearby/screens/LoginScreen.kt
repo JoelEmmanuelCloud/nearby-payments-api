@@ -19,7 +19,6 @@ import androidx.core.net.toUri
 import com.variance.nearby.AppViewModel
 import com.variance.nearby.ui.Card
 import com.variance.nearby.ui.MutedText
-import com.variance.nearby.ui.SecondaryButton
 import com.variance.nearby.ui.Title
 
 @Composable
@@ -84,8 +83,8 @@ fun LoginContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            SecondaryButton(
-                title = "Continue with Google",
+            GoogleSignInButton(
+                isDisabled = isSigningIn,
                 onClick = onSignInWithGoogle,
             )
 

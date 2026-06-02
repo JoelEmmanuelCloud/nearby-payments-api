@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace = "com.variance.nearby.bridge"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 30
@@ -23,10 +23,23 @@ dependencies {
 // ── Config from Bazel-forwarded environment ──────────────────────────────────
 fun env(name: String): String? = System.getenv(name)
 
-val swiftlyPath: String? = env("SWIFTLY_PATH")
-val swiftSdkRoot: String? = env("SWIFT_SDK_PATH")
-val swiftVersion: String? = env("SWIFT_VERSION")
-val androidSdkVersion: String? = env("SWIFT_ANDROID_SDK_VERSION")
+val envToPropertyMap = mapOf(
+    "SWIFTLY_PATH" to "swift.swiftly.path",
+    "SWIFT_SDK_PATH" to "swift.sdk.path",
+    "SWIFT_VERSION" to "swift.version",
+    "SWIFT_ANDROID_SDK_VERSION" to "swift.android.sdk.version",
+)
+
+envToPropertyMap.forEach { (envKey, propKey) ->
+    if (env(envKey) == null && project.findProperty(propKey) == null) {
+        throw GradleException("$envKey environment variable or $propKey gradle property is required")
+    }
+}
+
+val swiftlyPath = env("SWIFTLY_PATH") ?: project.findProperty("swift.swiftly.path").toString()
+val swiftSdkRoot = env("SWIFT_SDK_PATH") ?: project.findProperty("swift.sdk.path").toString()
+val swiftVersion = env("SWIFT_VERSION") ?: project.findProperty("swift.version").toString()
+val androidSdkVersion = env("SWIFT_ANDROID_SDK_VERSION") ?: project.findProperty("swift.android.sdk.version").toString()
 val sdkBundlePath = "$swiftSdkRoot/swift-$androidSdkVersion.artifactbundle"
 val minSdk = android.defaultConfig.minSdk ?: 30
 val repoRoot = project.projectDir.resolve("../../..")
@@ -166,8 +179,6 @@ swiftPackages.forEach { pkg ->
 
         abiList.forEach { (abi, info) ->
             val triple = info["triple"] ?: ""
-            val ndkDir = info["ndkDir"] ?: ""
-            val libDir = info["libDir"] ?: ""
 
             // 1. Built Swift binaries
             from(file("$packageDir/.build/$triple/debug")) {
@@ -184,17 +195,13 @@ swiftPackages.forEach { pkg ->
         javaOutput.set(javaOutDir)
     }
 
-    android.sourceSets.getByName("main") {
-        java.srcDir(javaOutDir.get().asFile)
-        jniLibs.srcDir(jniOutDir.get().asFile)
+    extensions.configure<com.android.build.api.dsl.LibraryExtension>("android") {
+        sourceSets.getByName("main").java.directories.add(javaOutDir.get().asFile.absolutePath)
+        sourceSets.getByName("main").jniLibs.directories.add(jniOutDir.get().asFile.absolutePath)
     }
 
     tasks.named("preBuild").configure {
         dependsOn(syncJava, copyLibs)
-        doFirst {
-            listOf("SWIFTLY_PATH", "SWIFT_SDK_PATH", "SWIFT_VERSION", "SWIFT_ANDROID_SDK_VERSION")
-                .forEach { System.getenv(it) ?: throw GradleException("$it is required") }
-        }
     }
 }
 
@@ -238,8 +245,8 @@ val copySwiftRuntimeLibs = tasks.register<Sync>("copySwiftRuntimeLibs") {
     into(swiftRuntimeJniOutDir)
 }
 
-android.sourceSets.getByName("main") {
-    jniLibs.srcDir(swiftRuntimeJniOutDir.get().asFile)
+extensions.configure<com.android.build.api.dsl.LibraryExtension>("android") {
+    sourceSets.getByName("main").jniLibs.directories.add(swiftRuntimeJniOutDir.get().asFile.absolutePath)
 }
 
 tasks.named("preBuild").configure {

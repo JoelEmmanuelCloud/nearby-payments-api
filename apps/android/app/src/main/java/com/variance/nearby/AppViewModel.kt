@@ -81,7 +81,6 @@ class AppViewModel(
     )
 
     init {
-
         userName = sessionStore.userName()
 
         route = if (!sessionStore.didCompleteOnboarding()) {
