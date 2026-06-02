@@ -1,15 +1,24 @@
 package auth
 
 import (
+	"bytes"
 	"context"
+	"crypto"
 	"crypto/ed25519"
+	"crypto/rsa"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
+
+	_ "crypto/sha256"
 
 	"github.com/redis/go-redis/v9"
 
@@ -26,42 +35,63 @@ const (
 )
 
 type ServiceDeps struct {
-	Store              *Store
-	Redis              *redis.Client
-	Walrus             *walrus.Client
-	GoogleClientID     string
-	GoogleClientSecret string
-	GoogleRedirectURI  string
-	CredentialSignKey  ed25519.PrivateKey
-	CredentialPubKey   ed25519.PublicKey
+	Store                 *Store
+	Redis                 *redis.Client
+	Walrus                *walrus.Client
+	GoogleClientID        string
+	GoogleClientSecret    string
+	GoogleRedirectURI     string
+	GoogleIOSClientID     string
+	GoogleAndroidClientID string
+	AppleBundleID         string
+	CredentialSignKey     ed25519.PrivateKey
+	CredentialPubKey      ed25519.PublicKey
+	ProverURL             string
 }
 
 type Service struct {
-	store              *Store
-	rdb                *redis.Client
-	walrus             *walrus.Client
-	googleClientID     string
-	googleClientSecret string
-	googleRedirectURI  string
-	credSignKey        ed25519.PrivateKey
-	credPubKey         ed25519.PublicKey
+	store                 *Store
+	rdb                   *redis.Client
+	walrus                *walrus.Client
+	googleClientID        string
+	googleClientSecret    string
+	googleRedirectURI     string
+	googleIOSClientID     string
+	googleAndroidClientID string
+	appleBundleID         string
+	credSignKey           ed25519.PrivateKey
+	credPubKey            ed25519.PublicKey
+	proverURL             string
+	proverClient          *http.Client
+	appleJWKSCache        appleJWKSCache
 }
 
 func NewService(deps ServiceDeps) *Service {
 	return &Service{
-		store:              deps.Store,
-		rdb:                deps.Redis,
-		walrus:             deps.Walrus,
-		googleClientID:     deps.GoogleClientID,
-		googleClientSecret: deps.GoogleClientSecret,
-		googleRedirectURI:  deps.GoogleRedirectURI,
-		credSignKey:        deps.CredentialSignKey,
-		credPubKey:         deps.CredentialPubKey,
+		store:                 deps.Store,
+		rdb:                   deps.Redis,
+		walrus:                deps.Walrus,
+		googleClientID:        deps.GoogleClientID,
+		googleClientSecret:    deps.GoogleClientSecret,
+		googleRedirectURI:     deps.GoogleRedirectURI,
+		googleIOSClientID:     deps.GoogleIOSClientID,
+		googleAndroidClientID: deps.GoogleAndroidClientID,
+		appleBundleID:         deps.AppleBundleID,
+		credSignKey:           deps.CredentialSignKey,
+		credPubKey:            deps.CredentialPubKey,
+		proverURL:             deps.ProverURL,
+		proverClient:          &http.Client{Timeout: 60 * time.Second},
 	}
 }
 
 func (s *Service) OAuthBegin(ctx context.Context, req OAuthBeginRequest) (*OAuthBeginResponse, error) {
-	if req.Provider != "google" {
+	switch req.Provider {
+	case "google":
+	case "apple":
+		if s.appleBundleID == "" {
+			return nil, ErrOAuthProviderUnsupported
+		}
+	default:
 		return nil, ErrOAuthProviderUnsupported
 	}
 
@@ -71,13 +101,21 @@ func (s *Service) OAuthBegin(ctx context.Context, req OAuthBeginRequest) (*OAuth
 	}
 
 	stateData := map[string]string{
-		"code_challenge":        req.CodeChallenge,
-		"code_challenge_method": req.CodeChallengeMethod,
-		"zklogin_nonce":         req.ZkLoginNonce,
+		"provider":      req.Provider,
+		"flow_type":     req.FlowType,
+		"zklogin_nonce": req.ZkLoginNonce,
+	}
+	if req.FlowType == "web" {
+		stateData["code_challenge"] = req.CodeChallenge
+		stateData["code_challenge_method"] = req.CodeChallengeMethod
 	}
 	stateJSON, _ := json.Marshal(stateData)
 	if err := s.rdb.Set(ctx, "oauth:state:"+state, stateJSON, oauthStateTTL).Err(); err != nil {
 		return nil, apperr.ErrInternal
+	}
+
+	if req.FlowType == "native" {
+		return &OAuthBeginResponse{State: state}, nil
 	}
 
 	params := url.Values{
@@ -107,18 +145,27 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 		return nil, ErrOAuthStateMismatch
 	}
 
-	var idToken string
-	if req.FlowType == "native" {
-		idToken = req.IDToken
-	} else {
-		var exchErr error
-		idToken, exchErr = s.exchangeGoogleCode(ctx, req.Code, req.CodeVerifier)
-		if exchErr != nil {
-			return nil, ErrOAuthFailed
-		}
+	provider := stateData["provider"]
+	if provider == "" {
+		provider = "google"
 	}
 
-	claims, err := s.verifyGoogleIDToken(ctx, idToken)
+	var idToken string
+	var claims map[string]interface{}
+	if req.FlowType == "native" {
+		idToken = req.IDToken
+		if provider == "apple" {
+			claims, err = s.verifyAppleIDToken(ctx, idToken)
+		} else {
+			claims, err = s.verifyGoogleIDToken(ctx, idToken)
+		}
+	} else {
+		idToken, err = s.exchangeGoogleCode(ctx, req.Code, req.CodeVerifier)
+		if err != nil {
+			return nil, ErrOAuthFailed
+		}
+		claims, err = s.verifyGoogleIDToken(ctx, idToken)
+	}
 	if err != nil {
 		return nil, ErrOAuthFailed
 	}
@@ -207,21 +254,6 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 		}
 	}
 
-	if req.SuiAddress != "" {
-		wb := &WalletBinding{
-			UserID:     userID,
-			SuiAddress: req.SuiAddress,
-			AuthScheme: "zklogin",
-			Issuer:     iss,
-			Audience:   aud,
-			CreatedAt:  now,
-			UpdatedAt:  now,
-		}
-		if err := s.store.UpsertWalletBinding(ctx, wb); err != nil {
-			return nil, fmt.Errorf("upsert wallet binding: %w", err)
-		}
-	}
-
 	deviceID := utils.NewID()
 	device := &Device{
 		ID:          deviceID,
@@ -285,10 +317,34 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 		ExpiresAt:        expiresAt,
 		RefreshExpiresAt: refreshExpiresAt,
 		UserID:           userID,
-		SuiAddress:       req.SuiAddress,
 		JWT:              idToken,
 		Salt:             salt.Salt,
 	}, nil
+}
+
+func (s *Service) BindWallet(ctx context.Context, sessCtx *SessionContext, req BindWalletRequest) error {
+	oi, err := s.store.GetOAuthIdentityByUserID(ctx, sessCtx.User.ID)
+	if err != nil {
+		return fmt.Errorf("get oauth identity: %w", err)
+	}
+	if oi == nil {
+		return ErrUnauthorized
+	}
+
+	now := utils.NowUnix()
+	wb := &WalletBinding{
+		UserID:     sessCtx.User.ID,
+		SuiAddress: req.SuiAddress,
+		AuthScheme: "zklogin",
+		Issuer:     oi.Issuer,
+		Audience:   oi.Audience,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+	if err := s.store.UpsertWalletBinding(ctx, wb); err != nil {
+		return fmt.Errorf("upsert wallet binding: %w", err)
+	}
+	return nil
 }
 
 func (s *Service) RefreshSession(ctx context.Context, refreshToken string) (*SessionRefreshResponse, error) {
@@ -503,6 +559,40 @@ func (s *Service) exchangeGoogleCode(ctx context.Context, code, codeVerifier str
 	return idToken, nil
 }
 
+func (s *Service) ProveZkLogin(ctx context.Context, req ZkLoginProveRequest) ([]byte, error) {
+	if req.KeyClaimName == "" {
+		req.KeyClaimName = "sub"
+	}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, apperr.ErrInternal
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, s.proverURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, apperr.ErrInternal
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.proverClient.Do(httpReq)
+	if err != nil {
+		return nil, ErrProverUnavailable
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, apperr.ErrInternal
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, ErrProverUnavailable
+	}
+
+	return respBody, nil
+}
+
 func (s *Service) verifyGoogleIDToken(ctx context.Context, idToken string) (map[string]interface{}, error) {
 	resp, err := http.Get("https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken)
 	if err != nil {
@@ -525,11 +615,158 @@ func (s *Service) verifyGoogleIDToken(ctx context.Context, idToken string) (map[
 	}
 
 	aud, _ := claims["aud"].(string)
-	if !strings.HasPrefix(aud, s.googleClientID) && aud != s.googleClientID {
-		return nil, fmt.Errorf("audience mismatch")
+	allowed := map[string]bool{s.googleClientID: true}
+	if s.googleIOSClientID != "" {
+		allowed[s.googleIOSClientID] = true
+	}
+	if s.googleAndroidClientID != "" {
+		allowed[s.googleAndroidClientID] = true
+	}
+	if !allowed[aud] {
+		return nil, fmt.Errorf("audience mismatch: %s", aud)
 	}
 
 	return claims, nil
+}
+
+type appleJWK struct {
+	Kty string `json:"kty"`
+	Kid string `json:"kid"`
+	Alg string `json:"alg"`
+	N   string `json:"n"`
+	E   string `json:"e"`
+}
+
+type appleJWKSCache struct {
+	mu        sync.RWMutex
+	keys      []appleJWK
+	fetchedAt time.Time
+}
+
+func (s *Service) verifyAppleIDToken(ctx context.Context, idToken string) (map[string]interface{}, error) {
+	parts := strings.Split(idToken, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid token format")
+	}
+
+	headerJSON, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("decode header: %w", err)
+	}
+	var header struct {
+		Kid string `json:"kid"`
+	}
+	if err := json.Unmarshal(headerJSON, &header); err != nil {
+		return nil, fmt.Errorf("parse header: %w", err)
+	}
+
+	key, err := s.fetchAppleJWKSKey(ctx, header.Kid)
+	if err != nil {
+		return nil, fmt.Errorf("get jwks key: %w", err)
+	}
+
+	nBytes, err := base64.RawURLEncoding.DecodeString(key.N)
+	if err != nil {
+		return nil, fmt.Errorf("decode modulus: %w", err)
+	}
+	eBytes, err := base64.RawURLEncoding.DecodeString(key.E)
+	if err != nil {
+		return nil, fmt.Errorf("decode exponent: %w", err)
+	}
+	pubKey := &rsa.PublicKey{
+		N: new(big.Int).SetBytes(nBytes),
+		E: int(new(big.Int).SetBytes(eBytes).Int64()),
+	}
+
+	signingInput := []byte(parts[0] + "." + parts[1])
+	digest := sha256.Sum256(signingInput)
+	sig, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return nil, fmt.Errorf("decode signature: %w", err)
+	}
+	if err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, digest[:], sig); err != nil {
+		return nil, fmt.Errorf("invalid signature: %w", err)
+	}
+
+	payloadJSON, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("decode payload: %w", err)
+	}
+	var claims map[string]interface{}
+	if err := json.Unmarshal(payloadJSON, &claims); err != nil {
+		return nil, fmt.Errorf("parse payload: %w", err)
+	}
+
+	iss, _ := claims["iss"].(string)
+	if iss != "https://appleid.apple.com" {
+		return nil, fmt.Errorf("invalid issuer: %s", iss)
+	}
+	var aud string
+	switch v := claims["aud"].(type) {
+	case string:
+		aud = v
+	case []interface{}:
+		if len(v) > 0 {
+			aud, _ = v[0].(string)
+		}
+	}
+	if aud != s.appleBundleID {
+		return nil, fmt.Errorf("invalid audience: %s", aud)
+	}
+	exp, _ := claims["exp"].(float64)
+	if int64(exp) < utils.NowUnix() {
+		return nil, fmt.Errorf("token expired")
+	}
+
+	if ev, ok := claims["email_verified"].(string); ok {
+		claims["email_verified"] = ev == "true"
+	}
+
+	return claims, nil
+}
+
+func (s *Service) fetchAppleJWKSKey(ctx context.Context, kid string) (*appleJWK, error) {
+	s.appleJWKSCache.mu.RLock()
+	if s.appleJWKSCache.keys != nil && time.Since(s.appleJWKSCache.fetchedAt) < 24*time.Hour {
+		for _, k := range s.appleJWKSCache.keys {
+			if k.Kid == kid {
+				k := k
+				s.appleJWKSCache.mu.RUnlock()
+				return &k, nil
+			}
+		}
+	}
+	s.appleJWKSCache.mu.RUnlock()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://appleid.apple.com/auth/keys", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := s.proverClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetch apple jwks: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var jwks struct {
+		Keys []appleJWK `json:"keys"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
+		return nil, fmt.Errorf("decode apple jwks: %w", err)
+	}
+
+	s.appleJWKSCache.mu.Lock()
+	s.appleJWKSCache.keys = jwks.Keys
+	s.appleJWKSCache.fetchedAt = time.Now()
+	s.appleJWKSCache.mu.Unlock()
+
+	for _, k := range jwks.Keys {
+		if k.Kid == kid {
+			k := k
+			return &k, nil
+		}
+	}
+	return nil, fmt.Errorf("key %s not found in apple jwks", kid)
 }
 
 func (s *Service) VerifyAccessToken(ctx context.Context, rawToken string) (*SessionContext, error) {

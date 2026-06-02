@@ -94,7 +94,7 @@ func testSessionContext(userID string) *auth.SessionContext {
 
 func TestRegisterLeaf_NoSession(t *testing.T) {
 	handler := newTestHandler()
-	body, _ := json.Marshal(map[string]string{"leafName": "alice", "parentName": "nearby"})
+	body, _ := json.Marshal(map[string]string{"leafName": "alice"})
 	req := httptest.NewRequest(http.MethodPost, "/v1/names/leaf", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
@@ -109,23 +109,7 @@ func TestRegisterLeaf_MissingLeafName(t *testing.T) {
 	userID := insertTestUser(t)
 	handler := newTestHandler()
 
-	body, _ := json.Marshal(map[string]string{"parentName": "nearby"})
-	req := httptest.NewRequest(http.MethodPost, "/v1/names/leaf", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	req = req.WithContext(auth.WithSession(req.Context(), testSessionContext(userID)))
-	rr := httptest.NewRecorder()
-	handler.RegisterLeaf(rr, req)
-
-	if rr.Code != http.StatusBadRequest {
-		t.Fatalf("expected 400, got %d", rr.Code)
-	}
-}
-
-func TestRegisterLeaf_MissingParentName(t *testing.T) {
-	userID := insertTestUser(t)
-	handler := newTestHandler()
-
-	body, _ := json.Marshal(map[string]string{"leafName": "alice"})
+	body, _ := json.Marshal(map[string]string{})
 	req := httptest.NewRequest(http.MethodPost, "/v1/names/leaf", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req = req.WithContext(auth.WithSession(req.Context(), testSessionContext(userID)))
@@ -151,30 +135,17 @@ func TestGetTask_NoSession(t *testing.T) {
 func TestService_RegisterLeaf_InvalidLeafName(t *testing.T) {
 	userID := insertTestUser(t)
 	_, err := testSvc.RegisterLeaf(context.Background(), userID, names.RegisterLeafRequest{
-		LeafName:   "Invalid Name!!!",
-		ParentName: "nearby",
+		LeafName: "Invalid Name!!!",
 	})
 	if !errors.Is(err, names.ErrNameInvalid) {
 		t.Fatalf("expected ErrNameInvalid, got %v", err)
 	}
 }
 
-func TestService_RegisterLeaf_EmptyParentName(t *testing.T) {
-	userID := insertTestUser(t)
-	_, err := testSvc.RegisterLeaf(context.Background(), userID, names.RegisterLeafRequest{
-		LeafName:   "alice",
-		ParentName: "",
-	})
-	if !errors.Is(err, names.ErrParentInvalid) {
-		t.Fatalf("expected ErrParentInvalid, got %v", err)
-	}
-}
-
 func TestService_RegisterLeaf_NoWalletBound(t *testing.T) {
 	userID := insertTestUser(t)
 	_, err := testSvc.RegisterLeaf(context.Background(), userID, names.RegisterLeafRequest{
-		LeafName:   "alice",
-		ParentName: "nearby",
+		LeafName: "alice",
 	})
 	if !errors.Is(err, names.ErrNoWalletBound) {
 		t.Fatalf("expected ErrNoWalletBound, got %v", err)
@@ -185,8 +156,7 @@ func TestService_RegisterLeaf_LeafNameTooShort(t *testing.T) {
 	userID := insertTestUser(t)
 	insertWalletBinding(t, userID, "0x"+utils.SHA256HexString(userID)[:62])
 	_, err := testSvc.RegisterLeaf(context.Background(), userID, names.RegisterLeafRequest{
-		LeafName:   "-bad",
-		ParentName: "nearby",
+		LeafName: "-bad",
 	})
 	if !errors.Is(err, names.ErrNameInvalid) {
 		t.Fatalf("expected ErrNameInvalid for leading hyphen, got %v", err)

@@ -46,8 +46,9 @@ All requests using `Authorization: Bearer {{accessToken}}` will now authenticate
 **What sign-in creates:**
 - A `users` row
 - A `sessions` row (access + refresh tokens)
-- A `wallet_bindings` row (required for deposit endpoints)
 - A `devices` and `device_integrity_records` row
+
+> Wallet binding is no longer part of sign-in. After completing OAuth, call `PUT /v1/me/wallet` with the derived `suiAddress` to bind the wallet (see Step 4). Deposit endpoints require a wallet binding.
 
 **Token TTLs:**
 - Access token: 15 minutes
@@ -74,6 +75,128 @@ Expected: `200` with the server's ed25519 public key. Mobile clients use this to
 ---
 
 ## Step 3 — Auth Endpoints
+
+### OAuth Begin
+No auth required. Returns a `state` token (and an `authURL` for web flow) that must be passed to OAuth Complete.
+
+**Web flow** (browser PKCE):
+```
+POST /v1/auth/oauth/begin
+Body:
+{
+  "provider": "google",
+  "flowType": "web",
+  "codeChallenge": "<SHA256(codeVerifier), base64url-encoded>",
+  "codeChallengeMethod": "S256",
+  "zkLoginNonce": "<ephemeral public key nonce>"
+}
+```
+Expected: `200` — redirect the user to `authURL`. Google returns `code` + `state` to the redirect URI.
+
+**Google native** (iOS / Android SDK):
+```
+POST /v1/auth/oauth/begin
+Body:
+{
+  "provider": "google",
+  "flowType": "native",
+  "zkLoginNonce": "<ephemeral public key nonce>"
+}
+```
+Expected: `200` — only `state` is returned. The Google Sign-In SDK handles auth and produces an `idToken`.
+
+**Apple native** (iOS only — Sign in with Apple):
+```
+POST /v1/auth/oauth/begin
+Body:
+{
+  "provider": "apple",
+  "flowType": "native",
+  "zkLoginNonce": "<ephemeral public key nonce>"
+}
+```
+Expected: `200` — only `state` is returned. `ASAuthorizationAppleIDProvider` handles auth and produces an `identityToken`.
+
+> `flowType` defaults to `"web"` if omitted. Supported providers: `google`, `apple`.
+
+---
+
+### OAuth Complete
+No auth required. Exchanges credentials for an access token, refresh token, JWT, and zkLogin salt.
+
+**Web flow:**
+```
+POST /v1/auth/oauth/complete
+Body:
+{
+  "flowType": "web",
+  "code": "<authorization code from Google redirect>",
+  "state": "<state from oauth/begin>",
+  "codeVerifier": "<original PKCE secret>",
+  "platform": "ios",
+  "osVersion": "18.0",
+  "appBundleId": "com.nearby.app",
+  "deviceIntegrity": { "provider": "stub" }
+}
+```
+
+**Google native:**
+```
+POST /v1/auth/oauth/complete
+Body:
+{
+  "flowType": "native",
+  "idToken": "<id_token from Google Sign-In SDK>",
+  "state": "<state from oauth/begin>",
+  "platform": "ios",
+  "osVersion": "18.0",
+  "appBundleId": "com.variance.nearby",
+  "deviceIntegrity": {
+    "provider": "apple_dcapp_attest",
+    "keyId": "<key id>",
+    "assertion": "<assertion>",
+    "clientDataHash": "<client data hash>"
+  }
+}
+```
+
+**Apple native:**
+```
+POST /v1/auth/oauth/complete
+Body:
+{
+  "flowType": "native",
+  "idToken": "<identityToken from ASAuthorizationAppleIDCredential>",
+  "authorizationCode": "<authorizationCode from ASAuthorizationAppleIDCredential>",
+  "state": "<state from oauth/begin>",
+  "platform": "ios",
+  "osVersion": "18.0",
+  "appBundleId": "com.variance.nearby",
+  "deviceIntegrity": {
+    "provider": "apple_dcapp_attest",
+    "keyId": "<key id>",
+    "assertion": "<assertion>",
+    "clientDataHash": "<client data hash>"
+  }
+}
+```
+
+Expected: `200`
+```json
+{
+  "accessToken": "...",
+  "refreshToken": "...",
+  "expiresAt": 1234567890,
+  "refreshExpiresAt": 1234567890,
+  "userId": "...",
+  "jwt": "<google id token>",
+  "salt": "<zklogin salt hex>"
+}
+```
+
+> `state` is required for both flows (CSRF protection). After receiving `jwt` and `salt`, compute `suiAddress = jwtToAddress(jwt, salt)` using the Sui SDK, then call `PUT /v1/me/wallet` to bind it.
+
+---
 
 ### Refresh Session
 Auth level: **low**
@@ -128,9 +251,20 @@ Expected: `200` with a signed `DeviceIdentityCredential` object containing a `si
 
 ---
 
-## Step 4 — Me (Profile & Avatar)
+## Step 4 — Me (Profile, Avatar & Wallet)
 
-Auth level: **low** for both endpoints.
+Auth level: **low** for all endpoints.
+
+### Bind Wallet
+Binds a zkLogin-derived Sui address to the authenticated user. Must be called after OAuth Complete once the client has computed `suiAddress = jwtToAddress(jwt, salt)` using the Sui SDK.
+
+```
+PUT /v1/me/wallet
+Body: { "suiAddress": "0x<64 hex chars>" }
+```
+Expected: `204 No Content`
+
+Re-calling with a different address updates the binding (upsert). Required before deposit endpoints will work.
 
 ### Get Profile
 ```
@@ -178,9 +312,9 @@ After uploading, `GET /v1/me/profile` returns `avatarUrl` with the same URL.
 
 ## Step 5 — Deposit Endpoints
 
-All deposit endpoints require **low** auth and a wallet binding. The wallet binding is created automatically during sign-in when `suiAddress` is included (the browser test page handles this).
+All deposit endpoints require **low** auth and a wallet binding. Call `PUT /v1/me/wallet` after sign-in to create the binding before using these endpoints.
 
-If you get `422 Unprocessable Entity`, the wallet binding is missing — sign out and sign in again.
+If you get `422 Unprocessable Entity`, the wallet binding is missing — call `PUT /v1/me/wallet` with a valid Sui address.
 
 ### Get Deposit Options
 ```
@@ -329,7 +463,7 @@ Registers an on-chain SuiNS name (e.g. `alice.nearby`). Registration is async �
 
 ```
 POST /v1/names/leaf
-Body: { "leafName": "alice", "parentName": "nearby" }
+Body: { "leafName": "alice" }
 ```
 Expected: `202 Accepted` with `taskId` — test script saves it to `{{taskId}}`
 
@@ -437,24 +571,26 @@ go test ./internal/domain/deposit/... -run TestHandleBridgeWebhook -v
 ```
 1.  Health Check
 2.  Get Server Public Key
-3.  Sign in via browser → paste accessToken into Postman collection variables
-4.  Get Profile                     (no avatarUrl yet)
-5.  Upload Avatar                   (set Content-Type + binary body in Postman)
-6.  Get Profile                     (avatarUrl now present)
-7.  Get Deposit Options             (confirms wallet binding; expect kyc_required on first call)
-8.  Get Deposit History             (empty array expected)
-9.  Create Payment Intent           (copy Idempotency-Key header value into body field)
-10. Get Payment Intent              (status: pending)
-11. Cancel Payment Intent           (status → cancelled)
-12. Create another Payment Intent   (new Idempotency-Key auto-generated)
-13. Get Payment Intent              (status: pending)
-14. Refresh Session                 (new tokens saved automatically)
-15. Assert Device Integrity
-16. Issue Device Credential
-17. Initiate Nearby Session
-18. Get Nearby Session
-19. Acknowledge Nearby Session
-20. Register Leaf Name              (requires SuiNS config)
-21. Get Name Task                   (poll until confirmed)
-22. Revoke Session
+3.  OAuth Begin (Web or Native)     (get state; web also returns authURL)
+4.  Sign in via browser / SDK      (web: paste accessToken into Postman; native: use OAuth Complete directly)
+5.  Bind Wallet                     (PUT /v1/me/wallet with suiAddress derived from jwt + salt)
+6.  Get Profile                     (no avatarUrl yet)
+7.  Upload Avatar                   (set Content-Type + binary body in Postman)
+8.  Get Profile                     (avatarUrl now present)
+9.  Get Deposit Options             (confirms wallet binding; expect kyc_required on first call)
+10. Get Deposit History             (empty array expected)
+11. Create Payment Intent           (copy Idempotency-Key header value into body field)
+12. Get Payment Intent              (status: pending)
+13. Cancel Payment Intent           (status → cancelled)
+14. Create another Payment Intent   (new Idempotency-Key auto-generated)
+15. Get Payment Intent              (status: pending)
+16. Refresh Session                 (new tokens saved automatically)
+17. Assert Device Integrity
+18. Issue Device Credential
+19. Initiate Nearby Session
+20. Get Nearby Session
+21. Acknowledge Nearby Session
+22. Register Leaf Name              (requires SuiNS config)
+23. Get Name Task                   (poll until confirmed)
+24. Revoke Session
 ```

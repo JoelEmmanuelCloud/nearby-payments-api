@@ -11,6 +11,8 @@ import (
 	"github.com/vaariance/nearby/internal/utils"
 )
 
+const parentName = "nearby"
+
 var leafNameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]$|^[a-z0-9]$`)
 
 type ServiceDeps struct {
@@ -35,13 +37,9 @@ func NewService(deps ServiceDeps) *Service {
 
 func (s *Service) RegisterLeaf(ctx context.Context, userID string, req RegisterLeafRequest) (*RegisterLeafResponse, error) {
 	leafName := strings.ToLower(strings.TrimSpace(req.LeafName))
-	parentName := strings.TrimSpace(req.ParentName)
 
 	if !leafNameRe.MatchString(leafName) {
 		return nil, ErrNameInvalid
-	}
-	if parentName == "" {
-		return nil, ErrParentInvalid
 	}
 
 	wb, err := s.authStore.GetWalletBinding(ctx, userID)

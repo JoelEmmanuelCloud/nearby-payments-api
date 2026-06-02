@@ -48,6 +48,7 @@ func New(deps Deps) http.Handler {
 			r.Post("/oauth/begin", deps.AuthHandler.OAuthBegin)
 			r.Get("/oauth/complete", deps.AuthHandler.OAuthCallbackPage)
 			r.Post("/oauth/complete", deps.AuthHandler.OAuthComplete)
+			r.Post("/zklogin/prove", deps.AuthHandler.ProveZkLogin)
 
 			r.Group(func(r chi.Router) {
 				r.Use(auth.Middleware(deps.AuthService, "low"))
@@ -95,6 +96,7 @@ func New(deps Deps) http.Handler {
 			r.Use(auth.Middleware(deps.AuthService, "low"))
 			r.Get("/profile", deps.AuthHandler.GetProfile)
 			r.Put("/avatar", deps.AuthHandler.UploadAvatar)
+			r.Put("/wallet", deps.AuthHandler.BindWallet)
 		})
 
 		r.Route("/nearby", func(r chi.Router) {
