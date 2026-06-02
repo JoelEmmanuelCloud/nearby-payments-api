@@ -6,7 +6,9 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.variance.nearby.deviceintegrity.StubIntegrityProvider
 import com.variance.nearby.gateway.APIGateway
+import com.variance.nearby.gateway.AuthType
 import com.variance.nearby.gateway.DeviceIntegrity
 import com.variance.nearby.gateway.OAuthProvider
 import com.variance.nearby.hsm.HardwareSecurityModule
