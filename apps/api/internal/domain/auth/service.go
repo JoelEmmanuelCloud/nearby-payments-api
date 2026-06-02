@@ -189,7 +189,12 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 
 	if stateData["zklogin_nonce"] != "" {
 		nonceClaim, _ := claims["nonce"].(string)
-		if nonceClaim != stateData["zklogin_nonce"] {
+		rawNonce := stateData["zklogin_nonce"]
+		expected := rawNonce
+		if provider == "apple" {
+			expected = utils.SHA256HexString(rawNonce)
+		}
+		if nonceClaim != expected {
 			return nil, ErrOAuthFailed
 		}
 	}
