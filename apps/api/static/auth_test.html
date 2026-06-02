@@ -24,15 +24,16 @@
       margin-bottom: 20px;
     }
     .card-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 16px; }
-    label { display: block; font-size: 0.875rem; color: #9ca3af; margin-bottom: 6px; }
-    select {
+    label { display: block; font-size: 0.875rem; color: #9ca3af; margin-bottom: 6px; margin-top: 12px; }
+    label:first-of-type { margin-top: 0; }
+    select, input[type="text"] {
       background: #1f2937;
       color: #e2e8f0;
       border: 1px solid #374151;
       padding: 8px 12px;
       border-radius: 6px;
       font-size: 0.875rem;
-      width: 160px;
+      width: 200px;
     }
     .btn {
       display: inline-flex;
@@ -55,6 +56,8 @@
       background: #1f2937;
       color: #e2e8f0;
       border: 1px solid #374151;
+      font-size: 0.8rem;
+      padding: 8px 14px;
     }
     .btn-secondary:hover { background: #374151; }
     pre {
@@ -80,45 +83,93 @@
       font-family: monospace;
       word-break: break-all;
       color: #4ade80;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
+    .token-box.dim {
+      background: #0f172a;
+      border-color: #1e293b;
+      color: #94a3b8;
+    }
+    .token-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-bottom: 4px;
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .token-label span { color: #374151; }
     .status { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; margin-bottom: 16px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #6b7280; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #6b7280; flex-shrink: 0; }
     .dot.green { background: #4ade80; }
     .dot.yellow { background: #facc15; }
     .dot.red { background: #f87171; }
     .hidden { display: none; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-top: 16px; }
     .divider { border: none; border-top: 1px solid #1f2937; margin: 20px 0; }
+    .ttl-badge {
+      display: inline-block;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      color: #9ca3af;
+      font-family: monospace;
+    }
+    .ttl-badge.warn { border-color: #78350f; color: #fbbf24; background: #1c1003; }
+    #countdown { font-size: 0.75rem; color: #6b7280; margin-top: 6px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Nearby API — Auth Test</h1>
-    <p class="subtitle">Test the full OAuth + session flow against your local server.</p>
+    <p class="subtitle">Web OAuth flow test page. Access token: 15 min &nbsp;|&nbsp; Refresh token: 30 days.</p>
 
     <div class="card" id="sign-in-card">
-      <div class="card-title">Step 1 — Sign in with Google</div>
-      <div class="row">
-        <div>
-          <label for="platform">Platform</label>
-          <select id="platform">
-            <option value="ios">ios</option>
-            <option value="android">android</option>
-          </select>
-        </div>
+      <div class="card-title">Step 1 — Sign in with Google (web flow)</div>
+      <div>
+        <label for="platform">Platform</label>
+        <select id="platform">
+          <option value="ios">ios</option>
+          <option value="android">android</option>
+        </select>
+      </div>
+      <div>
+        <label for="os-version">OS Version</label>
+        <input type="text" id="os-version" value="18.0" style="width:120px" />
       </div>
       <button class="btn" id="sign-in-btn" onclick="beginAuth()">Sign in with Google</button>
     </div>
 
     <div class="card hidden" id="token-card">
       <div class="card-title">Step 2 — Tokens</div>
-      <div class="status"><div class="dot green" id="status-dot"></div><span id="status-text">Signed in</span></div>
-      <label>Access Token</label>
+      <div class="status">
+        <div class="dot green" id="status-dot"></div>
+        <span id="status-text">Signed in</span>
+      </div>
+
+      <div class="token-label">Access Token <span class="ttl-badge" id="access-ttl">15 min</span></div>
       <div class="token-box" id="access-token-box">—</div>
+
+      <div class="token-label">User ID</div>
+      <div class="token-box dim" id="user-id-box">—</div>
+
+      <div class="token-label">JWT (for zkLogin prover)</div>
+      <div class="token-box dim" id="jwt-box">—</div>
+
+      <div class="token-label">zkLogin Salt</div>
+      <div class="token-box dim" id="salt-box">—</div>
+
+      <div id="countdown"></div>
+
       <div class="row">
-        <button class="btn btn-secondary" onclick="copyToken('access')">Copy Access Token</button>
-        <button class="btn btn-secondary" onclick="copyToken('refresh')">Copy Refresh Token</button>
+        <button class="btn btn-secondary" onclick="copyValue('accessToken', 'Access token')">Copy Access Token</button>
+        <button class="btn btn-secondary" onclick="copyValue('refreshToken', 'Refresh token')">Copy Refresh Token</button>
+        <button class="btn btn-secondary" onclick="copyValue('jwt', 'JWT')">Copy JWT</button>
+        <button class="btn btn-secondary" onclick="copyValue('salt', 'Salt')">Copy Salt</button>
+        <button class="btn btn-secondary" onclick="doRefresh()">Refresh Session</button>
         <button class="btn btn-secondary" style="color:#f87171;border-color:#7f1d1d" onclick="signOut()">Sign Out</button>
       </div>
     </div>
@@ -136,6 +187,7 @@
 
   <script>
     const API = window.location.origin;
+    let countdownInterval = null;
 
     function generateVerifier() {
       const arr = new Uint8Array(32);
@@ -151,12 +203,6 @@
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     }
 
-    function generateSuiAddress() {
-      const arr = new Uint8Array(32);
-      crypto.getRandomValues(arr);
-      return '0x' + Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
     async function beginAuth() {
       const btn = document.getElementById('sign-in-btn');
       btn.disabled = true;
@@ -166,11 +212,11 @@
       const challenge = await generateChallenge(verifier);
       const nonce = 'test-' + Date.now();
       const platform = document.getElementById('platform').value;
-      const suiAddress = generateSuiAddress();
+      const osVersion = document.getElementById('os-version').value || '18.0';
 
       sessionStorage.setItem('codeVerifier', verifier);
       sessionStorage.setItem('platform', platform);
-      sessionStorage.setItem('suiAddress', suiAddress);
+      sessionStorage.setItem('osVersion', osVersion);
 
       try {
         const res = await fetch(API + '/v1/auth/oauth/begin', {
@@ -178,6 +224,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             provider: 'google',
+            flowType: 'web',
             codeChallenge: challenge,
             codeChallengeMethod: 'S256',
             zkLoginNonce: nonce
@@ -208,7 +255,7 @@
 
       const verifier = sessionStorage.getItem('codeVerifier');
       const platform = sessionStorage.getItem('platform') || 'ios';
-      const suiAddress = sessionStorage.getItem('suiAddress') || generateSuiAddress();
+      const osVersion = sessionStorage.getItem('osVersion') || '18.0';
 
       if (!verifier) {
         showError({ error: 'codeVerifier missing from sessionStorage — start the flow from Step 1.' });
@@ -220,13 +267,13 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            flowType: 'web',
             code,
             state,
             codeVerifier: verifier,
             platform,
-            osVersion: '1.0.0',
-            appBundleId: 'com.nearby.test',
-            suiAddress,
+            osVersion,
+            appBundleId: 'com.variance.nearby',
             deviceIntegrity: { provider: 'stub' }
           })
         });
@@ -238,10 +285,14 @@
         if (data.accessToken) {
           sessionStorage.setItem('accessToken', data.accessToken);
           sessionStorage.setItem('refreshToken', data.refreshToken || '');
+          sessionStorage.setItem('userId', data.userId || '');
+          sessionStorage.setItem('jwt', data.jwt || '');
+          sessionStorage.setItem('salt', data.salt || '');
+          sessionStorage.setItem('expiresAt', data.expiresAt || '');
           sessionStorage.removeItem('codeVerifier');
           sessionStorage.removeItem('platform');
-          sessionStorage.removeItem('suiAddress');
-          showTokens(data.accessToken);
+          sessionStorage.removeItem('osVersion');
+          showTokens(data);
         } else {
           showError(data);
         }
@@ -250,10 +301,68 @@
       }
     }
 
-    function showTokens(accessToken) {
+    async function doRefresh() {
+      const refreshToken = sessionStorage.getItem('refreshToken');
+      if (!refreshToken) { showError({ error: 'No refresh token stored.' }); return; }
+
+      try {
+        const res = await fetch(API + '/v1/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
+        const data = await res.json();
+
+        document.getElementById('response-card').classList.remove('hidden');
+        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+
+        if (data.accessToken) {
+          sessionStorage.setItem('accessToken', data.accessToken);
+          sessionStorage.setItem('refreshToken', data.refreshToken || '');
+          sessionStorage.setItem('expiresAt', data.expiresAt || '');
+          document.getElementById('access-token-box').textContent = data.accessToken;
+          startCountdown(data.expiresAt);
+          document.getElementById('status-text').textContent = 'Refreshed';
+        } else {
+          showError(data);
+        }
+      } catch (e) {
+        showError({ error: e.message });
+      }
+    }
+
+    function showTokens(data) {
       document.getElementById('sign-in-card').classList.add('hidden');
       document.getElementById('token-card').classList.remove('hidden');
-      document.getElementById('access-token-box').textContent = accessToken;
+      document.getElementById('access-token-box').textContent = data.accessToken || sessionStorage.getItem('accessToken') || '—';
+      document.getElementById('user-id-box').textContent = data.userId || sessionStorage.getItem('userId') || '—';
+      document.getElementById('jwt-box').textContent = data.jwt || sessionStorage.getItem('jwt') || '—';
+      document.getElementById('salt-box').textContent = data.salt || sessionStorage.getItem('salt') || '—';
+      const expiresAt = data.expiresAt || parseInt(sessionStorage.getItem('expiresAt'));
+      if (expiresAt) startCountdown(expiresAt);
+    }
+
+    function startCountdown(expiresAt) {
+      if (countdownInterval) clearInterval(countdownInterval);
+      const el = document.getElementById('countdown');
+      const badge = document.getElementById('access-ttl');
+      function tick() {
+        const secs = expiresAt - Math.floor(Date.now() / 1000);
+        if (secs <= 0) {
+          el.textContent = 'Access token expired — click Refresh Session.';
+          badge.className = 'ttl-badge warn';
+          badge.textContent = 'expired';
+          clearInterval(countdownInterval);
+          return;
+        }
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        el.textContent = 'Access token expires in ' + m + 'm ' + s + 's';
+        badge.className = secs < 120 ? 'ttl-badge warn' : 'ttl-badge';
+        badge.textContent = m + 'm ' + s + 's';
+      }
+      tick();
+      countdownInterval = setInterval(tick, 1000);
     }
 
     function showError(data) {
@@ -261,28 +370,34 @@
       document.getElementById('error-output').textContent = JSON.stringify(data, null, 2);
     }
 
-    function copyToken(type) {
-      const key = type === 'access' ? 'accessToken' : 'refreshToken';
+    function copyValue(key, label) {
       const val = sessionStorage.getItem(key) || '';
-      navigator.clipboard.writeText(val).then(() => alert(type + ' token copied!'));
+      if (!val) { alert(label + ' not available.'); return; }
+      navigator.clipboard.writeText(val).then(() => alert(label + ' copied!'));
     }
 
     function signOut() {
-      sessionStorage.removeItem('accessToken');
-      sessionStorage.removeItem('refreshToken');
+      if (countdownInterval) clearInterval(countdownInterval);
+      ['accessToken','refreshToken','userId','jwt','salt','expiresAt'].forEach(k => sessionStorage.removeItem(k));
       document.getElementById('token-card').classList.add('hidden');
       document.getElementById('sign-in-card').classList.remove('hidden');
       document.getElementById('response-card').classList.add('hidden');
       document.getElementById('error-card').classList.add('hidden');
       document.getElementById('sign-in-btn').disabled = false;
       document.getElementById('sign-in-btn').textContent = 'Sign in with Google';
+      document.getElementById('countdown').textContent = '';
     }
 
     window.addEventListener('load', () => {
       const stored = sessionStorage.getItem('accessToken');
       if (stored) {
-        showTokens(stored);
-        document.getElementById('token-card').classList.remove('hidden');
+        showTokens({
+          accessToken: stored,
+          userId: sessionStorage.getItem('userId'),
+          jwt: sessionStorage.getItem('jwt'),
+          salt: sessionStorage.getItem('salt'),
+          expiresAt: parseInt(sessionStorage.getItem('expiresAt'))
+        });
         document.getElementById('sign-in-card').classList.add('hidden');
       }
       handleCallback();
