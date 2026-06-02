@@ -87,9 +87,15 @@ func New(deps Deps) http.Handler {
 		})
 
 		r.Route("/names", func(r chi.Router) {
-			r.Use(auth.Middleware(deps.AuthService, "high"))
-			r.Post("/leaf", deps.NamesHandler.RegisterLeaf)
-			r.Get("/tasks/{id}", deps.NamesHandler.GetTask)
+			r.Group(func(r chi.Router) {
+				r.Use(auth.Middleware(deps.AuthService, "low"))
+				r.Get("/leaf/{leafName}/available", deps.NamesHandler.CheckAvailability)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(auth.Middleware(deps.AuthService, "high"))
+				r.Post("/leaf", deps.NamesHandler.RegisterLeaf)
+				r.Get("/tasks/{id}", deps.NamesHandler.GetTask)
+			})
 		})
 
 		r.Route("/me", func(r chi.Router) {

@@ -12,4 +12,5 @@ var (
 	ErrAVSUnauthorized    = apperr.New("avs_unauthorized", "AVS quorum authorization failed", http.StatusForbidden)
 	ErrRegistrationFailed = apperr.New("registration_failed", "Name registration transaction failed", http.StatusBadGateway)
 	ErrNoWalletBound      = apperr.New("no_wallet_bound", "No Sui wallet bound to this account", http.StatusBadRequest)
+	ErrSuiNSUnavailable   = apperr.New("suins_unavailable", "SuiNS name service is unavailable", http.StatusServiceUnavailable)
 )

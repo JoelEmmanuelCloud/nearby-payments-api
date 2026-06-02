@@ -8,6 +8,7 @@ import (
 
 	"github.com/vaariance/nearby/internal/avs"
 	"github.com/vaariance/nearby/internal/domain/auth"
+	"github.com/vaariance/nearby/internal/sui"
 	"github.com/vaariance/nearby/internal/utils"
 )
 
@@ -19,12 +20,14 @@ type ServiceDeps struct {
 	Store     *Store
 	AuthStore *auth.Store
 	AVSClient *avs.Client
+	SuiClient *sui.Client
 }
 
 type Service struct {
 	store     *Store
 	authStore *auth.Store
 	avsClient *avs.Client
+	suiClient *sui.Client
 }
 
 func NewService(deps ServiceDeps) *Service {
@@ -32,6 +35,7 @@ func NewService(deps ServiceDeps) *Service {
 		store:     deps.Store,
 		authStore: deps.AuthStore,
 		avsClient: deps.AVSClient,
+		suiClient: deps.SuiClient,
 	}
 }
 
@@ -96,6 +100,24 @@ func (s *Service) RegisterLeaf(ctx context.Context, userID string, req RegisterL
 		Action:    task.Action,
 		Status:    task.Status,
 		ExpiresAt: task.ExpiresAt,
+	}, nil
+}
+
+func (s *Service) CheckAvailability(ctx context.Context, leafName string) (*NameAvailabilityResponse, error) {
+	leafName = strings.ToLower(strings.TrimSpace(leafName))
+	if !leafNameRe.MatchString(leafName) {
+		return nil, ErrNameInvalid
+	}
+
+	fullName := leafName + "." + parentName
+	address, err := s.suiClient.ResolveNameServiceAddress(ctx, fullName)
+	if err != nil {
+		return nil, ErrSuiNSUnavailable
+	}
+
+	return &NameAvailabilityResponse{
+		Name:      fullName,
+		Available: address == "",
 	}, nil
 }
 

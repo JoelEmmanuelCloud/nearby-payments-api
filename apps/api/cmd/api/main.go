@@ -138,6 +138,7 @@ func main() {
 		Store:     namesStore,
 		AuthStore: authStore,
 		AVSClient: avsClient,
+		SuiClient: suiClient,
 	})
 	namesHandler := names.NewHandler(namesSvc)
 

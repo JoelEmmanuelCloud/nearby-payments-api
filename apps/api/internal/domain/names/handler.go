@@ -46,6 +46,29 @@ func (h *Handler) RegisterLeaf(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+func (h *Handler) CheckAvailability(w http.ResponseWriter, r *http.Request) {
+	sessCtx := auth.GetSession(r.Context())
+	if sessCtx == nil {
+		apperr.Write(w, apperr.ErrUnauthorized)
+		return
+	}
+
+	leafName := chi.URLParam(r, "leafName")
+	if leafName == "" {
+		apperr.Write(w, apperr.ErrBadRequest)
+		return
+	}
+
+	resp, err := h.svc.CheckAvailability(r.Context(), leafName)
+	if err != nil {
+		apperr.Write(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
 func (h *Handler) GetTask(w http.ResponseWriter, r *http.Request) {
 	sessCtx := auth.GetSession(r.Context())
 	if sessCtx == nil {

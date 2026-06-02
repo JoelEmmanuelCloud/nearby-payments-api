@@ -34,3 +34,8 @@ type GetTaskResponse struct {
 	UpdatedAt int64  `json:"updatedAt"`
 	ExpiresAt int64  `json:"expiresAt"`
 }
+
+type NameAvailabilityResponse struct {
+	Name      string `json:"name"`
+	Available bool   `json:"available"`
+}

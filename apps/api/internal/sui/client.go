@@ -134,3 +134,15 @@ func (c *Client) GetTransactionBlock(ctx context.Context, digest string) (*Execu
 
 	return &result, nil
 }
+
+func (c *Client) ResolveNameServiceAddress(ctx context.Context, name string) (string, error) {
+	var result *string
+	err := c.call(ctx, "suix_resolveNameServiceAddress", []interface{}{name}, &result)
+	if err != nil {
+		return "", nil
+	}
+	if result == nil {
+		return "", nil
+	}
+	return *result, nil
+}
