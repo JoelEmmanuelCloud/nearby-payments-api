@@ -74,7 +74,7 @@ class AppViewModel(
         context = context.applicationContext,
         scope = viewModelScope,
         gateway = gateway,
-        serverClientId = "565533426961-poghio0agdknm6tegge7kpqk8hacv82m.apps.googleusercontent.com",
+        serverClientId = "565533426961-glfffimsek0cni5pq7e7hfmi2umm0e5i.apps.googleusercontent.com",
         storage = preferencesProvider,
         hsm = hsm,
         swiftArena = swiftArena,
