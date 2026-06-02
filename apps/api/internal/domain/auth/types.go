@@ -166,9 +166,10 @@ type OAuthCompleteResponse struct {
 }
 
 type SessionRefreshResponse struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
-	ExpiresAt    int64  `json:"expiresAt"`
+	AccessToken      string `json:"accessToken"`
+	RefreshToken     string `json:"refreshToken"`
+	ExpiresAt        int64  `json:"expiresAt"`
+	RefreshExpiresAt int64  `json:"refreshExpiresAt"`
 }
 
 type AssertIntegrityRequest struct {

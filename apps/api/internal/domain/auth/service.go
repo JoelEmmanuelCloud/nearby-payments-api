@@ -392,9 +392,10 @@ func (s *Service) RefreshSession(ctx context.Context, refreshToken string) (*Ses
 	}
 
 	return &SessionRefreshResponse{
-		AccessToken:  newAccess,
-		RefreshToken: newRefresh,
-		ExpiresAt:    expiresAt,
+		AccessToken:      newAccess,
+		RefreshToken:     newRefresh,
+		ExpiresAt:        expiresAt,
+		RefreshExpiresAt: refreshExpiresAt,
 	}, nil
 }
 

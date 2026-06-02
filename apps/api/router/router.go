@@ -49,10 +49,10 @@ func New(deps Deps) http.Handler {
 			r.Get("/oauth/complete", deps.AuthHandler.OAuthCallbackPage)
 			r.Post("/oauth/complete", deps.AuthHandler.OAuthComplete)
 			r.Post("/zklogin/prove", deps.AuthHandler.ProveZkLogin)
+			r.Post("/refresh", deps.AuthHandler.RefreshSession)
 
 			r.Group(func(r chi.Router) {
 				r.Use(auth.Middleware(deps.AuthService, "low"))
-				r.Post("/refresh", deps.AuthHandler.RefreshSession)
 				r.Post("/revoke", deps.AuthHandler.RevokeSession)
 			})
 
