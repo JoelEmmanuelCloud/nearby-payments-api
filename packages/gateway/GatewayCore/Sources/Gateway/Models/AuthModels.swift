@@ -59,12 +59,12 @@ public struct OAuthBeginRequest: Codable, Sendable, Equatable {
 /// Response returned when beginning the OAuth flow, directing the client to login.
 public struct OAuthBeginResponse: Codable, Sendable, Equatable {
   /// The target URL to navigate the user's browser/redirect view for authorization.
-  public let authURL: String
+  public let authURL: String?
   /// The verification state token mapping the local session.
   public let state: String
 
   /// Initializes a begin OAuth response.
-  public init(authURL: String, state: String) {
+  public init(authURL: String? = nil, state: String) {
     self.authURL = authURL
     self.state = state
   }
@@ -177,8 +177,14 @@ public struct OAuthCompleteResponse: Codable, Sendable, Equatable {
   public let accessToken: String
   /// The authorization refresh token used to renew expired access tokens.
   public let refreshToken: String
+  /// Unix timestamp in seconds indicating when the access token expires.
+  public let expiresAt: Int64
+  /// Unix timestamp in seconds indicating when the refresh token/session expires.
+  public let refreshExpiresAt: Int64
   /// The identifier representing the user.
   public let userId: String
+  /// The user's derived zkLogin Sui address, if already bound by the backend.
+  public let suiAddress: String?
   /// The JWT payload verifying user signature attributes.
   public let jwt: String
   /// The cryptographic salt value linked to the user's zkLogin account.
@@ -188,13 +194,19 @@ public struct OAuthCompleteResponse: Codable, Sendable, Equatable {
   public init(
     accessToken: String,
     refreshToken: String,
+    expiresAt: Int64,
+    refreshExpiresAt: Int64,
     userId: String,
+    suiAddress: String? = nil,
     jwt: String,
     salt: String
   ) {
     self.accessToken = accessToken
     self.refreshToken = refreshToken
+    self.expiresAt = expiresAt
+    self.refreshExpiresAt = refreshExpiresAt
     self.userId = userId
+    self.suiAddress = suiAddress
     self.jwt = jwt
     self.salt = salt
   }
@@ -215,13 +227,24 @@ public struct RefreshRequest: Codable, Sendable, Equatable {
 public struct RefreshResponse: Codable, Sendable, Equatable {
   /// The newly generated access token.
   public let accessToken: String
-  /// The newly generated refresh token.
+  /// The newly generated one-time refresh token.
   public let refreshToken: String
+  /// Unix timestamp in seconds indicating when the access token expires.
+  public let expiresAt: Int64
+  /// Unix timestamp in seconds indicating when the rotated refresh token/session expires.
+  public let refreshExpiresAt: Int64
 
   /// Initializes a token refresh response.
-  public init(accessToken: String, refreshToken: String) {
+  public init(
+    accessToken: String,
+    refreshToken: String,
+    expiresAt: Int64,
+    refreshExpiresAt: Int64
+  ) {
     self.accessToken = accessToken
     self.refreshToken = refreshToken
+    self.expiresAt = expiresAt
+    self.refreshExpiresAt = refreshExpiresAt
   }
 }
 

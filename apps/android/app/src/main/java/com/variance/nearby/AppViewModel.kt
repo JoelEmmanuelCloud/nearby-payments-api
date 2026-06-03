@@ -8,18 +8,13 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.variance.nearby.auth.GoogleAuthManager
+import com.variance.nearby.auth.SessionManager
 import com.variance.nearby.gateway.APIGateway
 import com.variance.nearby.hsm.HardwareSecurityModule
 import com.variance.nearby.hsm.StrongBoxHSM
 import com.variance.nearby.storage.PreferencesProvider
 import org.swift.swiftkit.core.SwiftArena
 import java.util.UUID
-
-enum class AppRoute {
-    ONBOARDING,
-    LOGIN,
-    HOME,
-}
 
 data class OnboardingPage(
     val title: String,
@@ -66,29 +61,32 @@ class AppViewModel(
     private val sessionStore = AppSessionStore(preferencesProvider, swiftArena)
 
     private val gateway: APIGateway = APIGateway.init(
-        "https://nearby-api-565533426961.us-central1.run.app",
-        "v1",
+        AppConstants.BASE_URL,
+        AppConstants.API_VERSION,
+        swiftArena,
+    )
+    private val sessionManager: SessionManager = SessionManager.init(
+        preferencesProvider,
+        hsm,
+        gateway,
         swiftArena,
     )
     private val googleAuthManager: GoogleAuthManager = GoogleAuthManager(
         context = context.applicationContext,
         scope = viewModelScope,
         gateway = gateway,
-        serverClientId = "565533426961-glfffimsek0cni5pq7e7hfmi2umm0e5i.apps.googleusercontent.com",
-        storage = preferencesProvider,
-        hsm = hsm,
+        serverClientId = AppConstants.GOOGLE_SERVER_CLIENT_ID,
+        sessionManager = sessionManager,
         swiftArena = swiftArena,
     )
 
     init {
         userName = sessionStore.userName()
 
-        route = if (!sessionStore.didCompleteOnboarding()) {
-            AppRoute.ONBOARDING
-        } else if (sessionStore.isAuthenticated()) {
-            AppRoute.HOME
+        if (!sessionStore.didCompleteOnboarding()) {
+            route = AppRoute.ONBOARDING
         } else {
-            AppRoute.LOGIN
+            checkStoredSession()
         }
     }
 
@@ -114,7 +112,7 @@ class AppViewModel(
 
     fun finishOnboarding() {
         sessionStore.completeOnboarding()
-        route = AppRoute.LOGIN
+        checkStoredSession()
     }
 
     fun signInWithGoogle() {
@@ -128,7 +126,7 @@ class AppViewModel(
                 isSigningIn = false
                 statusMessage = null
                 userName = name
-                sessionStore.saveAuthenticatedSession(name)
+                sessionStore.saveUserName(name)
                 route = AppRoute.HOME
             },
             onError = { error ->
@@ -164,7 +162,7 @@ class AppViewModel(
                 isSigningIn = false
                 statusMessage = null
                 userName = name
-                sessionStore.saveAuthenticatedSession(name)
+                sessionStore.saveUserName(name)
                 route = AppRoute.HOME
             },
             onError = { error ->
@@ -175,10 +173,36 @@ class AppViewModel(
     }
 
     fun signOut() {
-        sessionStore.clearSession()
-        userName = sessionStore.userName()
-        statusMessage = null
-        route = AppRoute.LOGIN
+        isSigningIn = true
+        statusMessage = "Signing out..."
+
+        googleAuthManager.signOut(
+            onComplete = {
+                sessionStore.clearUserName()
+                userName = sessionStore.userName()
+                isSigningIn = false
+                statusMessage = null
+                route = AppRoute.LOGIN
+            },
+            onError = { error ->
+                statusMessage = "Sign out failed: ${error.localizedMessage}"
+            },
+        )
+    }
+
+    private fun checkStoredSession() {
+        route = AppRoute.LOADING
+        route = if (isLoggedIn()) {
+            AppRoute.HOME
+        } else {
+            AppRoute.LOGIN
+        }
+    }
+
+    private fun isLoggedIn(): Boolean = try {
+        sessionManager.isLoggedIn()
+    } catch (_: Exception) {
+        false
     }
 
     override fun onCleared() {

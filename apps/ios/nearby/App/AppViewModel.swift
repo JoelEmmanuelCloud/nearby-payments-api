@@ -30,6 +30,7 @@ final class AppViewModel: ObservableObject {
 
   private let store: AppSessionStore
   private let authManager: AppleAuthManager?
+  private let sessionManager: SessionManager?
   private var appleSignInNonce: String?
 
   convenience init() {
@@ -38,15 +39,16 @@ final class AppViewModel: ObservableObject {
 
   init(store: AppSessionStore) {
     self.store = store
-    self.authManager = Self.makeAuthManager()
+    let authManager = Self.makeAuthManager()
+    self.authManager = authManager
+    self.sessionManager = authManager?.sessionManager
     self.userName = store.userName()
 
     if !store.didCompleteOnboarding() {
       route = .onboarding
-    } else if store.isAuthenticated() {
-      route = .home
     } else {
-      route = .login
+      route = .loading
+      checkStoredSession()
     }
   }
 
@@ -73,7 +75,7 @@ final class AppViewModel: ObservableObject {
 
   func finishOnboarding() {
     store.completeOnboarding()
-    route = .login
+    checkStoredSession()
   }
 
   func prepareAppleSignInRequest(_ request: ASAuthorizationAppleIDRequest) {
@@ -100,7 +102,7 @@ final class AppViewModel: ObservableObject {
       do {
         try await authManager.signInWithApple(result, nonce: nonce)
         userName = "Apple account"
-        store.saveAuthenticatedSession(userName: userName)
+        store.saveUserName(userName)
         statusMessage = nil
         route = .home
       } catch {
@@ -133,7 +135,7 @@ final class AppViewModel: ObservableObject {
           presentationAnchor: presentationAnchor
         )
         userName = "Google account"
-        store.saveAuthenticatedSession(userName: userName)
+        store.saveUserName(userName)
         statusMessage = nil
         route = .home
       } catch {
@@ -145,18 +147,55 @@ final class AppViewModel: ObservableObject {
   }
 
   func signOut() {
-    store.clearSession()
-    userName = store.userName()
-    statusMessage = nil
-    route = .login
+    guard let authManager else {
+      store.clearUserName()
+      userName = store.userName()
+      statusMessage = nil
+      route = .login
+      return
+    }
+
+    isSigningIn = true
+    statusMessage = "Signing out"
+
+    Task {
+      do {
+        try await authManager.signOut()
+      } catch {
+        statusMessage = error.localizedDescription
+      }
+
+      store.clearUserName()
+      userName = store.userName()
+      isSigningIn = false
+      route = .login
+    }
+  }
+
+  private func checkStoredSession() {
+    guard let sessionManager else {
+      route = .login
+      return
+    }
+
+    route = .loading
+
+    Task {
+      do {
+        route = try sessionManager.isLoggedIn() ? .home : .login
+      } catch {
+        statusMessage = error.localizedDescription
+        route = .login
+      }
+    }
   }
 
   private static func makeAuthManager() -> AppleAuthManager? {
     let bundleId = Bundle.main.bundleIdentifier ?? "com.variance.nearby"
 
     return try? AppleAuthManager(
-      baseURLString: "https://nearby-api-565533426961.us-central1.run.app",
-      apiVersion: "v1",
+      baseURLString: AppConstants.baseURLString,
+      apiVersion: AppConstants.apiVersion,
       bundleId: bundleId
     )
   }

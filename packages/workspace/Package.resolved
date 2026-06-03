@@ -1,5 +1,5 @@
 {
-  "originHash" : "5ddcd542cb0c89a44469ea596a922ea4b002897ba4aee76a0eb8b03115a34e84",
+  "originHash" : "cb4d1fc9aebaa9e3d88d95eb4ca28c566b2e75223b5cefd98f5e9d9a3eb858d0",
   "pins" : [
     {
       "identity" : "apollo-ios",
@@ -26,24 +26,6 @@
       "state" : {
         "revision" : "e07e00fa1fd435143a2dcf8b7eec9a7710b2fdfe",
         "version" : "5.7.0"
-      }
-    },
-    {
-      "identity" : "cryptoswift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/krzyzanowskim/CryptoSwift.git",
-      "state" : {
-        "revision" : "f2a627b84c1ff96f21ac2fcb623ab36142dd5512",
-        "version" : "1.10.0"
-      }
-    },
-    {
-      "identity" : "ed25519swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/pebble8888/ed25519swift.git",
-      "state" : {
-        "revision" : "1e821f5516049f5b83aca8cb3b982910cf8c028c",
-        "version" : "1.2.8"
       }
     },
     {
@@ -74,15 +56,6 @@
       }
     },
     {
-      "identity" : "jwtdecode.swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/auth0/JWTDecode.swift",
-      "state" : {
-        "revision" : "36a5ce735a61c4bc119593f43ce2c027b4ca7392",
-        "version" : "3.3.0"
-      }
-    },
-    {
       "identity" : "swift-asn1",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-asn1.git",
@@ -98,15 +71,6 @@
       "state" : {
         "revision" : "95ba0316a9b733e92bb6b071255ff46263bbe7dc",
         "version" : "3.15.1"
-      }
-    },
-    {
-      "identity" : "swiftyjson",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/SwiftyJSON/SwiftyJSON.git",
-      "state" : {
-        "revision" : "2b6054efa051565954e1d2b9da831680026cd768",
-        "version" : "4.3.0"
       }
     },
     {

@@ -552,7 +552,7 @@
           "REPO_MAPPING:rules_swift_package_manager+,bazel_skylib bazel_skylib+",
           "REPO_MAPPING:rules_swift_package_manager+,bazel_tools bazel_tools",
           "REPO_MAPPING:rules_swift_package_manager+,cgrindel_bazel_starlib cgrindel_bazel_starlib+",
-          "FILE:@@//packages/workspace/Package.resolved 420ffb3b7fd1d8f3be05b39b6a1aff8957ece78aed1e4eb7bf9e0369953fd36c"
+          "FILE:@@//packages/workspace/Package.resolved 5b5442dd878a11384701cfcfe6c51ca5263e66ddd93861631d58a37345eb9693"
         ],
         "generatedRepoSpecs": {
           "swift_package": {
@@ -569,34 +569,6 @@
               "commit": "ea633500311c4fd0711ff58ea8182d28745dee6e",
               "remote": "https://github.com/MarcoDotIO/UInt256.git",
               "version": "1.0.0",
-              "env": {},
-              "env_inherit": [],
-              "cached_json_directory": "",
-              "replace_scm_with_registry": false,
-              "target_deps": {}
-            }
-          },
-          "swiftpkg_swiftyjson": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_swiftyjson",
-              "commit": "2b6054efa051565954e1d2b9da831680026cd768",
-              "remote": "https://github.com/SwiftyJSON/SwiftyJSON.git",
-              "version": "4.3.0",
-              "env": {},
-              "env_inherit": [],
-              "cached_json_directory": "",
-              "replace_scm_with_registry": false,
-              "target_deps": {}
-            }
-          },
-          "swiftpkg_jwtdecode.swift": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_jwtdecode.swift",
-              "commit": "36a5ce735a61c4bc119593f43ce2c027b4ca7392",
-              "remote": "https://github.com/auth0/JWTDecode.swift",
-              "version": "3.3.0",
               "env": {},
               "env_inherit": [],
               "cached_json_directory": "",
@@ -624,34 +596,6 @@
               "bazel_package_name": "swiftpkg_apollo_ios",
               "commit": "abd0ff0537df1fb3f5305f927a219cc320924838",
               "remote": "https://github.com/vaariance/apollo-ios.git",
-              "env": {},
-              "env_inherit": [],
-              "cached_json_directory": "",
-              "replace_scm_with_registry": false,
-              "target_deps": {}
-            }
-          },
-          "swiftpkg_ed25519swift": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_ed25519swift",
-              "commit": "1e821f5516049f5b83aca8cb3b982910cf8c028c",
-              "remote": "https://github.com/pebble8888/ed25519swift.git",
-              "version": "1.2.8",
-              "env": {},
-              "env_inherit": [],
-              "cached_json_directory": "",
-              "replace_scm_with_registry": false,
-              "target_deps": {}
-            }
-          },
-          "swiftpkg_cryptoswift": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_cryptoswift",
-              "commit": "f2a627b84c1ff96f21ac2fcb623ab36142dd5512",
-              "remote": "https://github.com/krzyzanowskim/CryptoSwift.git",
-              "version": "1.10.0",
               "env": {},
               "env_inherit": [],
               "cached_json_directory": "",
@@ -747,12 +691,8 @@
         "moduleExtensionMetadata": {
           "explicitRootModuleDirectDeps": [
             "swiftpkg_uint256",
-            "swiftpkg_swiftyjson",
-            "swiftpkg_jwtdecode.swift",
             "swiftpkg_bigint",
             "swiftpkg_apollo_ios",
-            "swiftpkg_ed25519swift",
-            "swiftpkg_cryptoswift",
             "swiftpkg_googlesignin_ios",
             "swiftpkg_swift_crypto",
             "swift_package"

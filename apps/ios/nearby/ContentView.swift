@@ -5,6 +5,8 @@ struct ContentView: View {
 
   var body: some View {
     switch viewModel.route {
+    case .loading:
+      ProgressView()
     case .onboarding:
       OnboardingView(viewModel: viewModel)
     case .login:

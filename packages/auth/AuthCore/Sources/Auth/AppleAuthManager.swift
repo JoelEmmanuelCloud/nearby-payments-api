@@ -17,7 +17,7 @@
     ASWebAuthenticationPresentationContextProviding, Sendable
   {
     private let auth: AuthManager
-    private let sessionManager: SessionManager
+    public let sessionManager: SessionManager
     private let integrityProvider: IntegrityProvider
 
     private let continuationLock = NSLock()
@@ -39,7 +39,7 @@
       bundleId: String
     ) {
       self.integrityProvider = StubIntegrityProvider()
-      self.sessionManager = SessionManager(storage: storage, hsm: hsm)
+      self.sessionManager = SessionManager(storage: storage, hsm: hsm, gateway: gateway)
 
       let platform = "ios"
       let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
@@ -131,7 +131,7 @@
         deviceIntegrity: integrityAssertion
       )
 
-      try sessionManager.saveSession(response: completeResponse)
+      try sessionManager.saveSession(response: completeResponse, provider: .apple, maxEpoch: 0)
     }
 
     /// Triggers native Google Sign-In with a presenting root view controller and completes session setup.
@@ -172,7 +172,12 @@
         deviceIntegrity: integrityAssertion
       )
 
-      try sessionManager.saveSession(response: completeResponse)
+      try sessionManager.saveSession(response: completeResponse, provider: .google, maxEpoch: 0)
+    }
+
+    /// Revokes the current session server-side and clears local credentials.
+    public func signOut() async throws {
+      try await sessionManager.revokeSession()
     }
 
     /// Protocol method returns the active presentation window for the authorization dialog.

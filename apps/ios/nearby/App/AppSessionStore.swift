@@ -3,7 +3,6 @@ import Foundation
 struct AppSessionStore {
   private enum Key {
     static let didCompleteOnboarding = "nearby.didCompleteOnboarding"
-    static let isAuthenticated = "nearby.isAuthenticated"
     static let userName = "nearby.userName"
   }
 
@@ -17,10 +16,6 @@ struct AppSessionStore {
     defaults.bool(forKey: Key.didCompleteOnboarding)
   }
 
-  func isAuthenticated() -> Bool {
-    defaults.bool(forKey: Key.isAuthenticated)
-  }
-
   func userName() -> String {
     defaults.string(forKey: Key.userName) ?? "Nearby user"
   }
@@ -29,13 +24,11 @@ struct AppSessionStore {
     defaults.set(true, forKey: Key.didCompleteOnboarding)
   }
 
-  func saveAuthenticatedSession(userName: String) {
-    defaults.set(true, forKey: Key.isAuthenticated)
+  func saveUserName(_ userName: String) {
     defaults.set(userName, forKey: Key.userName)
   }
 
-  func clearSession() {
-    defaults.set(false, forKey: Key.isAuthenticated)
+  func clearUserName() {
     defaults.removeObject(forKey: Key.userName)
   }
 }

@@ -3,8 +3,8 @@ import Testing
 
 @testable import Gateway
 
-@Suite("Auth Gateway")
-struct AuthGatewayTests {
+@Suite("API Gateway")
+struct APIGatewayTests {
 
   @Test("serverPublicKey sends GET to the correct path")
   func serverPublicKey() async throws {
@@ -36,8 +36,10 @@ struct AuthGatewayTests {
     let gateway = APIGateway(configuration: .test, httpClient: mock)
 
     let request = OAuthBeginRequest(
+      flowType: .web,
       provider: .google,
       codeChallenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+      codeChallengeMethod: "S256",
       zkLoginNonce: "zklogin-nonce-123"
     )
     let result = try await gateway.beginOAuth(request: request)
@@ -55,12 +57,36 @@ struct AuthGatewayTests {
     #expect(sentBody.zkLoginNonce == "zklogin-nonce-123")
   }
 
+  @Test("beginOAuth parses native response without auth URL")
+  func beginOAuthNative() async throws {
+    let expectedResponse = OAuthBeginResponse(state: "native-state")
+    let mock = MockHTTPClient(
+      responseBody: try JSONCoders.encoder.encode(expectedResponse),
+      statusCode: 200
+    )
+    let gateway = APIGateway(configuration: .test, httpClient: mock)
+
+    let result = try await gateway.beginOAuth(
+      request: OAuthBeginRequest(
+        flowType: .native,
+        provider: .apple,
+        zkLoginNonce: "native-nonce"
+      )
+    )
+
+    #expect(result == expectedResponse)
+    #expect(result.authURL == nil)
+  }
+
   @Test("completeOAuth sends device metadata and returns session tokens")
   func completeOAuth() async throws {
     let expectedResponse = OAuthCompleteResponse(
       accessToken: "access-jwt",
       refreshToken: "refresh-jwt",
+      expiresAt: 1_700_000_900,
+      refreshExpiresAt: 1_702_592_000,
       userId: "user-123",
+      suiAddress: "0x0000000000000000000000000000000000000000000000000000000000000001",
       jwt: "provider-jwt",
       salt: "user-salt"
     )
@@ -85,19 +111,25 @@ struct AuthGatewayTests {
 
     #expect(result == expectedResponse)
     #expect(result.userId == "user-123")
+    #expect(result.expiresAt == 1_700_000_900)
+    #expect(result.refreshExpiresAt == 1_702_592_000)
+    #expect(
+      result.suiAddress == "0x0000000000000000000000000000000000000000000000000000000000000001")
 
     let json =
       try JSONSerialization.jsonObject(with: mock.capturedRequest!.httpBody!) as? [String: Any]
     #expect(json?["platform"] as? String == "ios")
-    #expect(json?["flow_type"] as? String == "web")
+    #expect(json?["flowType"] as? String == "web")
     #expect((json?["deviceIntegrity"] as? [String: Any])?["provider"] as? String == "stub")
   }
 
-  @Test("refresh sends bearer token and returns rotated token pair")
+  @Test("refresh sends bearer token and returns rotated tokens")
   func refresh() async throws {
     let expectedResponse = RefreshResponse(
       accessToken: "new-access",
-      refreshToken: "new-refresh"
+      refreshToken: "new-refresh",
+      expiresAt: 1_700_000_900,
+      refreshExpiresAt: 1_702_592_000
     )
     let mock = MockHTTPClient(
       responseBody: try JSONCoders.encoder.encode(expectedResponse),
@@ -160,7 +192,6 @@ struct AuthGatewayTests {
     let expected = DeviceCredential(
       version: 1,
       userId: "user-123",
-      deviceId: "device-456",
       platform: "ios",
       appBundleId: "com.variance.nearby",
       integrityProvider: "stub",
@@ -209,8 +240,10 @@ struct AuthGatewayTests {
     await #expect(throws: GatewayError.self) {
       _ = try await gateway.beginOAuth(
         request: OAuthBeginRequest(
+          flowType: .web,
           provider: .google,
           codeChallenge: "challenge",
+          codeChallengeMethod: "S256",
           zkLoginNonce: "nonce"
         )
       )
@@ -253,8 +286,10 @@ struct AuthGatewayTests {
 
     _ = try await gateway.beginOAuth(
       request: OAuthBeginRequest(
+        flowType: .web,
         provider: .google,
         codeChallenge: "c",
+        codeChallengeMethod: "S256",
         zkLoginNonce: "n"
       )
     )

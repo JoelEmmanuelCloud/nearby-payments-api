@@ -1,10 +1,10 @@
 import Foundation
 
-/// Defines a protocol for communicating with the authentication backend service.
+/// Defines a protocol for communicating with the backend API service.
 ///
 /// Implementations of this protocol are responsible for server-side key retrieval, OAuth handshakes,
 /// token rotations, session revocation, integrity verification, and secure credential issuance.
-public protocol AuthGateway: Sendable {
+public protocol APIGatewayProtocol: Sendable {
 
   /// Fetches the public key used by the backend to sign device credentials.
   ///

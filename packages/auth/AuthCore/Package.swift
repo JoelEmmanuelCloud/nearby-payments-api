@@ -36,6 +36,15 @@ let package = Package(
       exclude: [
         "swift-java.config"
       ]
-    )
+    ),
+    .testTarget(
+      name: "AuthTests",
+      dependencies: [
+        "Auth",
+        .product(name: "Gateway", package: "Gateway"),
+        .product(name: "Storage", package: "Storage"),
+        .product(name: "HSM", package: "HSM"),
+      ]
+    ),
   ]
 )

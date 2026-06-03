@@ -6,7 +6,14 @@ import Foundation
 /// are responsible for securely generating and storing cryptographic keys,
 /// as well as performing signing operations without ever exposing the private key
 /// to the application memory space.
-public protocol HardwareSecurityModule: Sendable {
+///
+/// Not `Sendable`: this is a Java-callback interface (a Kotlin class implements
+/// it across the swift-java bridge). The swift-java convention is plain,
+/// non-`Sendable` callback protocols — making it `Sendable` forces the generated
+/// JNI wrapper to be `Sendable` while holding a non-`Sendable` Java handle. The
+/// concrete conformer owns thread-safety; holders that need it (e.g.
+/// `SessionManager`) assert it via `@unchecked Sendable`.
+public protocol HardwareSecurityModule {
 
   /// Generates a new hardware-backed keypair and returns the public key.
   ///

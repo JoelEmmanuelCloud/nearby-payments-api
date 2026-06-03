@@ -1,10 +1,10 @@
 import Foundation
 
-/// The primary implementation of the `AuthGateway` protocol, executing HTTP requests to the authentication backend.
+/// The primary implementation of the `APIGatewayProtocol`, executing HTTP requests to the backend API.
 ///
 /// This class handles network communications for user authentication, token refresh, token revocation,
 /// device integrity assertions, and security credentials issuance. It is bridged to Kotlin on Android via JNI.
-public final class APIGateway: AuthGateway {
+public final class APIGateway: APIGatewayProtocol {
 
   private let executor: HTTPRequestExecutor
 

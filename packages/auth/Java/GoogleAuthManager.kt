@@ -6,13 +6,12 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.variance.nearby.deviceintegrity.PlayIntegrityProvider
 import com.variance.nearby.deviceintegrity.StubIntegrityProvider
 import com.variance.nearby.gateway.APIGateway
 import com.variance.nearby.gateway.AuthType
 import com.variance.nearby.gateway.DeviceIntegrity
 import com.variance.nearby.gateway.OAuthProvider
-import com.variance.nearby.hsm.HardwareSecurityModule
-import com.variance.nearby.storage.SecureStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
@@ -40,34 +39,26 @@ class GoogleAuthManager(
     private val scope: CoroutineScope,
     private val gateway: APIGateway,
     private val serverClientId: String,
-    storage: SecureStorage,
-    hsm: HardwareSecurityModule,
+    private val sessionManager: SessionManager,
     private val swiftArena: SwiftArena,
 ) {
-    private val auth: AuthManager
-    private val sessionManager: SessionManager
+    private val auth: AuthManager =
+        AuthManager.init(
+            "android",
+            Build.VERSION.RELEASE,
+            context.packageName,
+            gateway,
+            swiftArena,
+        )
+
     private val credentialManager = CredentialManager.create(context)
     private val integrityProvider = StubIntegrityProvider() // PlayIntegrityProvider(context, 0L)
 
     // Maps pending auth state to the original client-side nonce
     private val stateToNonceMap = ConcurrentHashMap<String, String>()
 
-    init {
-        auth =
-            AuthManager.init(
-                "android",
-                Build.VERSION.RELEASE,
-                context.packageName,
-                gateway,
-                swiftArena,
-            )
-
-        // Instantiate the native Kotlin SessionManager
-        sessionManager = SessionManager.init(storage, hsm, swiftArena)
-    }
-
     /**
-     * Attests device integrity bound to a SHA-256 hash of the nonce and current session state.
+     * Attests device integrity bound to an SHA-256 hash of the nonce and current session state.
      * Integrates with Play Integrity API and returns the signed attestation token.
      */
     private suspend fun attestIntegrity(
@@ -75,15 +66,15 @@ class GoogleAuthManager(
         state: String,
     ): String =
         withContext(Dispatchers.IO) {
-            try {
-                integrityProvider.prepare()
-                val hashData = PKCE.hash(nonce + state, swiftArena)
-                val hashBytes = hashData.toByteArray()
-                val requestHash = android.util.Base64.encodeToString(hashBytes, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP)
-                integrityProvider.attest(requestHash)
-            } catch (e: Exception) {
-                "mock_integrity_token"
-            }
+            integrityProvider.prepare()
+            val hashData = PKCE.hash(nonce + state, swiftArena)
+            val hashBytes = hashData.toByteArray()
+            val requestHash =
+                android.util.Base64.encodeToString(
+                    hashBytes,
+                    android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP,
+                )
+            integrityProvider.attest(requestHash)
         }
 
     /**
@@ -138,7 +129,7 @@ class GoogleAuthManager(
                 // 4. Complete flow
                 val deviceIntegrity =
                     DeviceIntegrity.init(
-                        "play_integrity",
+                        PlayIntegrityProvider.PROVIDER,
                         Optional.empty(),
                         Optional.empty(),
                         Optional.of(token),
@@ -158,7 +149,7 @@ class GoogleAuthManager(
                         ).await()
 
                 // Save session natively in Kotlin
-                sessionManager.saveSession(completeResponse)
+                sessionManager.saveSession(completeResponse, OAuthProvider.google(swiftArena), 0L)
 
                 withContext(Dispatchers.Main) {
                     onSuccess("Google account")
@@ -195,8 +186,13 @@ class GoogleAuthManager(
                 // Store the state-to-nonce mapping for the redirection callback
                 stateToNonceMap[webResponse.state] = nonce
 
-                launchCustomTabs(webResponse.authURL)
-            } catch (e: Exception) {
+                val authURL =
+                    webResponse.authURL.orElseThrow {
+                        IllegalStateException("Apple web sign-in did not return an auth URL.")
+                    }
+
+                launchCustomTabs(authURL)
+            } catch (_: Exception) {
                 // handle error
             }
         }
@@ -228,7 +224,7 @@ class GoogleAuthManager(
 
                 val deviceIntegrity =
                     DeviceIntegrity.init(
-                        "play_integrity",
+                        PlayIntegrityProvider.PROVIDER,
                         Optional.empty(),
                         Optional.empty(),
                         Optional.of(token),
@@ -247,7 +243,7 @@ class GoogleAuthManager(
                         ).await()
 
                 // Save session natively in Kotlin
-                sessionManager.saveSession(completeResponse)
+                sessionManager.saveSession(completeResponse, OAuthProvider.apple(swiftArena), 0L)
 
                 withContext(Dispatchers.Main) {
                     onSuccess("Apple account")
@@ -255,6 +251,25 @@ class GoogleAuthManager(
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     onError(e)
+                }
+            }
+        }
+    }
+
+    fun signOut(
+        onComplete: () -> Unit,
+        onError: (Throwable) -> Unit,
+    ) {
+        scope.launch(Dispatchers.IO) {
+            try {
+                sessionManager.revokeSession().await()
+                withContext(Dispatchers.Main) {
+                    onComplete()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onError(e)
+                    onComplete()
                 }
             }
         }

@@ -89,7 +89,6 @@ val abiList = if (isCi) {
     )
 }
 
-// Add this outside the forEach, at the top of the file
 abstract class SyncSwiftJavaTask : DefaultTask() {
     @get:Inject
     abstract val fileSystemOperations: FileSystemOperations

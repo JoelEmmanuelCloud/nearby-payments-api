@@ -59,7 +59,7 @@ class PlayIntegrityProvider(
 
     companion object {
         /** The identifier name identifying the Play Integrity provider platform. */
-        const val provider = "play_integrity"
+        const val PROVIDER = "play_integrity"
     }
 }
 

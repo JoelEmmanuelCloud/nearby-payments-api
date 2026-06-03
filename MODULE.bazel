@@ -177,11 +177,7 @@ use_repo(
     "swift_package",
     "swiftpkg_apollo_ios",
     "swiftpkg_bigint",
-    "swiftpkg_cryptoswift",
-    "swiftpkg_ed25519swift",
     "swiftpkg_googlesignin_ios",
-    "swiftpkg_jwtdecode.swift",
     "swiftpkg_swift_crypto",
-    "swiftpkg_swiftyjson",
     "swiftpkg_uint256",
 )
