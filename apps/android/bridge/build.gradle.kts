@@ -52,6 +52,7 @@ val swiftPackages = listOf(
     mapOf("target" to "HSM", "dir" to "packages/hsm", "sourcePath" to "HSMCore/Sources/HSM"),
     mapOf("target" to "Auth", "dir" to "packages/auth", "sourcePath" to "AuthCore/Sources/Auth"),
     mapOf("target" to "LeanSuiApi", "dir" to "packages/sui-api", "sourcePath" to "LeanSuiApiCore/Sources/LeanSuiApi"),
+    mapOf("target" to "LeanSuiBCS", "dir" to "packages/sui-bcs", "sourcePath" to "LeanSuiBCSCore/Sources/LeanSuiBCS"),
 )
 val swiftRuntimePackage = swiftPackages.first()
 val swiftRuntimeTarget = swiftRuntimePackage["target"] ?: error("Swift runtime package target is required")
