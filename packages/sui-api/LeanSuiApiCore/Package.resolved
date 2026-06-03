@@ -1,0 +1,24 @@
+{
+  "originHash" : "e351d178c3a13afe579c74911e6b8183c9ca1b3fb7ff0d230d88bd271a3bccb9",
+  "pins" : [
+    {
+      "identity" : "apollo-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vaariance/apollo-ios.git",
+      "state" : {
+        "branch" : "jextract-portable",
+        "revision" : "abd0ff0537df1fb3f5305f927a219cc320924838"
+      }
+    },
+    {
+      "identity" : "bigint",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/attaswift/BigInt.git",
+      "state" : {
+        "revision" : "e07e00fa1fd435143a2dcf8b7eec9a7710b2fdfe",
+        "version" : "5.7.0"
+      }
+    }
+  ],
+  "version" : 3
+}

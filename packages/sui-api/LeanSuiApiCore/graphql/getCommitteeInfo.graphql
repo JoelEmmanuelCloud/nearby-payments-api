@@ -1,0 +1,13 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+query getCommitteeInfo($epochId: UInt53) {
+    epoch(epochId: $epochId) {
+        epochId
+        validatorSet {
+            contents {
+                json
+            }
+        }
+    }
+}

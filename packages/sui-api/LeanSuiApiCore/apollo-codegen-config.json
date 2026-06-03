@@ -1,0 +1,35 @@
+{
+  "schemaNamespace": "SuiGraphQL",
+  "input": {
+    "operationSearchPaths": ["**/*.graphql"],
+    "schemaSearchPaths": ["**/*.graphqls"]
+  },
+  "output": {
+    "testMocks": {
+      "none": {}
+    },
+    "schemaTypes": {
+      "path": "./Sources/LeanSuiApi/",
+      "moduleType": {
+        "embeddedInTarget": {
+          "name": "LeanSuiApi",
+          "accessModifier": "internal"
+        }
+      }
+    },
+    "operations": {
+      "inSchemaModule": {}
+    }
+  },
+  "schemaDownload": {
+    "downloadMethod": {
+      "introspection": {
+        "endpointURL": "https://graphql.mainnet.sui.io/graphql",
+        "httpMethod": { "POST": {} },
+        "includeDeprecatedInputValues": false,
+        "outputFormat": "SDL"
+      }
+    },
+    "outputPath": "./graphql/schema.graphqls"
+  }
+}
