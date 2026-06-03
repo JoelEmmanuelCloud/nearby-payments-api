@@ -18,16 +18,19 @@ struct HTTPRequestExecutor: Sendable {
   /// - Parameters:
   ///   - path: The target relative subpath.
   ///   - accessToken: An optional bearer token to authorize the request.
+  ///   - deviceHeaders: Optional platform-specific device integrity headers.
   /// - Returns: A decoded model of the generic `Response` type.
   /// - Throws: `GatewayError` if URL construction, network transport, or decoding fails.
   func get<Response: Decodable>(
     path: String,
-    accessToken: String? = nil
+    accessToken: String? = nil,
+    deviceHeaders: DeviceHeaders? = nil
   ) async throws -> Response {
     let urlRequest = try buildRequest(
       method: "GET",
       path: path,
-      accessToken: accessToken
+      accessToken: accessToken,
+      deviceHeaders: deviceHeaders
     )
     return try await execute(urlRequest)
   }
@@ -54,6 +57,74 @@ struct HTTPRequestExecutor: Sendable {
       deviceHeaders: deviceHeaders
     )
     urlRequest.httpBody = try JSONCoders.encode(body)
+    return try await execute(urlRequest)
+  }
+
+  /// Executes a PUT request to a relative path, encoding the JSON body and decoding the response.
+  ///
+  /// - Parameters:
+  ///   - path: The target relative subpath.
+  ///   - body: The model payload to serialize into the request body.
+  ///   - accessToken: Optional bearer authorization token.
+  /// - Returns: A decoded model of the generic `Response` type.
+  /// - Throws: `GatewayError` if encoding, execution, or decoding fails.
+  func put<Body: Encodable, Response: Decodable>(
+    path: String,
+    body: Body,
+    accessToken: String? = nil
+  ) async throws -> Response {
+    var urlRequest = try buildRequest(
+      method: "PUT",
+      path: path,
+      accessToken: accessToken
+    )
+    urlRequest.httpBody = try JSONCoders.encode(body)
+    return try await execute(urlRequest)
+  }
+
+  /// Executes a PUT request with no returned response body.
+  ///
+  /// - Parameters:
+  ///   - path: The target relative subpath.
+  ///   - body: Optional body payload to serialize.
+  ///   - accessToken: Optional bearer authorization token.
+  /// - Throws: `GatewayError` if execution fails.
+  func putVoid<Body: Encodable>(
+    path: String,
+    body: Body,
+    accessToken: String? = nil
+  ) async throws {
+    var urlRequest = try buildRequest(
+      method: "PUT",
+      path: path,
+      accessToken: accessToken
+    )
+    urlRequest.httpBody = try JSONCoders.encode(body)
+    try await executeVoid(urlRequest)
+  }
+
+  /// Executes a PUT request with raw binary data and a custom Content-Type header.
+  ///
+  /// - Parameters:
+  ///   - path: The target relative subpath.
+  ///   - data: The binary data payload.
+  ///   - contentType: The MIME content type header value.
+  ///   - accessToken: Optional bearer authorization token.
+  /// - Returns: A decoded model of the generic `Response` type.
+  /// - Throws: `GatewayError` if execution or decoding fails.
+  func putRaw<Response: Decodable>(
+    path: String,
+    data: Data,
+    contentType: String,
+    accessToken: String? = nil
+  ) async throws -> Response {
+    var urlRequest = try buildRequest(
+      method: "PUT",
+      path: path,
+      accessToken: accessToken,
+      contentType: contentType
+    )
+    urlRequest.httpBody = data
     return try await execute(urlRequest)
   }
 
@@ -88,6 +159,7 @@ struct HTTPRequestExecutor: Sendable {
     method: String,
     path: String,
     accessToken: String? = nil,
+    contentType: String? = nil,
     deviceHeaders: DeviceHeaders? = nil
   ) throws -> URLRequest {
     guard let url = configuration.url(for: path) else {
@@ -97,9 +169,10 @@ struct HTTPRequestExecutor: Sendable {
     var request = URLRequest(url: url)
     request.httpMethod = method
 
-    if method == "POST" {
+    if method == "POST" || method == "PUT" {
+      let ct = contentType ?? APIConstants.ContentType.json
       request.setValue(
-        APIConstants.ContentType.json,
+        ct,
         forHTTPHeaderField: APIConstants.Headers.contentType
       )
     }

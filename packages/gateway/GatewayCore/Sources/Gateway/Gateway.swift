@@ -151,4 +151,128 @@ public final class APIGateway: APIGatewayProtocol {
       )
     )
   }
+
+  /// Binds a zkLogin-derived Sui address to the authenticated user on the backend.
+  ///
+  /// - Parameters:
+  ///   - request: The bind wallet parameters containing the sui address.
+  ///   - accessToken: The active authorization access token.
+  /// - Throws: `GatewayError` if the binding request fails.
+  public func bindWallet(
+    request: BindWalletRequest,
+    accessToken: String
+  ) async throws {
+    try await executor.putVoid(
+      path: APIConstants.Me.wallet,
+      body: request,
+      accessToken: accessToken
+    )
+  }
+
+  /// Retrieves the authenticated user's profile metadata.
+  ///
+  /// - Parameter accessToken: The active authorization access token.
+  /// - Returns: A `UserProfileResponse` containing user details.
+  /// - Throws: `GatewayError` if the request fails.
+  public func getProfile(accessToken: String) async throws -> UserProfileResponse {
+    try await executor.get(
+      path: APIConstants.Me.profile,
+      accessToken: accessToken
+    )
+  }
+
+  /// Uploads a binary avatar image for the user.
+  ///
+  /// - Parameters:
+  ///   - data: The binary image data.
+  ///   - contentType: The MIME content type (e.g. image/jpeg).
+  ///   - accessToken: The active authorization access token.
+  /// - Returns: A response containing the new avatar URL.
+  /// - Throws: `GatewayError` if the upload fails.
+  public func uploadAvatar(
+    data: Data,
+    contentType: String,
+    accessToken: String
+  ) async throws -> AvatarUploadResponse {
+    try await executor.putRaw(
+      path: APIConstants.Me.avatar,
+      data: data,
+      contentType: contentType,
+      accessToken: accessToken
+    )
+  }
+
+  /// Checks the availability of a leaf name under nearby.sui.
+  ///
+  /// - Parameters:
+  ///   - leafName: The leaf name string to check.
+  ///   - accessToken: The active authorization access token.
+  /// - Returns: The name availability status.
+  /// - Throws: `GatewayError` if the request fails.
+  public func checkNameAvailability(
+    leafName: String,
+    accessToken: String
+  ) async throws -> NameAvailabilityResponse {
+    try await executor.get(
+      path: APIConstants.Names.leafAvailable(name: leafName),
+      accessToken: accessToken
+    )
+  }
+
+  /// Submits an asynchronous request to register a leaf name under nearby.sui.
+  ///
+  /// - Parameters:
+  ///   - request: The registration parameters containing the leaf name.
+  ///   - accessToken: The active authorization access token.
+  ///   - deviceProvider: The name of the device integrity provider.
+  ///   - requestNonce: The verification nonce challenge.
+  ///   - requestTimestamp: Current ISO or millisecond timestamp.
+  /// - Returns: The registered task info.
+  /// - Throws: `GatewayError` if registration fails.
+  public func registerLeafName(
+    request: RegisterLeafRequest,
+    accessToken: String,
+    deviceProvider: String,
+    requestNonce: String,
+    requestTimestamp: String
+  ) async throws -> RegisterLeafResponse {
+    try await executor.post(
+      path: APIConstants.Names.leafRegister,
+      body: request,
+      accessToken: accessToken,
+      deviceHeaders: DeviceHeaders(
+        provider: deviceProvider,
+        nonce: requestNonce,
+        timestamp: requestTimestamp
+      )
+    )
+  }
+
+  /// Retrieves the current status of an asynchronous name registration task.
+  ///
+  /// - Parameters:
+  ///   - taskId: The task identifier to query.
+  ///   - accessToken: The active authorization access token.
+  ///   - deviceProvider: The name of the device integrity provider.
+  ///   - requestNonce: The verification nonce challenge.
+  ///   - requestTimestamp: Current ISO or millisecond timestamp.
+  /// - Returns: The current status of the task.
+  /// - Throws: `GatewayError` if the request fails.
+  public func getNameTask(
+    taskId: String,
+    accessToken: String,
+    deviceProvider: String,
+    requestNonce: String,
+    requestTimestamp: String
+  ) async throws -> NameTaskStatusResponse {
+    try await executor.get(
+      path: APIConstants.Names.taskStatus(id: taskId),
+      accessToken: accessToken,
+      deviceHeaders: DeviceHeaders(
+        provider: deviceProvider,
+        nonce: requestNonce,
+        timestamp: requestTimestamp
+      )
+    )
+  }
 }

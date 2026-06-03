@@ -78,4 +78,79 @@ public protocol APIGatewayProtocol: Sendable {
     requestNonce: String,
     requestTimestamp: String
   ) async throws -> DeviceCredential
+
+  /// Binds a zkLogin-derived Sui address to the authenticated user.
+  ///
+  /// - Parameters:
+  ///   - request: The bind wallet request details.
+  ///   - accessToken: The active authorization access token.
+  /// - Throws: `GatewayError` if the request fails.
+  func bindWallet(request: BindWalletRequest, accessToken: String) async throws
+
+  /// Retrieves the user profile metadata.
+  ///
+  /// - Parameter accessToken: The active authorization access token.
+  /// - Returns: The user's profile metadata.
+  /// - Throws: `GatewayError` if the request fails.
+  func getProfile(accessToken: String) async throws -> UserProfileResponse
+
+  /// Uploads a binary avatar image for the user.
+  ///
+  /// - Parameters:
+  ///   - data: The raw binary data of the image.
+  ///   - contentType: The MIME type of the image (e.g. "image/jpeg").
+  ///   - accessToken: The active authorization access token.
+  /// - Returns: The response containing the public URL to the uploaded avatar.
+  /// - Throws: `GatewayError` if the upload fails.
+  func uploadAvatar(
+    data: Data,
+    contentType: String,
+    accessToken: String
+  ) async throws -> AvatarUploadResponse
+
+  /// Checks the availability of a leaf name under nearby.sui.
+  ///
+  /// - Parameters:
+  ///   - leafName: The leaf name string to verify.
+  ///   - accessToken: The active authorization access token.
+  /// - Returns: The availability details response.
+  /// - Throws: `GatewayError` if the request fails.
+  func checkNameAvailability(leafName: String, accessToken: String) async throws
+    -> NameAvailabilityResponse
+
+  /// Schedules a background queue task to register a leaf name under nearby.sui.
+  ///
+  /// - Parameters:
+  ///   - request: The registration parameters containing the leaf name.
+  ///   - accessToken: The active authorization access token.
+  ///   - deviceProvider: The name of the device integrity provider.
+  ///   - requestNonce: The verification nonce challenge.
+  ///   - requestTimestamp: Current ISO or millisecond timestamp.
+  /// - Returns: The details of the scheduled task.
+  /// - Throws: `GatewayError` if the registration request fails.
+  func registerLeafName(
+    request: RegisterLeafRequest,
+    accessToken: String,
+    deviceProvider: String,
+    requestNonce: String,
+    requestTimestamp: String
+  ) async throws -> RegisterLeafResponse
+
+  /// Retrieves the current status of an asynchronous name registration task.
+  ///
+  /// - Parameters:
+  ///   - taskId: The task identifier to query.
+  ///   - accessToken: The active authorization access token.
+  ///   - deviceProvider: The name of the device integrity provider.
+  ///   - requestNonce: The verification nonce challenge.
+  ///   - requestTimestamp: Current ISO or millisecond timestamp.
+  /// - Returns: The current status of the task.
+  /// - Throws: `GatewayError` if the query fails.
+  func getNameTask(
+    taskId: String,
+    accessToken: String,
+    deviceProvider: String,
+    requestNonce: String,
+    requestTimestamp: String
+  ) async throws -> NameTaskStatusResponse
 }

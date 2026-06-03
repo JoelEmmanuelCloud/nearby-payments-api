@@ -23,6 +23,26 @@ public enum APIConstants {
     public static let credential: String = "auth/credential"
   }
 
+  /// Endpoint subpaths for me (profile and wallet binding) actions.
+  public enum Me {
+    /// PUT endpoint to bind a Sui address.
+    public static let wallet: String = "me/wallet"
+    /// GET endpoint to fetch user profile metadata.
+    public static let profile: String = "me/profile"
+    /// PUT endpoint to upload a profile picture.
+    public static let avatar: String = "me/avatar"
+  }
+
+  /// Endpoint subpaths for SuiNS leaf name operations.
+  public enum Names {
+    /// GET endpoint to check name availability.
+    public static func leafAvailable(name: String) -> String { "names/leaf/\(name)/available" }
+    /// POST endpoint to register a leaf name.
+    public static let leafRegister: String = "names/leaf"
+    /// GET endpoint to check status of a name registration task.
+    public static func taskStatus(id: String) -> String { "names/tasks/\(id)" }
+  }
+
   /// Custom and standard HTTP header fields.
   public enum Headers {
     /// Content-Type header.

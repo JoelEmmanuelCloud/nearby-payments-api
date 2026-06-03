@@ -2,9 +2,13 @@ import Foundation
 
 /// Errors thrown by the HSM package.
 public enum HSMError: Error, LocalizedError, Equatable {
+  /// The requested cryptographic key reference was not found in secure storage.
   case keyNotFound
+  /// Cryptographic key generation failed.
   case keyGenerationFailed(status: Int)
+  /// Cryptographic key retrieval from secure storage failed.
   case keyRetrievalFailed(status: Int)
+  /// Cryptographic key deletion from secure storage failed.
   case keyDeletionFailed(status: Int)
 
   public var errorDescription: String? {

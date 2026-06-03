@@ -297,4 +297,167 @@ struct APIGatewayTests {
     let url = mock.capturedRequest!.url!
     #expect(url.absoluteString == "http://localhost:8080/v1/auth/oauth/begin")
   }
+
+  @Test("bindWallet sends PUT to correct path with JSON body")
+  func bindWallet() async throws {
+    let mock = MockHTTPClient(statusCode: 204)
+    let gateway = APIGateway(configuration: .test, httpClient: mock)
+
+    let request = BindWalletRequest(suiAddress: "0x123456789")
+    try await gateway.bindWallet(request: request, accessToken: "test-token")
+
+    let req = mock.capturedRequest!
+    #expect(req.httpMethod == "PUT")
+    #expect(req.url?.path.contains("me/wallet") == true)
+    #expect(req.value(forHTTPHeaderField: "Authorization") == "Bearer test-token")
+    #expect(req.value(forHTTPHeaderField: "Content-Type") == "application/json")
+
+    let sentBody = try JSONCoders.decoder.decode(
+      BindWalletRequest.self,
+      from: req.httpBody!
+    )
+    #expect(sentBody.suiAddress == "0x123456789")
+  }
+
+  @Test("getProfile sends GET and returns user profile metadata")
+  func getProfile() async throws {
+    let expected = UserProfileResponse(
+      userId: "user-abc",
+      status: "active",
+      avatarUrl: "https://blobs/123",
+      createdAt: 1_700_000_000
+    )
+    let mock = MockHTTPClient(
+      responseBody: try JSONCoders.encoder.encode(expected),
+      statusCode: 200
+    )
+    let gateway = APIGateway(configuration: .test, httpClient: mock)
+
+    let result = try await gateway.getProfile(accessToken: "test-token")
+
+    #expect(result == expected)
+    let req = mock.capturedRequest!
+    #expect(req.httpMethod == "GET")
+    #expect(req.url?.path.contains("me/profile") == true)
+    #expect(req.value(forHTTPHeaderField: "Authorization") == "Bearer test-token")
+  }
+
+  @Test("uploadAvatar sends PUT with raw image data and custom content-type")
+  func uploadAvatar() async throws {
+    let expected = AvatarUploadResponse(avatarUrl: "https://blobs/456")
+    let mock = MockHTTPClient(
+      responseBody: try JSONCoders.encoder.encode(expected),
+      statusCode: 200
+    )
+    let gateway = APIGateway(configuration: .test, httpClient: mock)
+
+    let imageData = "fake-jpeg-data".data(using: .utf8)!
+    let result = try await gateway.uploadAvatar(
+      data: imageData,
+      contentType: "image/jpeg",
+      accessToken: "test-token"
+    )
+
+    #expect(result == expected)
+    let req = mock.capturedRequest!
+    #expect(req.httpMethod == "PUT")
+    #expect(req.url?.path.contains("me/avatar") == true)
+    #expect(req.value(forHTTPHeaderField: "Authorization") == "Bearer test-token")
+    #expect(req.value(forHTTPHeaderField: "Content-Type") == "image/jpeg")
+    #expect(req.httpBody == imageData)
+  }
+
+  @Test("checkNameAvailability sends GET to correct path")
+  func checkNameAvailability() async throws {
+    let expected = NameAvailabilityResponse(name: "alice.nearby", available: true)
+    let mock = MockHTTPClient(
+      responseBody: try JSONCoders.encoder.encode(expected),
+      statusCode: 200
+    )
+    let gateway = APIGateway(configuration: .test, httpClient: mock)
+
+    let result = try await gateway.checkNameAvailability(
+      leafName: "alice", accessToken: "test-token")
+
+    #expect(result == expected)
+    let req = mock.capturedRequest!
+    #expect(req.httpMethod == "GET")
+    #expect(req.url?.path.contains("names/leaf/alice/available") == true)
+    #expect(req.value(forHTTPHeaderField: "Authorization") == "Bearer test-token")
+  }
+
+  @Test("registerLeafName sends POST with device headers and returns task info")
+  func registerLeafName() async throws {
+    let expected = RegisterLeafResponse(
+      taskId: "task-99",
+      nameHash: "hash123",
+      action: "register",
+      status: "pending",
+      expiresAt: 1_700_003_600
+    )
+    let mock = MockHTTPClient(
+      responseBody: try JSONCoders.encoder.encode(expected),
+      statusCode: 202
+    )
+    let gateway = APIGateway(configuration: .test, httpClient: mock)
+
+    let request = RegisterLeafRequest(leafName: "alice")
+    let result = try await gateway.registerLeafName(
+      request: request,
+      accessToken: "test-token",
+      deviceProvider: "apple_dcapp_attest",
+      requestNonce: "nonce123",
+      requestTimestamp: "timestamp456"
+    )
+
+    #expect(result == expected)
+    let req = mock.capturedRequest!
+    #expect(req.httpMethod == "POST")
+    #expect(req.url?.path.contains("names/leaf") == true)
+    #expect(req.value(forHTTPHeaderField: "Authorization") == "Bearer test-token")
+    #expect(req.value(forHTTPHeaderField: "X-Device-Provider") == "apple_dcapp_attest")
+    #expect(req.value(forHTTPHeaderField: "X-Request-Nonce") == "nonce123")
+    #expect(req.value(forHTTPHeaderField: "X-Request-Timestamp") == "timestamp456")
+
+    let sentBody = try JSONCoders.decoder.decode(
+      RegisterLeafRequest.self,
+      from: req.httpBody!
+    )
+    #expect(sentBody.leafName == "alice")
+  }
+
+  @Test("getNameTask sends GET with device headers to correct path")
+  func getNameTask() async throws {
+    let expected = NameTaskStatusResponse(
+      taskId: "task-99",
+      nameHash: "hash123",
+      action: "register",
+      status: "confirmed",
+      createdAt: 1_700_000_000,
+      updatedAt: 1_700_000_100,
+      expiresAt: 1_700_003_600
+    )
+    let mock = MockHTTPClient(
+      responseBody: try JSONCoders.encoder.encode(expected),
+      statusCode: 200
+    )
+    let gateway = APIGateway(configuration: .test, httpClient: mock)
+
+    let result = try await gateway.getNameTask(
+      taskId: "task-99",
+      accessToken: "test-token",
+      deviceProvider: "apple_dcapp_attest",
+      requestNonce: "nonce123",
+      requestTimestamp: "timestamp456"
+    )
+
+    #expect(result == expected)
+    let req = mock.capturedRequest!
+    #expect(req.httpMethod == "GET")
+    #expect(req.url?.path.contains("names/tasks/task-99") == true)
+    #expect(req.value(forHTTPHeaderField: "Authorization") == "Bearer test-token")
+    #expect(req.value(forHTTPHeaderField: "X-Device-Provider") == "apple_dcapp_attest")
+    #expect(req.value(forHTTPHeaderField: "X-Request-Nonce") == "nonce123")
+    #expect(req.value(forHTTPHeaderField: "X-Request-Timestamp") == "timestamp456")
+  }
 }
