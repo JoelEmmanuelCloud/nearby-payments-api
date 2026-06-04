@@ -27,6 +27,11 @@ type Config struct {
 	GoogleIOSClientID      string
 	GoogleAndroidClientID  string
 	AppleBundleID          string
+	AppleWebClientID       string
+	AppleWebRedirectURI    string
+	AppleKeyID             string
+	ApplePrivateKeyPEM     string
+	AppleTeamID            string
 	WalrusPublisherURL     string
 	WalrusAggregatorURL    string
 	ZkLoginProverURL       string
@@ -70,6 +75,11 @@ func Load() (*Config, error) {
 		GoogleIOSClientID:      optional("GOOGLE_IOS_CLIENT_ID", ""),
 		GoogleAndroidClientID:  optional("GOOGLE_ANDROID_CLIENT_ID", ""),
 		AppleBundleID:          optional("APPLE_BUNDLE_ID", ""),
+		AppleWebClientID:       optional("APPLE_WEB_CLIENT_ID", ""),
+		AppleWebRedirectURI:    optional("APPLE_WEB_REDIRECT_URI", ""),
+		AppleKeyID:             optional("APPLE_KEY_ID", ""),
+		ApplePrivateKeyPEM:     strings.ReplaceAll(optional("APPLE_PRIVATE_KEY_PEM", ""), `\n`, "\n"),
+		AppleTeamID:            optional("APPLE_TEAM_ID", ""),
 		WalrusPublisherURL:     optional("WALRUS_PUBLISHER_URL", ""),
 		WalrusAggregatorURL:    optional("WALRUS_AGGREGATOR_URL", ""),
 		ZkLoginProverURL:       optional("ZKLOGIN_PROVER_URL", "https://prover.mystenlabs.com/v1"),

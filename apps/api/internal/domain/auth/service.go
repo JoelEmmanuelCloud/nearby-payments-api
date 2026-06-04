@@ -4,11 +4,15 @@ import (
 	"bytes"
 	"context"
 	"crypto"
+	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"math/big"
@@ -44,6 +48,11 @@ type ServiceDeps struct {
 	GoogleIOSClientID     string
 	GoogleAndroidClientID string
 	AppleBundleID         string
+	AppleWebClientID      string
+	AppleWebRedirectURI   string
+	AppleKeyID            string
+	ApplePrivateKeyPEM    string
+	AppleTeamID           string
 	CredentialSignKey     ed25519.PrivateKey
 	CredentialPubKey      ed25519.PublicKey
 	ProverURL             string
@@ -59,6 +68,11 @@ type Service struct {
 	googleIOSClientID     string
 	googleAndroidClientID string
 	appleBundleID         string
+	appleWebClientID      string
+	appleWebRedirectURI   string
+	appleKeyID            string
+	applePrivateKeyPEM    string
+	appleTeamID           string
 	credSignKey           ed25519.PrivateKey
 	credPubKey            ed25519.PublicKey
 	proverURL             string
@@ -77,6 +91,11 @@ func NewService(deps ServiceDeps) *Service {
 		googleIOSClientID:     deps.GoogleIOSClientID,
 		googleAndroidClientID: deps.GoogleAndroidClientID,
 		appleBundleID:         deps.AppleBundleID,
+		appleWebClientID:      deps.AppleWebClientID,
+		appleWebRedirectURI:   deps.AppleWebRedirectURI,
+		appleKeyID:            deps.AppleKeyID,
+		applePrivateKeyPEM:    deps.ApplePrivateKeyPEM,
+		appleTeamID:           deps.AppleTeamID,
 		credSignKey:           deps.CredentialSignKey,
 		credPubKey:            deps.CredentialPubKey,
 		proverURL:             deps.ProverURL,
@@ -88,8 +107,14 @@ func (s *Service) OAuthBegin(ctx context.Context, req OAuthBeginRequest) (*OAuth
 	switch req.Provider {
 	case "google":
 	case "apple":
-		if s.appleBundleID == "" {
-			return nil, ErrOAuthProviderUnsupported
+		if req.FlowType == "native" {
+			if s.appleBundleID == "" {
+				return nil, ErrOAuthProviderUnsupported
+			}
+		} else {
+			if s.appleWebClientID == "" || s.appleTeamID == "" || s.appleKeyID == "" || s.applePrivateKeyPEM == "" {
+				return nil, ErrOAuthProviderUnsupported
+			}
 		}
 	default:
 		return nil, ErrOAuthProviderUnsupported
@@ -116,6 +141,20 @@ func (s *Service) OAuthBegin(ctx context.Context, req OAuthBeginRequest) (*OAuth
 
 	if req.FlowType == "native" {
 		return &OAuthBeginResponse{State: state}, nil
+	}
+
+	if req.Provider == "apple" {
+		params := url.Values{
+			"client_id":     {s.appleWebClientID},
+			"redirect_uri":  {s.appleWebRedirectURI},
+			"response_type": {"code"},
+			"response_mode": {"form_post"},
+			"scope":         {"openid email"},
+			"state":         {state},
+			"nonce":         {utils.SHA256HexString(req.ZkLoginNonce)},
+		}
+		authURL := "https://appleid.apple.com/auth/authorize?" + params.Encode()
+		return &OAuthBeginResponse{State: state, AuthURL: authURL}, nil
 	}
 
 	params := url.Values{
@@ -155,16 +194,24 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 	if req.FlowType == "native" {
 		idToken = req.IDToken
 		if provider == "apple" {
-			claims, err = s.verifyAppleIDToken(ctx, idToken)
+			claims, err = s.verifyAppleIDToken(ctx, idToken, s.appleBundleID)
 		} else {
 			claims, err = s.verifyGoogleIDToken(ctx, idToken)
 		}
 	} else {
-		idToken, err = s.exchangeGoogleCode(ctx, req.Code, req.CodeVerifier)
-		if err != nil {
-			return nil, ErrOAuthFailed
+		if provider == "apple" {
+			idToken, err = s.exchangeAppleCode(ctx, req.Code)
+			if err != nil {
+				return nil, ErrOAuthFailed
+			}
+			claims, err = s.verifyAppleIDToken(ctx, idToken, s.appleWebClientID)
+		} else {
+			idToken, err = s.exchangeGoogleCode(ctx, req.Code, req.CodeVerifier)
+			if err != nil {
+				return nil, ErrOAuthFailed
+			}
+			claims, err = s.verifyGoogleIDToken(ctx, idToken)
 		}
-		claims, err = s.verifyGoogleIDToken(ctx, idToken)
 	}
 	if err != nil {
 		return nil, ErrOAuthFailed
@@ -656,7 +703,96 @@ type appleJWKSCache struct {
 	fetchedAt time.Time
 }
 
-func (s *Service) verifyAppleIDToken(ctx context.Context, idToken string) (map[string]interface{}, error) {
+func (s *Service) generateAppleClientSecret() (string, error) {
+	block, _ := pem.Decode([]byte(s.applePrivateKeyPEM))
+	if block == nil {
+		return "", fmt.Errorf("failed to decode apple private key pem")
+	}
+	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("parse apple private key: %w", err)
+	}
+	ecKey, ok := key.(*ecdsa.PrivateKey)
+	if !ok {
+		return "", fmt.Errorf("apple private key is not ecdsa")
+	}
+
+	now := time.Now()
+	headerJSON, _ := json.Marshal(map[string]string{
+		"alg": "ES256",
+		"kid": s.appleKeyID,
+	})
+	payloadJSON, _ := json.Marshal(map[string]interface{}{
+		"iss": s.appleTeamID,
+		"iat": now.Unix(),
+		"exp": now.Add(time.Hour).Unix(),
+		"aud": "https://appleid.apple.com",
+		"sub": s.appleWebClientID,
+	})
+
+	header := base64.RawURLEncoding.EncodeToString(headerJSON)
+	payload := base64.RawURLEncoding.EncodeToString(payloadJSON)
+	signingInput := header + "." + payload
+
+	digest := sha256.Sum256([]byte(signingInput))
+	r, sv, err := ecdsa.Sign(rand.Reader, ecKey, digest[:])
+	if err != nil {
+		return "", fmt.Errorf("sign apple client secret: %w", err)
+	}
+
+	rb := r.Bytes()
+	svb := sv.Bytes()
+	sig := make([]byte, 64)
+	copy(sig[32-len(rb):32], rb)
+	copy(sig[64-len(svb):64], svb)
+
+	return signingInput + "." + base64.RawURLEncoding.EncodeToString(sig), nil
+}
+
+func (s *Service) exchangeAppleCode(ctx context.Context, code string) (string, error) {
+	clientSecret, err := s.generateAppleClientSecret()
+	if err != nil {
+		return "", err
+	}
+
+	form := url.Values{
+		"client_id":     {s.appleWebClientID},
+		"client_secret": {clientSecret},
+		"code":          {code},
+		"grant_type":    {"authorization_code"},
+		"redirect_uri":  {s.appleWebRedirectURI},
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://appleid.apple.com/auth/token",
+		strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := s.proverClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("apple token exchange: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var tokenResp struct {
+		IDToken string `json:"id_token"`
+		Error   string `json:"error"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return "", fmt.Errorf("decode apple token response: %w", err)
+	}
+	if tokenResp.Error != "" {
+		return "", fmt.Errorf("apple token error: %s", tokenResp.Error)
+	}
+	if tokenResp.IDToken == "" {
+		return "", fmt.Errorf("no id_token in apple token response")
+	}
+	return tokenResp.IDToken, nil
+}
+
+func (s *Service) verifyAppleIDToken(ctx context.Context, idToken string, audience string) (map[string]interface{}, error) {
 	parts := strings.Split(idToken, ".")
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid token format")
@@ -723,7 +859,7 @@ func (s *Service) verifyAppleIDToken(ctx context.Context, idToken string) (map[s
 			aud, _ = v[0].(string)
 		}
 	}
-	if aud != s.appleBundleID {
+	if aud != audience {
 		return nil, fmt.Errorf("invalid audience: %s", aud)
 	}
 	exp, _ := claims["exp"].(float64)

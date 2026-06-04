@@ -80,8 +80,8 @@ func (h *Handler) OAuthComplete(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		if req.Code == "" || req.CodeVerifier == "" {
-			apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "code and codeVerifier are required for web flow")
+		if req.Code == "" {
+			apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "code is required for web flow")
 			return
 		}
 	}
@@ -303,6 +303,17 @@ func (h *Handler) OAuthCallbackPage(w http.ResponseWriter, r *http.Request) {
 	q := url.Values{}
 	q.Set("code", r.URL.Query().Get("code"))
 	q.Set("state", r.URL.Query().Get("state"))
+	http.Redirect(w, r, "/static/auth_test.html?"+q.Encode(), http.StatusFound)
+}
+
+func (h *Handler) OAuthAppleCallback(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		apperr.Write(w, apperr.ErrBadRequest)
+		return
+	}
+	q := url.Values{}
+	q.Set("code", r.FormValue("code"))
+	q.Set("state", r.FormValue("state"))
 	http.Redirect(w, r, "/static/auth_test.html?"+q.Encode(), http.StatusFound)
 }
 

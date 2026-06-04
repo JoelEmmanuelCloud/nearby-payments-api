@@ -48,6 +48,7 @@ func New(deps Deps) http.Handler {
 			r.Post("/oauth/begin", deps.AuthHandler.OAuthBegin)
 			r.Get("/oauth/complete", deps.AuthHandler.OAuthCallbackPage)
 			r.Post("/oauth/complete", deps.AuthHandler.OAuthComplete)
+			r.Post("/oauth/callback/apple", deps.AuthHandler.OAuthAppleCallback)
 			r.Post("/zklogin/prove", deps.AuthHandler.ProveZkLogin)
 			r.Post("/refresh", deps.AuthHandler.RefreshSession)
 
