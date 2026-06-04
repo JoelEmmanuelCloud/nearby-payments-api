@@ -12,7 +12,7 @@
     ]
   },
   "variable": [
-    { "key": "baseUrl",      "value": "https://nearby-api-565533426961.us-central1.run.app" },
+    { "key": "baseUrl",      "value": "https://nearby-api-nry2jzv3qq-uc.a.run.app" },
     { "key": "localUrl",     "value": "http://localhost:8080" },
     { "key": "accessToken",  "value": "" },
     { "key": "refreshToken", "value": "" },

@@ -5,7 +5,7 @@
 | | Base URL |
 |---|---|
 | **Local** | `http://localhost:8080` |
-| **Production** | `https://nearby-api-565533426961.us-central1.run.app` |
+| **Production** | `https://nearby-api-nry2jzv3qq-uc.a.run.app` |
 
 The Postman collection variable `{{baseUrl}}` defaults to production. To test locally, set it to `http://localhost:8080` in the collection **Variables** tab. `{{localUrl}}` is pre-set to the local value as a convenience.
 
