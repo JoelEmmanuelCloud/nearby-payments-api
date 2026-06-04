@@ -40,11 +40,11 @@ func (h *Handler) OAuthBegin(w http.ResponseWriter, r *http.Request) {
 		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "flowType must be web or native")
 		return
 	}
-	if req.FlowType == "web" && req.CodeChallenge == "" {
-		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "codeChallenge is required for web flow")
+	if req.FlowType == "web" && req.Provider == "google" && req.CodeChallenge == "" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "codeChallenge is required for Google web flow")
 		return
 	}
-	if req.FlowType == "web" && req.CodeChallengeMethod == "" {
+	if req.FlowType == "web" && req.Provider == "google" && req.CodeChallengeMethod == "" {
 		req.CodeChallengeMethod = "S256"
 	}
 
