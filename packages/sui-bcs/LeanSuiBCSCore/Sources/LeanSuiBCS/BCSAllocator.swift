@@ -41,11 +41,11 @@ public final class BCSAllocator {
   private static let POOL_SIZES: [Int] = [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
   private static let MAX_POOL_SIZE = 32  // Maximum number of blocks per pool
   private static let ALIGNMENT_MASK = 31  // For 32-byte alignment
-  public static let MIN_ALIGNMENT = 32
+  public static let MIN_ALIGNMENT: Int = 32
 
   // MARK: - Shared Instance
 
-  public static let shared = BCSAllocator()
+  static let shared = BCSAllocator()
 
   // MARK: - Memory Pool Structure
 

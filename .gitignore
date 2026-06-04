@@ -202,5 +202,9 @@ tmp/
 # swift
 .build/
 .swiftpm/
+.netrc
+./packages/**/Packages
+xcuserdata/
+DerivedData/
 
 tasks/

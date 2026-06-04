@@ -185,8 +185,24 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            packages/hello/.build
-          key: swift-bridge-${{ runner.os }}-${{ runner.arch }}-${{ env.SWIFT_VERSION }}-${{ env.SWIFT_ANDROID_SDK_VERSION }}-arm64-v8a-${{ hashFiles('packages/hello/Package.swift', 'packages/hello/Package.resolved', 'packages/hello/Sources/**') }}
+            packages/gateway/.build
+            packages/storage/.build
+            packages/hsm/.build
+            packages/auth/.build
+            packages/sui-api/.build
+            packages/sui-bcs/.build
+            packages/sui/.build
+          key: swift-bridge-${{ runner.os }}-${{ runner.arch }}-${{ env.SWIFT_VERSION }}-${{ env.SWIFT_ANDROID_SDK_VERSION }}-arm64-v8a-${{ hashFiles('packages/{gateway,storage,hsm,auth,sui-api,sui-bcs,sui}/**/Package.swift', 'packages/{gateway,storage,hsm,auth,sui-api,sui-bcs,sui}/**/Package.resolved', 'packages/{gateway,storage,hsm,auth,sui-api,sui-bcs,sui}/**/Sources/**') }}
+
+      - name: Cache Gradle distribution and caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/wrapper/dists
+            ~/.gradle/caches
+          key: gradle-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Build Android bridge + app
         run: bazel run --config=bridge_ci --remote_cache="$BAZEL_REMOTE_CACHE_URL" --remote_header="Authorization=Bearer $BAZEL_CACHE_TOKEN" //apps/android:app

@@ -36,7 +36,7 @@ public final class Serializer {
   // MARK: - Constants
   private static let MAX_SEQUENCE_LENGTH: UInt32 = (1 << 31) - 1
   private static let MAX_CONTAINER_DEPTH = 500
-  public static let INITIAL_CAPACITY = 1024
+  public static let INITIAL_CAPACITY: Int = 1024
 
   // Buffer alignment for the optional pooled allocator path.
   private static let ALIGNMENT = 32
@@ -538,11 +538,11 @@ public final class SerializerPool: @unchecked Sendable {
   private var pool: [Serializer] = []
   private let maxPoolSize = 10
 
-  public static let shared = SerializerPool()
+  static let shared = SerializerPool()
 
   private init() {}
 
-  public func withSerializer<T>(_ operation: (Serializer) throws -> T) rethrows -> T {
+  func withSerializer<T>(_ operation: (Serializer) throws -> T) rethrows -> T {
     let serializer = queue.sync { () -> Serializer in
       if let serializer = pool.popLast() {
         serializer.reset()

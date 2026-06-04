@@ -17,7 +17,7 @@ public enum SuiNetworkKind: Sendable, Equatable {
   case devnet
 
   /// The default GraphQL endpoint for this network.
-  public var graphQLEndpoint: URL {
+  var graphQLEndpoint: URL {
     switch self {
     case .mainnet: return URL(string: "https://graphql.mainnet.sui.io/graphql")!
     case .testnet: return URL(string: "https://graphql.testnet.sui.io/graphql")!
@@ -35,7 +35,7 @@ public final class SuiNetwork: Sendable {
   public let kind: SuiNetworkKind
 
   /// The GraphQL endpoint this network resolves to.
-  public let graphQLEndpoint: URL
+  let graphQLEndpoint: URL
 
   /// - Parameters:
   ///   - kind: The well-known network.

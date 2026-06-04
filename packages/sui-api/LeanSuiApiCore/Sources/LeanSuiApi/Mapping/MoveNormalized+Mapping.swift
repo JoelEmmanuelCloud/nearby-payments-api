@@ -29,7 +29,7 @@ extension SuiMoveNormalizedFunction {
       name: f.name,
       visibility: SuiMoveVisibility(graphql: f.visibility),
       isEntry: f.isEntry,
-      parameters: (f.parameters ?? []).map { $0.signature },
+      parameters: (f.parameters ?? []).map { $0.signature.string },
       typeParameters: (f.typeParameters ?? []).map { tp in
         SuiMoveFunctionTypeParameter(
           constraints: tp.constraints.compactMap {
@@ -37,7 +37,7 @@ extension SuiMoveNormalizedFunction {
           }
         )
       },
-      returns: (f.return ?? []).map { $0.signature }
+      returns: (f.return ?? []).map { $0.signature.string }
     )
   }
 }
@@ -48,7 +48,7 @@ extension SuiMoveNormalizedStruct {
       name: s.name,
       abilities: mapAbilities(s.abilities),
       fields: (s.fields ?? []).map {
-        SuiMoveNormalizedField(name: $0.name, signature: $0.type?.signature)
+        SuiMoveNormalizedField(name: $0.name, signature: $0.type?.signature.string)
       },
       typeParameters: (s.typeParameters ?? []).map { tp in
         SuiMoveStructTypeParameter(

@@ -20,7 +20,7 @@ public struct GraphQLSuiProvider: Sendable {
   }
 
   /// Create a provider against a custom GraphQL endpoint URL.
-  public init(url: URL) {
+  init(url: URL) {  // internal: URL not bridgeable; Kotlin uses init(network:)
     self.apollo = ApolloClient(url: url)
   }
 
@@ -512,7 +512,7 @@ public struct GraphQLSuiProvider: Sendable {
       query: GetMoveFunctionArgTypesQuery(packageId: packageId, module: module, function: function)
     )
     let params = result.data?.object?.asMovePackage?.module?.function?.parameters ?? []
-    return params.map { $0.signature }
+    return params.map { $0.signature.string }
   }
 
   // MARK: - Event endpoints
