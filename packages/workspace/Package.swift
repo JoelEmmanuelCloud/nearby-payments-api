@@ -23,7 +23,7 @@ let package = Package(
     .package(url: "https://github.com/vaariance/apollo-ios.git", branch: "jextract-portable"),
 
     // --- Auth Dependencies ---
-    .package(url: "https://github.com/google/GoogleSignIn-iOS.git", from: "7.1.0"),
+    .package(url: "https://github.com/google/GoogleSignIn-iOS.git", from: "9.0.0"),
     .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0"..<"4.0.0"),
   ],
   targets: [

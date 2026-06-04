@@ -165,6 +165,7 @@ class GoogleAuthManager(
     fun signInWithApple(
         nonce: String,
         launchCustomTabs: (String) -> Unit,
+        onError: (Throwable) -> Unit,
     ) {
         scope.launch(Dispatchers.IO) {
             try {
@@ -185,9 +186,13 @@ class GoogleAuthManager(
                         IllegalStateException("Apple web sign-in did not return an auth URL.")
                     }
 
-                launchCustomTabs(authURL)
-            } catch (_: Exception) {
-                // handle error
+                withContext(Dispatchers.Main) {
+                    launchCustomTabs(authURL)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onError(e)
+                }
             }
         }
     }

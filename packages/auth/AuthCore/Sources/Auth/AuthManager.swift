@@ -59,8 +59,10 @@ public final class AuthManager: @unchecked Sendable {
     switch authType {
     case .web:
       verifier = PKCE.generateCodeVerifier()
-      challenge = PKCE.generateCodeChallenge(verifier: verifier)
-      codeChallengeMethod = "S256"
+      if provider != .apple {
+        challenge = PKCE.generateCodeChallenge(verifier: verifier)
+        codeChallengeMethod = "S256"
+      }
 
     case .native:
       verifier = ""
@@ -123,6 +125,7 @@ public final class AuthManager: @unchecked Sendable {
   ///   - deviceIntegrity: The unified device integrity proof structure.
   /// - Returns: An `OAuthCompleteResponse` containing the user session credentials.
   /// - Throws: `AuthError.stateMismatch` if the state does not match the active session request.
+  /// - !important: The code (specifically for apple web signin) it is not recommended to be sent back to us, a token can stand in place of it. However what we get, is what to use to complete the oauth flow.
   public func completeWebSignIn(
     provider: OAuthProvider,
     code: String,
@@ -135,7 +138,7 @@ public final class AuthManager: @unchecked Sendable {
       payload: .web(
         code: code,
         state: state,
-        codeVerifier: codeVerifier
+        codeVerifier: provider == .apple ? nil : codeVerifier
       ),
       integrity: deviceIntegrity
     )

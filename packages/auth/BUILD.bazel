@@ -8,6 +8,7 @@ swift_library(
     module_name = "Auth",
     visibility = ["//visibility:public"],
     deps = [
+        "//packages/device-integrity:DeviceIntegrity",
         "//packages/gateway:Gateway",
         "//packages/hsm:HSM",
         "//packages/storage:Storage",

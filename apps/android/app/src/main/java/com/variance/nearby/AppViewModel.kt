@@ -148,6 +148,10 @@ class AppViewModel(
                 statusMessage = "Please log in in the browser..."
                 launchCustomTabs(url)
             },
+            onError = { error ->
+                isSigningIn = false
+                statusMessage = "Apple Sign-In failed: ${error.localizedMessage}"
+            },
         )
     }
 

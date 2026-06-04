@@ -552,7 +552,7 @@
           "REPO_MAPPING:rules_swift_package_manager+,bazel_skylib bazel_skylib+",
           "REPO_MAPPING:rules_swift_package_manager+,bazel_tools bazel_tools",
           "REPO_MAPPING:rules_swift_package_manager+,cgrindel_bazel_starlib cgrindel_bazel_starlib+",
-          "FILE:@@//packages/workspace/Package.resolved 5b5442dd878a11384701cfcfe6c51ca5263e66ddd93861631d58a37345eb9693"
+          "FILE:@@//packages/workspace/Package.resolved 892348409a01cf23c6e81fb12e71db6c6e9dcd32bfa8c41e01eca4dff65a40c9"
         ],
         "generatedRepoSpecs": {
           "swift_package": {
@@ -607,9 +607,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_googlesignin_ios",
-              "commit": "a7965d134c5d3567026c523e0a8a583f73b62b0d",
+              "commit": "913b4005ea26aebe1c97d54e35ad82a515924c71",
               "remote": "https://github.com/google/GoogleSignIn-iOS.git",
-              "version": "7.1.0",
+              "version": "9.1.0",
               "env": {},
               "env_inherit": [],
               "cached_json_directory": "",
@@ -631,13 +631,41 @@
               "target_deps": {}
             }
           },
+          "swiftpkg_app_check": {
+            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_app_check",
+              "commit": "61b85103a1aeed8218f17c794687781505fbbef5",
+              "remote": "https://github.com/google/app-check.git",
+              "version": "11.2.0",
+              "env": {},
+              "env_inherit": [],
+              "cached_json_directory": "",
+              "replace_scm_with_registry": false,
+              "target_deps": {}
+            }
+          },
           "swiftpkg_appauth_ios": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_appauth_ios",
-              "commit": "2781038865a80e2c425a1da12cc1327bcd56501f",
+              "commit": "145104f5ea9d58ae21b60add007c33c1cc0c948e",
               "remote": "https://github.com/openid/AppAuth-iOS.git",
-              "version": "1.7.6",
+              "version": "2.0.0",
+              "env": {},
+              "env_inherit": [],
+              "cached_json_directory": "",
+              "replace_scm_with_registry": false,
+              "target_deps": {}
+            }
+          },
+          "swiftpkg_googleutilities": {
+            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_googleutilities",
+              "commit": "60da361632d0de02786f709bdc0c4df340f7613e",
+              "remote": "https://github.com/google/GoogleUtilities.git",
+              "version": "8.1.0",
               "env": {},
               "env_inherit": [],
               "cached_json_directory": "",
@@ -663,9 +691,23 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_gtmappauth",
-              "commit": "5d7d66f647400952b1758b230e019b07c0b4b22a",
+              "commit": "56e0ccf09a6dd29dc7e68bdf729598240ca8aa16",
               "remote": "https://github.com/google/GTMAppAuth.git",
-              "version": "4.1.1",
+              "version": "5.0.0",
+              "env": {},
+              "env_inherit": [],
+              "cached_json_directory": "",
+              "replace_scm_with_registry": false,
+              "target_deps": {}
+            }
+          },
+          "swiftpkg_promises": {
+            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_promises",
+              "commit": "540318ecedd63d883069ae7f1ed811a2df00b6ac",
+              "remote": "https://github.com/google/promises.git",
+              "version": "2.4.0",
               "env": {},
               "env_inherit": [],
               "cached_json_directory": "",
