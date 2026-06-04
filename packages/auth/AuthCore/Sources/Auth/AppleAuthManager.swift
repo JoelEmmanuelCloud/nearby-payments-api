@@ -9,21 +9,13 @@
   import Storage
 
   /// iOS platform-specific coordinator that orchestrates native OAuth sign-in operations,
-  /// including native Sign in with Apple, native Google Sign-In, and UI presentation context anchoring.
+  /// including native Sign in with Apple and native Google Sign-In.
   ///
   /// This class is explicitly excluded from the JNI Java bridge and only compiles/executes on iOS devices.
-  public final class AppleAuthManager: NSObject, ASAuthorizationControllerDelegate,
-    ASAuthorizationControllerPresentationContextProviding,
-    ASWebAuthenticationPresentationContextProviding, Sendable
-  {
+  public final class AppleAuthManager: Sendable {
     private let auth: AuthManager
     public let sessionManager: SessionManager
     private let integrityProvider: IntegrityProvider
-
-    private let continuationLock = NSLock()
-    private var activeAnchor: ASPresentationAnchor?
-    private var credentialContinuation:
-      CheckedContinuation<(idToken: String, authCode: String?), Error>?
 
     /// Initializes `AppleAuthManager` with custom gateway, storage, and HSM providers.
     ///
@@ -92,8 +84,8 @@
       _ request: ASAuthorizationAppleIDRequest,
       nonce: String
     ) {
-      request.requestedScopes = [.fullName, .email]
-      request.nonce = PKCE.hash(nonce).base64urlEncodedString()
+      request.requestedScopes = [.email]
+      request.nonce = PKCE.hashBase64URL(nonce)
     }
 
     /// Completes native Sign in with Apple after receiving the authorization result from the UI framework.
@@ -180,17 +172,5 @@
       try await sessionManager.revokeSession()
     }
 
-    /// Protocol method returns the active presentation window for the authorization dialog.
-    public func presentationAnchor(for controller: ASAuthorizationController)
-      -> ASPresentationAnchor
-    {
-      return activeAnchor ?? ASPresentationAnchor()
-    }
-
-    /// Protocol method returns the active presentation window for the web authentication session.
-    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor
-    {
-      return activeAnchor ?? ASPresentationAnchor()
-    }
   }
 #endif

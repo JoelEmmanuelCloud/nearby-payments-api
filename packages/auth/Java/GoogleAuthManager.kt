@@ -67,13 +67,7 @@ class GoogleAuthManager(
     ): String =
         withContext(Dispatchers.IO) {
             integrityProvider.prepare()
-            val hashData = PKCE.hash(nonce + state, swiftArena)
-            val hashBytes = hashData.toByteArray()
-            val requestHash =
-                android.util.Base64.encodeToString(
-                    hashBytes,
-                    android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP,
-                )
+            val requestHash = PKCE.hashBase64URL(nonce + state)
             integrityProvider.attest(requestHash)
         }
 

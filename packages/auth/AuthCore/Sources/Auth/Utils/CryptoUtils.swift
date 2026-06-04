@@ -21,8 +21,8 @@ public struct PKCE {
   ///
   /// - Returns: A base64url-encoded 32-byte string.
   public static func generateCodeVerifier() -> String {
-    let key = SymmetricKey(size: SymmetricKeySize(bitCount: 32 * 8))
-    let bytes = key.withUnsafeBytes { Array($0) }
+    var rng = SystemRandomNumberGenerator()
+    let bytes = (0..<32).map { _ in UInt8.random(in: 0...255, using: &rng) }
     return Data(bytes).base64urlEncodedString()
   }
 
@@ -34,11 +34,19 @@ public struct PKCE {
     return hash(verifier).base64urlEncodedString()
   }
 
+  /// Hashes a string using SHA-256 and returns the digest as a base64url-encoded string.
+  ///
+  /// - Parameter input: The string input to hash.
+  /// - Returns: The base64url-encoded SHA-256 digest.
+  public static func hashBase64URL(_ input: String) -> String {
+    hash(input).base64urlEncodedString()
+  }
+
   /// Hashes a string using SHA-256.
   ///
   /// - Parameter input: The string input to hash.
   /// - Returns: The SHA-256 digest wrapped in a `Data` object.
-  public static func hash(_ input: String) -> Data {
+  static func hash(_ input: String) -> Data {
     Data(SHA256.hash(data: Data(input.utf8)))
   }
 }
