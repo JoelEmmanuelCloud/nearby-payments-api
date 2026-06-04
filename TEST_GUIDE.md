@@ -34,8 +34,8 @@ The Postman pre-request scripts on `high` endpoints generate these headers autom
 ## Step 1 — Get an Access Token
 
 1. Open `{{baseUrl}}/static/auth_test.html` in your browser
-2. Select platform (`ios` or `android`) and click **Sign in with Google**
-3. Complete Google sign-in — the page redirects back and completes the exchange automatically
+2. Select platform (`ios` or `android`) and click **Sign in with Google** or **Sign in with Apple**
+3. Complete sign-in — the page redirects back and completes the exchange automatically
 4. Copy the **Access Token** from the green box
 
 Paste the token into the Postman collection variable `accessToken`:
@@ -105,7 +105,7 @@ Body:
 ```
 Expected: `200` — only `state` is returned. The Google Sign-In SDK handles auth and produces an `idToken`.
 
-**Apple native** (iOS only — Sign in with Apple):
+**Apple native** (iOS only — Sign in with Apple SDK):
 ```
 POST /v1/auth/oauth/begin
 Body:
@@ -117,14 +117,44 @@ Body:
 ```
 Expected: `200` — only `state` is returned. `ASAuthorizationAppleIDProvider` handles auth and produces an `identityToken`.
 
+**Apple web** (browser-based Sign in with Apple):
+```
+POST /v1/auth/oauth/begin
+Body:
+{
+  "provider": "apple",
+  "flowType": "web",
+  "zkLoginNonce": "<ephemeral public key nonce>"
+}
+```
+Expected: `200` — returns `state` and `authURL`. Redirect the user to `authURL`. Apple POSTs `code` and `state` to `POST /v1/auth/oauth/callback/apple`, which redirects to `/static/auth_test.html?code=...&state=...`.
+
+> Requires `APPLE_WEB_CLIENT_ID`, `APPLE_WEB_REDIRECT_URI`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY_PEM`, and `APPLE_TEAM_ID` set in the backend env. Returns `501 oauth_provider_unsupported` if any are missing.
+
 > `flowType` defaults to `"web"` if omitted. Supported providers: `google`, `apple`.
+
+---
+
+### Apple OAuth Callback
+No auth required. **Called by Apple — not by the client directly.**
+
+After the user completes Sign in with Apple on the web, Apple POSTs `code` and `state` as `application/x-www-form-urlencoded` to this endpoint. The server extracts both values and redirects the browser to `/static/auth_test.html?code=...&state=...`, from which the client calls `POST /v1/auth/oauth/complete`.
+
+```
+POST /v1/auth/oauth/callback/apple
+Content-Type: application/x-www-form-urlencoded   (sent by Apple, not by you)
+Body: code=<auth_code>&state=<state>
+```
+Expected: `302` redirect to `/static/auth_test.html?code=...&state=...`
+
+Configure `APPLE_WEB_REDIRECT_URI=https://nearby-api.variance.space/v1/auth/oauth/callback/apple` in both Apple Developer Console (Services ID → Web Authentication → Return URLs) and in the backend env.
 
 ---
 
 ### OAuth Complete
 No auth required. Exchanges credentials for an access token, refresh token, JWT, and zkLogin salt.
 
-**Web flow:**
+**Google web flow:**
 ```
 POST /v1/auth/oauth/complete
 Body:
@@ -135,10 +165,31 @@ Body:
   "codeVerifier": "<original PKCE secret>",
   "platform": "ios",
   "osVersion": "18.0",
-  "appBundleId": "com.nearby.app",
+  "appBundleId": "com.variance.nearby",
   "deviceIntegrity": { "provider": "stub" }
 }
 ```
+
+**Apple web flow:**
+```
+POST /v1/auth/oauth/complete
+Body:
+{
+  "flowType": "web",
+  "code": "<authorization code from Apple callback>",
+  "state": "<state from oauth/begin>",
+  "platform": "ios",
+  "osVersion": "18.0",
+  "appBundleId": "com.variance.nearby",
+  "deviceIntegrity": {
+    "provider": "ios_app_attest",
+    "keyId": "<key id>",
+    "assertion": "<assertion>",
+    "clientDataHash": "<client data hash>"
+  }
+}
+```
+> No `codeVerifier` for Apple web — Apple uses a server-generated ES256 client_secret JWT (derived from `APPLE_PRIVATE_KEY_PEM`) instead of PKCE. The `jwt` in the response will have `aud=com.variance.nearby.auth` (the web service ID, not the app bundle ID).
 
 **Google native:**
 ```
@@ -596,8 +647,11 @@ go test ./internal/domain/deposit/... -run TestHandleBridgeWebhook -v
 ```
 1.  Health Check
 2.  Get Server Public Key
-3.  OAuth Begin (Web or Native)     (get state; web also returns authURL)
-4.  Sign in via browser / SDK      (web: paste accessToken into Postman; native: use OAuth Complete directly)
+3.  OAuth Begin (Web or Native)     (get state; web flows also return authURL)
+4.  Sign in via browser / SDK
+      Google web:   redirect to authURL → OAuth Complete (Google Web) with code + codeVerifier
+      Apple web:    redirect to authURL → Apple POSTs to /oauth/callback/apple → OAuth Complete (Apple Web) with code (no codeVerifier)
+      Google/Apple native: use OAuth Complete (Native) directly with idToken from SDK
 5.  Bind Wallet                     (PUT /v1/me/wallet with suiAddress derived from jwt + salt)
 6.  Get Profile                     (no avatarUrl yet)
 7.  Upload Avatar                   (set Content-Type + binary body in Postman)
