@@ -23,7 +23,6 @@
 //  THE SOFTWARE.
 //
 
-import Foundation
 import UInt256
 
 /// The max UInt8 value
@@ -61,7 +60,7 @@ public final class Deserializer {
   private let buffer: UnsafeRawBufferPointer
   private var position: Int = 0
   private var containerDepth: Int = 0
-  private let originalData: Data  // Keep reference to prevent deallocation
+  private let originalData: SuiData
   private var allocator: BCSAllocator?
 
   // Performance tracking for SIMD operations
@@ -79,45 +78,46 @@ public final class Deserializer {
 
   // MARK: - Initialization
 
-  public init(data: Data) {
+  public init(data: SuiData) {
     self.originalData = data
     self.allocator = nil
-    self.buffer = Self.makeOwnedBuffer(from: data)
+    self.buffer = Self.makeOwnedBuffer(from: data.bytes)
+  }
+
+  public convenience init(bytes: [UInt8]) {
+    self.init(data: SuiData(bytes))
   }
 
   /// Initialize with a custom allocator for SIMD optimization
-  public init(data: Data, allocator: BCSAllocator) {
+  public init(data: SuiData, allocator: BCSAllocator) {
     self.originalData = data
     self.allocator = allocator
-    self.buffer = Self.makeOwnedBuffer(from: data)
+    self.buffer = Self.makeOwnedBuffer(from: data.bytes)
+  }
+
+  public convenience init(bytes: [UInt8], allocator: BCSAllocator) {
+    self.init(data: SuiData(bytes), allocator: allocator)
   }
 
   deinit {
     buffer.baseAddress?.deallocate()
   }
 
-  /// Copy `data` into an owned, stably-addressed buffer.
-  ///
-  /// `Data.withUnsafeBytes` only guarantees the pointer is valid *inside* the
-  /// closure. Storing that pointer for the lifetime of the deserializer is a
-  /// use-after-scope bug (it dangles once the closure returns, and reads
-  /// garbage for small/inline-stored `Data`). Owning a copy keeps the bytes
-  /// alive and stable for the deserializer's whole lifetime.
-  private static func makeOwnedBuffer(from data: Data) -> UnsafeRawBufferPointer {
+  /// Copy bytes into an owned, stably-addressed buffer for the deserializer's lifetime.
+  private static func makeOwnedBuffer(from data: [UInt8]) -> UnsafeRawBufferPointer {
     let raw = UnsafeMutableRawBufferPointer.allocate(
       byteCount: data.count,
       alignment: MemoryLayout<UInt64>.alignment
     )
     if !data.isEmpty {
-      data.copyBytes(
-        to: raw.bindMemory(to: UInt8.self),
-        count: data.count
-      )
+      data.withUnsafeBytes { bytes in
+        raw.baseAddress!.copyMemory(from: bytes.baseAddress!, byteCount: data.count)
+      }
     }
     return UnsafeRawBufferPointer(raw)
   }
 
-  public func output() -> Data {
+  public func output() -> SuiData {
     return originalData
   }
 
@@ -269,15 +269,15 @@ public final class Deserializer {
 
   // MARK: - Bytes Deserialization
 
-  private func deserializeData() throws -> Data {
+  private func deserializeData() throws -> SuiData {
     let length = try deserializeULEB128()
     let bytes = try readBytes(Int(length))
-    return Data(bytes)
+    return SuiData(bytes)
   }
 
-  private func deserializeFixedData(_ length: Int) throws -> Data {
+  private func deserializeFixedData(_ length: Int) throws -> SuiData {
     let bytes = try readBytes(length)
-    return Data(bytes)
+    return SuiData(bytes)
   }
 
   // MARK: - SIMD-Optimized Array Deserialization
@@ -349,13 +349,13 @@ public final class Deserializer {
     return try deserializeBool()
   }
 
-  /// Deserialize a Data object from the Deserializer's input data buffer.
-  public static func toBytes(_ deserializer: Deserializer) throws -> Data {
+  /// Deserialize bytes from the Deserializer's input data buffer.
+  public static func toBytes(_ deserializer: Deserializer) throws -> SuiData {
     return try deserializer.deserializeData()
   }
 
-  /// Deserialize a fixed-length Data object from the Deserializer's input data buffer.
-  public func fixedBytes(length: Int) throws -> Data {
+  /// Deserialize fixed-length bytes from the Deserializer's input data buffer.
+  public func fixedBytes(length: Int) throws -> SuiData {
     return try deserializeFixedData(length)
   }
 
@@ -369,7 +369,7 @@ public final class Deserializer {
     var result: [K: V] = [:]
     result.reserveCapacity(Int(length))
 
-    var previousKeyBytes: Data?
+    var previousKeyBytes: SuiData?
 
     for _ in 0..<length {
       // Capture the position before deserializing the key
@@ -478,9 +478,9 @@ public final class Deserializer {
   }
 
   /// Reads a specified number of bytes from the input data and advances the current position.
-  private func read(length: Int) throws -> Data {
+  private func read(length: Int) throws -> SuiData {
     let bytes = try readBytes(length)
-    return Data(bytes)
+    return SuiData(bytes)
   }
 
   /// Reads a specified number of bytes from the input data and interprets the bytes as an unsigned integer.

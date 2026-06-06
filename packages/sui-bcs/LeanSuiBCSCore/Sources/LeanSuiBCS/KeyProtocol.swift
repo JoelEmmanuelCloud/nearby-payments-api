@@ -23,8 +23,6 @@
 //  THE SOFTWARE.
 //
 
-import Foundation
-
 public protocol KeyProtocol: EncodingProtocol, Sendable {
   /// Serializes an output instance using the given Serializer.
   ///

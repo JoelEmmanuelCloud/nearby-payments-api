@@ -23,6 +23,4 @@
 //  THE SOFTWARE.
 //
 
-import Foundation
-
 public protocol EncodingContainer {}
