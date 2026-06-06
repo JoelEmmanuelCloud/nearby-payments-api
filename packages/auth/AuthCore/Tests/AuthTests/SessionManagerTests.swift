@@ -172,6 +172,26 @@ struct SessionManagerTests {
     #expect(try manager.getCurrentSession() == nil)
     #expect(hsm.didDeleteKey)
   }
+
+  @Test("revoke returns the provider of the cleared session")
+  func revokeReturnsProvider() async throws {
+    let manager = SessionManager(storage: MockStorage(), hsm: MockHSM(), gateway: MockGateway())
+    try manager.saveSession(response: makeOAuthCompleteResponse(), provider: .apple, maxEpoch: 5)
+
+    let provider = try await manager.revokeSession()
+
+    #expect(provider == .apple)
+    #expect(try manager.getCurrentSession() == nil)
+  }
+
+  @Test("revoke returns nil when no session is present")
+  func revokeReturnsNilWithoutSession() async throws {
+    let manager = SessionManager(storage: MockStorage(), hsm: MockHSM(), gateway: MockGateway())
+
+    let provider = try await manager.revokeSession()
+
+    #expect(provider == nil)
+  }
 }
 
 private func now() -> Int64 {
@@ -299,6 +319,48 @@ private final class MockGateway: APIGatewayProtocol, @unchecked Sendable {
     requestNonce: String,
     requestTimestamp: String
   ) async throws -> DeviceCredential {
+    throw AuthError.unknown
+  }
+
+  func bindWallet(request: BindWalletRequest, accessToken: String) async throws {
+    throw AuthError.unknown
+  }
+
+  func getProfile(accessToken: String) async throws -> UserProfileResponse {
+    throw AuthError.unknown
+  }
+
+  func uploadAvatar(
+    data: Data,
+    contentType: String,
+    accessToken: String
+  ) async throws -> AvatarUploadResponse {
+    throw AuthError.unknown
+  }
+
+  func checkNameAvailability(leafName: String, accessToken: String) async throws
+    -> NameAvailabilityResponse
+  {
+    throw AuthError.unknown
+  }
+
+  func registerLeafName(
+    request: RegisterLeafRequest,
+    accessToken: String,
+    deviceProvider: String,
+    requestNonce: String,
+    requestTimestamp: String
+  ) async throws -> RegisterLeafResponse {
+    throw AuthError.unknown
+  }
+
+  func getNameTask(
+    taskId: String,
+    accessToken: String,
+    deviceProvider: String,
+    requestNonce: String,
+    requestTimestamp: String
+  ) async throws -> NameTaskStatusResponse {
     throw AuthError.unknown
   }
 }

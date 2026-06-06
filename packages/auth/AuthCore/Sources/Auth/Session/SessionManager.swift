@@ -247,7 +247,14 @@ public final class SessionManager: @unchecked Sendable {
   }
 
   /// Revokes the current backend session and always clears local session state.
-  public func revokeSession() async throws {
+  ///
+  /// - Returns: The OAuth provider of the session that was revoked, or `nil` if no
+  ///   session was present. Callers use this to detach the corresponding identity
+  ///   provider (e.g. Google `disconnect`) after the local session is cleared.
+  /// - Throws: `SessionError.gatewayRevokeFailed` if the backend revoke call fails.
+  ///   Local session state is cleared regardless.
+  @discardableResult
+  public func revokeSession() async throws -> OAuthProvider? {
     let session = try getCurrentSession()
 
     defer {
@@ -264,6 +271,8 @@ public final class SessionManager: @unchecked Sendable {
         throw SessionError.gatewayRevokeFailed
       }
     }
+
+    return session?.provider
   }
 
   /// Clears either the current session or every secure value owned by the underlying providers.

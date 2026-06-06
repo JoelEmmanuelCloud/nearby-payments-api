@@ -2,6 +2,7 @@ package com.variance.nearby.auth
 
 import android.content.Context
 import android.os.Build
+import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -30,8 +31,6 @@ import java.util.concurrent.ConcurrentHashMap
  * @property scope Coroutine scope in which background authentication actions run.
  * @property gateway The API gateway client bridged from Swift.
  * @property serverClientId The Web client ID registered for Google Sign-In.
- * @property storage The secure preferences storage implementation.
- * @property hsm Hardware security module providing StrongBox or software keys.
  * @property swiftArena The foreign memory arena managing Swift-allocated bridge objects.
  */
 class GoogleAuthManager(
@@ -261,7 +260,8 @@ class GoogleAuthManager(
     ) {
         scope.launch(Dispatchers.IO) {
             try {
-                sessionManager.revokeSession().await()
+                val provider = sessionManager.revokeSession(swiftArena).await()
+                detachProvider(providerRawOf(provider))
                 withContext(Dispatchers.Main) {
                     onComplete()
                 }
@@ -271,6 +271,18 @@ class GoogleAuthManager(
                     onComplete()
                 }
             }
+        }
+    }
+
+    /** Raw provider value from an optional bridged provider, or null if absent. */
+    private fun providerRawOf(provider: Optional<OAuthProvider>): String? = if (provider.isPresent) provider.get().rawValue else null
+
+    /** Detaches the local provider credential state after sign-out. Best-effort. */
+    private suspend fun detachProvider(providerRaw: String?) {
+        if (providerRaw == OAuthProvider.google(swiftArena).rawValue) {
+            // Clears the provider's sticky credential selection. Does not revoke the OAuth
+            // grant — that is the backend's responsibility via Google's revoke endpoint.
+            runCatching { credentialManager.clearCredentialState(ClearCredentialStateRequest()) }
         }
     }
 }

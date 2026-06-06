@@ -17,21 +17,23 @@
     public let sessionManager: SessionManager
     private let integrityProvider: IntegrityProvider
 
-    /// Initializes `AppleAuthManager` with custom gateway, storage, and HSM providers.
+    /// Initializes `AppleAuthManager` with an upstream-owned gateway and session manager.
+    ///
+    /// The session manager (and the HSM it wraps) is constructed by the caller so the same
+    /// HSM instance can be shared higher up — e.g. to back the zkLogin ephemeral key — rather
+    /// than being recreated internally. Mirrors the Android `GoogleAuthManager` initializer.
     ///
     /// - Parameters:
     ///   - gateway: The HTTP client API Gateway instance.
-    ///   - storage: Keychain provider for secure token storage.
-    ///   - hsm: Secure Enclave hardware key provider.
+    ///   - sessionManager: The session manager owning token storage, the HSM, and refresh/revoke.
     ///   - bundleId: The iOS app bundle identifier.
     public init(
       gateway: APIGateway,
-      storage: KeychainProvider,
-      hsm: SecureEnclaveHSM,
+      sessionManager: SessionManager,
       bundleId: String
     ) {
       self.integrityProvider = StubIntegrityProvider()
-      self.sessionManager = SessionManager(storage: storage, hsm: hsm, gateway: gateway)
+      self.sessionManager = sessionManager
 
       let platform = "ios"
       let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
@@ -41,27 +43,6 @@
         osVersion: osVersion,
         appBundleId: bundleId,
         gateway: gateway
-      )
-    }
-
-    /// Convenience initializer constructing dependencies from baseURL and version parameters.
-    ///
-    /// - Parameters:
-    ///   - baseURLString: Root URL string of the authentication backend server.
-    ///   - apiVersion: The target backend API version string (e.g. "v1").
-    ///   - bundleId: The application's bundle identifier.
-    /// - Throws: `GatewayError` if the baseURLString is invalid.
-    public convenience init(
-      baseURLString: String,
-      apiVersion: String,
-      bundleId: String
-    ) throws {
-      let gateway = try APIGateway(baseURLString: baseURLString, apiVersion: apiVersion)
-      self.init(
-        gateway: gateway,
-        storage: KeychainProvider(),
-        hsm: SecureEnclaveHSM(),
-        bundleId: bundleId
       )
     }
 
@@ -167,9 +148,54 @@
       try sessionManager.saveSession(response: completeResponse, provider: .google, maxEpoch: 0)
     }
 
-    /// Revokes the current session server-side and clears local credentials.
+    /// Revokes the current session server-side, clears local credentials, and detaches
+    /// the identity provider.
+    ///
+    /// After the backend session is revoked and local state cleared, the corresponding
+    /// provider is told the app no longer holds the session. For Google this calls
+    /// `disconnect()`, which revokes the OAuth grant. Apple offers no client-side
+    /// revoke API, so its grant must be revoked server-side via `/auth/revoke`.
+    @MainActor
     public func signOut() async throws {
-      try await sessionManager.revokeSession()
+      let provider = try await sessionManager.revokeSession()
+
+      switch provider {
+      case .google:
+        // `disconnect()` signs out and revokes all OAuth2 scope grants at Google.
+        // Best-effort: a failure here must not resurrect the already-cleared session.
+        try? await GIDSignIn.sharedInstance.disconnect()
+      case .apple, .none:
+        // No client-side Apple revoke API; backend handles `/auth/revoke`.
+        break
+      }
+    }
+
+    /// Observes live Sign in with Apple credential revocation and signs the user out.
+    ///
+    /// Apple posts `credentialRevokedNotification` when the user revokes the app's
+    /// Sign in with Apple credential (e.g. from Settings) while the app is running.
+    /// This catches provider revocation while the app is running without attempting
+    /// any silent provider sign-in. The session is revoked and cleared before
+    /// `onRevoked` is invoked.
+    ///
+    /// - Parameter onRevoked: Called on the main actor after the session is cleared,
+    ///   so the app can route to sign-in.
+    /// - Returns: The observer token. Retain it for as long as observation is desired
+    ///   and remove it from `NotificationCenter.default` to stop observing.
+    @discardableResult
+    public func observeAppleCredentialRevocation(
+      onRevoked: @escaping @Sendable () -> Void
+    ) -> NSObjectProtocol {
+      NotificationCenter.default.addObserver(
+        forName: ASAuthorizationAppleIDProvider.credentialRevokedNotification,
+        object: nil,
+        queue: .main
+      ) { [weak self] _ in
+        Task { @MainActor in
+          try? await self?.signOut()
+          onRevoked()
+        }
+      }
     }
 
   }

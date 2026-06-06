@@ -20,7 +20,7 @@ let package = Package(
     // swift-crypto. None are external workspace deps any more.
     .package(url: "https://github.com/MarcoDotIO/UInt256.git", from: "1.0.0"),
     .package(url: "https://github.com/attaswift/BigInt.git", from: "5.3.0"),
-    .package(url: "https://github.com/vaariance/apollo-ios.git", branch: "jextract-portable"),
+    .package(path: "/Users/peter/Developer/apollo-ios"),
 
     // --- Auth Dependencies ---
     .package(url: "https://github.com/google/GoogleSignIn-iOS.git", from: "9.0.0"),
