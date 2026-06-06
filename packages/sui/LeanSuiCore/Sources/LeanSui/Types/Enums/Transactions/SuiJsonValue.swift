@@ -126,7 +126,7 @@ public indirect enum SuiJsonValue: SuiBCSBridged, Equatable {
   public func toData() throws -> Data {
     let ser = Serializer()
     try self.serialize(ser)
-    return ser.output()
+    return Data(ser.output().bytes)
   }
 
   public func serialize(_ serializer: Serializer) throws {

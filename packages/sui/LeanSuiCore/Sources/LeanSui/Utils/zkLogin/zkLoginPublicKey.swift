@@ -31,8 +31,8 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
   /// Canonical identifier bytes: `iss_len || iss || unpadded_address_seed`.
   /// This is the *current* Sui encoding (see `base_types.rs` `try_from_unpadded`),
   /// the one the live network verifies zkLogin signatures against.
-  public var key: Data
-  private let client: GraphQLClientProtocol?
+  public var key: SuiData
+  private let client: SuiGraphQLClient?
 
   /// Retained (when constructed from a seed) so the *legacy* padded address can
   /// be derived on demand via `toLegacySuiAddress()`. `nil` when built from raw
@@ -40,11 +40,11 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
   private let addressSeed: BigInt?
   private let normalizedIss: String?
 
-  public typealias DataValue = Data
+  public typealias DataValue = SuiData
 
   public static let LENGTH: Int = 32
 
-  public init(data: Data) throws {
+  public init(data: SuiData) throws {
     guard data.count >= Self.LENGTH else {
       throw AccountError.invalidPublicKey
     }
@@ -73,7 +73,7 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
   // Kept `internal`: `BigInt` does not bridge and collides with the `String`
   // overload (`addressSeed:iss:client:`). The public `String` initializer wraps
   // this one.
-  init(addressSeed: BigInt, iss: String, client: GraphQLClientProtocol? = nil) throws {
+  init(addressSeed: BigInt, iss: String, client: SuiGraphQLClient? = nil) throws {
     // Current Sui encoding (base_types.rs `try_from_unpadded`):
     //   iss_bytes_len || iss_bytes || UNPADDED address seed
     // The seed must NOT be zero-padded to 32 bytes — the live network derives and
@@ -92,14 +92,14 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
     tmp.append(issBytes)  // Then the issuer bytes
     tmp.append(Data(addressSeedBytes))  // Then the unpadded address seed
 
-    self.key = tmp
+    self.key = tmp.suiData
     self.client = client
     self.addressSeed = addressSeed
     self.normalizedIss = normalizedIss
   }
 
   // Added overload for string addressSeed
-  public init(addressSeed: String, iss: String, client: GraphQLClientProtocol? = nil) throws {
+  public init(addressSeed: String, iss: String, client: SuiGraphQLClient) throws {
     // Try to convert the string addressSeed to BigInt
     guard let bigIntSeed = BigInt(addressSeed, radix: 10) else {
       throw AccountError.invalidData
@@ -118,15 +118,15 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
   }
 
   public func base64() -> String {
-    return key.base64EncodedString()
+    return key.data.base64EncodedString()
   }
 
   public func hex() -> String {
-    return "0x\(self.key.hexEncodedString())"
+    return "0x\(self.key.data.hexEncodedString())"
   }
 
   public func toBase58() throws -> String {
-    return try toSuiBytes().toBase58String()
+    return try toSuiBytes().bytes.toBase58String()
   }
 
   public static func fromBase58(_ base58: String) throws -> zkLoginPublicIdentifier {
@@ -137,14 +137,14 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
     guard data.count > 1 else {
       throw AccountError.invalidPublicKey
     }
-    return try zkLoginPublicIdentifier(data: Data(data.dropFirst()))
+    return try zkLoginPublicIdentifier(data: SuiData(Array(data.dropFirst())))
   }
 
   public func toSuiAddress() throws -> String {
     return try Inputs.normalizeSuiAddress(
       value: String(
         try BLAKE2b.hash(
-          data: Data(try self.toSuiBytes()),
+          data: try self.toSuiBytes().data,
           digestLength: 32
         ).hexEncodedString().prefix(64))
     )
@@ -188,25 +188,25 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
   /// - Returns: A string representing the Sui address.
   public func toSuiPublicKey() throws -> String {
     let bytes = try self.toSuiBytes()
-    return bytes.toBase64()
+    return bytes.bytes.toBase64()
   }
 
   /// Converts the public key to Sui bytes.
   /// - Throws: If any error occurs during conversion.
   /// - Returns: An array of bytes representing the Sui public key.
-  public func toSuiBytes() throws -> [UInt8] {
+  public func toSuiBytes() throws -> SuiData {
     // Create a data structure with the format [flag_byte] + [zkLogin_identifier_bytes]
     var result = [UInt8]()
     result.append(SignatureSchemeFlags.SIGNATURE_SCHEME_TO_FLAG["zkLogin"]!)
-    result.append(contentsOf: [UInt8](self.key))
+    result.append(contentsOf: self.key.bytes)
 
-    return result
+    return SuiData(result)
   }
 
   // Methods for zkLogin signature verification
 
   /// Verifies that the signature is valid for the provided transaction data
-  public func verifyTransaction(transactionData: [UInt8], signature: zkLoginSignature) async throws
+  public func verifyTransaction(transactionData: SuiData, signature: zkLoginSignature) async throws
     -> Bool
   {
     guard let client = self.client else {
@@ -217,7 +217,7 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
     let address = try extractAddressFromSignature(signature: signature)
 
     // Convert transaction data to base64
-    let transactionDataBase64 = Data(transactionData).base64EncodedString()
+    let transactionDataBase64 = transactionData.data.base64EncodedString()
 
     // Serialize signature
     let serializedSignature = signature.serialize()
@@ -238,7 +238,7 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
   }
 
   /// Verifies that the signature is valid for the provided personal message
-  public func verifyPersonalMessage(message: [UInt8], signature: zkLoginSignature) async throws
+  public func verifyPersonalMessage(message: SuiData, signature: zkLoginSignature) async throws
     -> Bool
   {
     guard let client = self.client else {
@@ -249,7 +249,7 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
     let address = try extractAddressFromSignature(signature: signature)
 
     // Convert message to base64
-    let messageBase64 = Data(message).base64EncodedString()
+    let messageBase64 = message.data.base64EncodedString()
 
     // Serialize signature
     let serializedSignature = signature.serialize()
@@ -284,7 +284,7 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
     return try publicKey.toSuiAddress()
   }
 
-  public func verify(data: Data, signature: Signature) throws -> Bool {
+  public func verify(data: SuiData, signature: Signature) throws -> Bool {
     throw SuiError.customError(message: "Not implemented")
   }
 
@@ -292,29 +292,29 @@ public struct zkLoginPublicIdentifier: PublicKeyProtocol {
     throw SuiError.customError(message: "Not implemented")
   }
 
-  public func verifyTransactionBlock(_ transactionBlock: [UInt8], _ signature: Signature) throws
+  public func verifyTransactionBlock(_ transactionBlock: SuiData, _ signature: Signature) throws
     -> Bool
   {
     throw SuiError.customError(message: "Not implemented")
   }
 
-  public func verifyWithIntent(_ bytes: [UInt8], _ signature: Signature, _ intent: IntentScope)
+  public func verifyWithIntent(_ bytes: SuiData, _ signature: Signature, _ intent: IntentScope)
     throws -> Bool
   {
     throw SuiError.customError(message: "Not implemented")
   }
 
-  public func verifyPersonalMessage(_ message: [UInt8], _ signature: Signature) throws -> Bool {
+  public func verifyPersonalMessage(_ message: SuiData, _ signature: Signature) throws -> Bool {
     throw SuiError.customError(message: "Not implemented")
   }
 
   public static func deserialize(from deserializer: Deserializer) throws -> zkLoginPublicIdentifier
   {
-    let key = try Deserializer.toBytes(deserializer)
+    let key = try Deserializer.toBytes(deserializer).bytes
     if key.count != zkLoginPublicIdentifier.LENGTH {
       throw AccountError.lengthMismatch
     }
-    return try zkLoginPublicIdentifier(data: key)
+    return try zkLoginPublicIdentifier(data: SuiData(key))
   }
 
   public func serialize(_ serializer: Serializer) throws {

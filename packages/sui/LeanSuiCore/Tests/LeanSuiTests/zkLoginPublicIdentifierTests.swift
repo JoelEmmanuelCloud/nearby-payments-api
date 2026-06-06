@@ -35,11 +35,11 @@ final class zkLoginPublicIdentifierTests: XCTestCase {
     let seed = "380704556853533152350240698167704405529973457670972223618755249929828551006"
 
     let pubId1 = try zkLoginPublicIdentifier(
-      addressSeed: seed,
+      addressSeed: try XCTUnwrap(BigInt(seed, radix: 10)),
       iss: "https://accounts.google.com"
     )
     let pubId2 = try zkLoginPublicIdentifier(
-      addressSeed: seed,
+      addressSeed: try XCTUnwrap(BigInt(seed, radix: 10)),
       iss: "accounts.google.com"
     )
     XCTAssertEqual(try pubId1.toSuiAddress(), try pubId2.toSuiAddress())
@@ -49,7 +49,12 @@ final class zkLoginPublicIdentifierTests: XCTestCase {
     let expectedAddress = "0xf7badc2b245c7f74d7509a4aa357ecf80a29e7713fb4c44b0e7541ec43885ee1"
     let publicKey = try zkLoginPublicIdentifier(
       addressSeed:
-        "13322897930163218532266430409510394316985274769125667290600321564259466511711",
+        try XCTUnwrap(
+          BigInt(
+            "13322897930163218532266430409510394316985274769125667290600321564259466511711",
+            radix: 10
+          )
+        ),
       iss: "https://accounts.google.com"
     )
     XCTAssertEqual(try publicKey.toSuiAddress(), expectedAddress)

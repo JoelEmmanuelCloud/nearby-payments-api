@@ -23,13 +23,12 @@
 //  THE SOFTWARE.
 //
 
-import Foundation
 import LeanSuiBCS
 
 /// Protocol defining the requirements for a public key type.
 public protocol PublicKeyProtocol: KeyProtocol, CustomStringConvertible, Hashable, Sendable {
   /// The type of data value that represents the key.
-  associatedtype DataValue = Data
+  associatedtype DataValue = SuiData
 
   /// The actual public key data.
   var key: DataValue { get }
@@ -52,7 +51,7 @@ public protocol PublicKeyProtocol: KeyProtocol, CustomStringConvertible, Hashabl
   ///
   /// - Returns: A Boolean value indicating whether the signature is valid or not.
   /// - Throws: An error of type invalidSignature if the signature is invalid or an error occurred during verification.
-  func verify(data: Data, signature: Signature) throws -> Bool
+  func verify(data: SuiData, signature: Signature) throws -> Bool
 
   /// Converts the public key to a Sui address.
   /// - Throws: If any error occurs during conversion.
@@ -71,7 +70,7 @@ public protocol PublicKeyProtocol: KeyProtocol, CustomStringConvertible, Hashabl
   ///   - signature: The signature to verify the block with.
   /// - Throws: If any error occurs during verification.
   /// - Returns: `true` if the verification is successful, otherwise `false`.
-  func verifyTransactionBlock(_ transactionBlock: [UInt8], _ signature: Signature) throws -> Bool
+  func verifyTransactionBlock(_ transactionBlock: SuiData, _ signature: Signature) throws -> Bool
 
   /// Verifies bytes with the given signature and intent.
   /// - Parameters:
@@ -80,7 +79,7 @@ public protocol PublicKeyProtocol: KeyProtocol, CustomStringConvertible, Hashabl
   ///   - intent: The intent scope of the verification.
   /// - Throws: If any error occurs during verification.
   /// - Returns: `true` if the verification is successful, otherwise `false`.
-  func verifyWithIntent(_ bytes: [UInt8], _ signature: Signature, _ intent: IntentScope) throws
+  func verifyWithIntent(_ bytes: SuiData, _ signature: Signature, _ intent: IntentScope) throws
     -> Bool
 
   /// Verifies a personal message with the given signature.
@@ -89,7 +88,7 @@ public protocol PublicKeyProtocol: KeyProtocol, CustomStringConvertible, Hashabl
   ///   - signature: The signature to verify the message with.
   /// - Throws: If any error occurs during verification.
   /// - Returns: `true` if the verification is successful, otherwise `false`.
-  func verifyPersonalMessage(_ message: [UInt8], _ signature: Signature) throws -> Bool
+  func verifyPersonalMessage(_ message: SuiData, _ signature: Signature) throws -> Bool
 
-  func toSuiBytes() throws -> [UInt8]
+  func toSuiBytes() throws -> SuiData
 }

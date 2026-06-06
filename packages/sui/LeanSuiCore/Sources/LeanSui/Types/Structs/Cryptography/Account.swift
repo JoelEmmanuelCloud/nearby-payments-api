@@ -25,6 +25,7 @@
 
 import Crypto
 import Foundation
+import HSM
 import LeanSuiBCS
 
 /// Sui Blockchain Account
@@ -42,11 +43,13 @@ public struct Account: Equatable, Hashable, Sendable {
   ///
   /// - Parameter accountType: The type of cryptographic key to be used. Defaults to `.ed25519`.
   /// - Throws: An error if the account initialization fails.
-  public init(accountType: KeyType = .ed25519, hasBiometrics: Bool = false) throws {
+  public init(accountType: KeyType = .ed25519) throws {
     switch accountType {
     case .ed25519:
       let privateKey = ED25519PrivateKey()
       try self.init(privateKey: privateKey, accountType: accountType)
+    case .hsm:
+      throw AccountError.invalidContext
     }
   }
 
@@ -57,14 +60,25 @@ public struct Account: Equatable, Hashable, Sendable {
   ///   - accountType: The type of cryptographic key to be used. Defaults to `.ed25519`.
   /// - Throws: An error if the account initialization fails.
   public init(
-    privateKey: Data,
+    privateKey: SuiData,
     accountType: KeyType = .ed25519
   ) throws {
     switch accountType {
     case .ed25519:
       let privateKey = try ED25519PrivateKey(key: privateKey)
       try self.init(privateKey: privateKey, accountType: accountType)
+    case .hsm:
+      throw AccountError.invalidContext
     }
+  }
+
+  /// Creates an account backed by a platform hardware security module.
+  ///
+  /// - Parameter hsm: The platform-backed HSM implementation that owns the private key.
+  /// - Throws: An error if the HSM public key cannot be generated or parsed.
+  public init(hsm: any HardwareSecurityModule) throws {
+    let privateKey = try HSMPrivateKey(hsm: hsm)
+    try self.init(privateKey: privateKey, accountType: .hsm)
   }
 
   /// Creates an account with the given public key, private key, and key type.
@@ -114,6 +128,8 @@ public struct Account: Equatable, Hashable, Sendable {
       self.privateKey = privateKey
       self.publicKey = try privateKey.publicKey()
       self.accountType = keyType
+    case .hsm:
+      throw AccountError.invalidContext
     }
   }
 
@@ -158,6 +174,8 @@ public struct Account: Equatable, Hashable, Sendable {
       let privateKey = try ED25519PrivateKey(value: value)
       self.privateKey = privateKey
       self.publicKey = try privateKey.publicKey()
+    case .hsm:
+      throw AccountError.invalidContext
     }
   }
 
@@ -178,6 +196,10 @@ public struct Account: Equatable, Hashable, Sendable {
   ///
   /// - Throws: An error of type SuiError if there is an issue writing to the file.
   public func store(_ path: String) throws {
+    guard self.accountType != .hsm else {
+      throw AccountError.cannotBeExported
+    }
+
     let data: [String: String] = [
       "account_address": self.publicKey.hex(),
       "private_key": self.privateKey.hex(),
@@ -191,6 +213,16 @@ public struct Account: Equatable, Hashable, Sendable {
     try jsonData.write(to: fileURL)
   }
 
+  /// Returns the account's public key in hex format.
+  public func publicKeyHex() -> String {
+    return self.publicKey.hex()
+  }
+
+  /// Returns the account's Sui public key bytes.
+  public func publicKeyData() throws -> SuiData {
+    return try self.publicKey.toSuiBytes()
+  }
+
   /// Returns the account's account address.
   /// - Returns: An AccountAddress object
   public func address() throws -> String {
@@ -200,7 +232,7 @@ public struct Account: Equatable, Hashable, Sendable {
   /// Use the private key to sign the data inputted.
   /// - Parameter data: The data being serialized / signed
   /// - Returns: A Signature object
-  public func sign(_ data: Data) throws -> Signature {
+  public func sign(_ data: SuiData) throws -> Signature {
     return try self.privateKey.sign(data: data)
   }
 
@@ -212,7 +244,7 @@ public struct Account: Equatable, Hashable, Sendable {
   /// - Returns: A boolean value indicating whether the signature is valid.
   /// - Throws: An error if the verification process fails.
   public func verify(
-    _ data: Data,
+    _ data: SuiData,
     _ signature: Signature
   ) throws -> Bool {
     return try self.publicKey.verify(
@@ -229,7 +261,7 @@ public struct Account: Equatable, Hashable, Sendable {
   /// - Returns: The resulting signature.
   /// - Throws: An error if the signing process fails.
   public func signWithIntent(
-    _ bytes: [UInt8],
+    _ bytes: SuiData,
     _ intent: IntentScope
   ) throws -> Signature {
     return try self.privateKey.signWithIntent(bytes, intent)
@@ -242,7 +274,7 @@ public struct Account: Equatable, Hashable, Sendable {
   /// - Returns: The resulting signature.
   /// - Throws: An error if the signing process fails.
   public func signTransactionBlock(
-    _ bytes: [UInt8]
+    _ bytes: SuiData
   ) throws -> Signature {
     return try self.privateKey.signTransactionBlock(bytes)
   }
@@ -254,7 +286,7 @@ public struct Account: Equatable, Hashable, Sendable {
   /// - Returns: The resulting signature.
   /// - Throws: An error if the signing process fails.
   public func signPersonalMessage(
-    _ bytes: [UInt8]
+    _ bytes: SuiData
   ) throws -> Signature {
     return try self.privateKey.signPersonalMessage(bytes)
   }
@@ -267,7 +299,7 @@ public struct Account: Equatable, Hashable, Sendable {
   /// - Returns: A boolean value indicating whether the signature is valid.
   /// - Throws: An error if the verification process fails.
   public func verifyTransactionBlock(
-    _ transactionBlock: [UInt8],
+    _ transactionBlock: SuiData,
     _ signature: Signature
   ) throws -> Bool {
     return try self.publicKey.verifyTransactionBlock(
@@ -284,7 +316,7 @@ public struct Account: Equatable, Hashable, Sendable {
   /// - Returns: A boolean value indicating whether the signature is valid.
   /// - Throws: An error if the verification process fails.
   public func verifyWithIntent(
-    _ bytes: [UInt8],
+    _ bytes: SuiData,
     _ signature: Signature,
     _ intent: IntentScope
   ) throws -> Bool {
@@ -303,7 +335,7 @@ public struct Account: Equatable, Hashable, Sendable {
   /// - Returns: A boolean value indicating whether the signature is valid.
   /// - Throws: An error if the verification process fails.
   public func verifyPersonalMessage(
-    _ message: [UInt8],
+    _ message: SuiData,
     _ signature: Signature
   ) throws -> Bool {
     return try self.publicKey.verifyPersonalMessage(
@@ -328,9 +360,13 @@ public struct Account: Equatable, Hashable, Sendable {
   /// - Returns: The exported account representation.
   /// - Throws: `AccountError.cannotBeExported` if the account's private key type is unsupported for export.
   public func export() throws -> ExportedAccount {
+    guard self.accountType != .hsm else {
+      throw AccountError.cannotBeExported
+    }
+
     return ExportedAccount(
       schema: self.accountType,
-      privateKey: (privateKey.key as! Data).base64EncodedString()
+      privateKey: (privateKey.key as! SuiData).data.base64EncodedString()
     )
   }
 }

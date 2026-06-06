@@ -27,11 +27,11 @@ import Foundation
 import LeanSuiBCS
 
 public struct Inputs {
-  /// Creates a `PureCallArg` object from the provided `Data`.
+  /// Creates a `PureCallArg` object from serialized bytes.
   ///
-  /// - Parameter data: The `Data` instance used to initialize the `PureCallArg` object.
+  /// - Parameter data: The serialized bytes used to initialize the `PureCallArg` object.
   /// - Returns: A `PureCallArg` object initialized with the provided data.
-  public static func pure(data: Data) -> PureCallArg {
+  public static func pure(data: SuiData) -> PureCallArg {
     return PureCallArg(value: data)
   }
 

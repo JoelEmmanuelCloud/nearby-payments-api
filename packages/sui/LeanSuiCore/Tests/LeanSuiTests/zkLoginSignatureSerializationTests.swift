@@ -7,6 +7,7 @@
 //  cross-checked against the @mysten/sui TypeScript tests. Byte-exact; no network.
 //
 
+import LeanSuiBCS
 import XCTest
 
 @testable import LeanSui
@@ -79,7 +80,7 @@ final class zkLoginSignatureSerializationTests: XCTestCase {
     let signature = zkLoginSignature(
       inputs: inputs,
       maxEpoch: 174,
-      userSignature: [UInt8](userSignature)
+      userSignature: userSignature.suiData
     )
 
     let serialized = signature.serialize()

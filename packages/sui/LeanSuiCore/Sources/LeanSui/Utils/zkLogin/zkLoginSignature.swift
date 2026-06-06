@@ -33,21 +33,21 @@ import LeanSuiBCS
 public struct zkLoginSignature: SuiBCSBridged, Equatable {
   public var inputs: zkLoginSignatureInputs
   public var maxEpoch: UInt64
-  public var userSignature: [UInt8]
+  public var userSignature: SuiData
 
-  public init(inputs: zkLoginSignatureInputs, maxEpoch: UInt64, userSignature: [UInt8]) {
+  public init(inputs: zkLoginSignatureInputs, maxEpoch: UInt64, userSignature: SuiData) {
     self.inputs = inputs
     self.maxEpoch = maxEpoch
     self.userSignature = userSignature
   }
 
-  public init(serializedData: Data) throws {
-    let der = Deserializer(data: serializedData)
+  public init(serializedData: SuiData) throws {
+    let der = Deserializer(bytes: serializedData.bytes)
     let result = try zkLoginSignature.deserialize(from: der)
     self.init(inputs: result.inputs, maxEpoch: result.maxEpoch, userSignature: result.userSignature)
   }
 
-  public func getSignatureBytes(signature: String? = nil) throws -> Data {
+  public func getSignatureBytes(signature: String? = nil) throws -> SuiData {
     let ser = Serializer()
 
     // Serialize the entire zkLoginSignature struct
@@ -59,21 +59,21 @@ public struct zkLoginSignature: SuiBCSBridged, Equatable {
     let bytes = try self.getSignatureBytes()
     var signatureBytes = Data(count: bytes.count + 1)
     signatureBytes[0] = SignatureSchemeFlags.SIGNATURE_SCHEME_TO_FLAG["zkLogin"]!
-    signatureBytes[1..<(bytes.count + 1)] = bytes
+    signatureBytes[1..<(bytes.count + 1)] = bytes.data
     return signatureBytes.base64EncodedString()
   }
 
   public func serialize(_ serializer: Serializer) throws {
     try Serializer._struct(serializer, value: self.inputs)
     try Serializer.u64(serializer, self.maxEpoch)
-    try serializer.sequence(self.userSignature, Serializer.u8)
+    try serializer.sequence(self.userSignature.bytes, Serializer.u8)
   }
 
   public static func deserialize(from deserializer: Deserializer) throws -> zkLoginSignature {
     return zkLoginSignature(
       inputs: try Deserializer._struct(deserializer),
       maxEpoch: try Deserializer.u64(deserializer),
-      userSignature: [UInt8](try Deserializer.toBytes(deserializer))
+      userSignature: try Deserializer.toBytes(deserializer)
     )
   }
 
@@ -84,12 +84,11 @@ public struct zkLoginSignature: SuiBCSBridged, Equatable {
     do {
       // First serialize the zkLoginSignature struct
       try self.serialize(serializer)
-      let bytes = serializer.output()
+      let bytes = serializer.output().bytes
 
       // Create result with signature scheme flag (0x05) as first byte
-      var signatureBytes = Data(count: bytes.count + 1)
-      signatureBytes[0] = SignatureSchemeFlags.SIGNATURE_SCHEME_TO_FLAG["zkLogin"]!
-      signatureBytes[1..<(bytes.count + 1)] = bytes
+      var signatureBytes = Data([SignatureSchemeFlags.SIGNATURE_SCHEME_TO_FLAG["zkLogin"]!])
+      signatureBytes.append(contentsOf: bytes)
 
       // Convert to base64
       let base64Signature = signatureBytes.base64EncodedString()
@@ -116,7 +115,7 @@ public struct zkLoginSignature: SuiBCSBridged, Equatable {
     // Skip the flag byte
     let signatureBytes = data.subdata(in: 1..<data.count)
 
-    let deserializer = Deserializer(data: signatureBytes)
+    let deserializer = Deserializer(bytes: [UInt8](signatureBytes))
 
     // Deserialize the proof points structure
     let proofPoints = try zkLoginSignatureInputsProofPoints.deserialize(from: deserializer)
@@ -147,7 +146,7 @@ public struct zkLoginSignature: SuiBCSBridged, Equatable {
     return zkLoginSignature(
       inputs: inputs,
       maxEpoch: maxEpoch,
-      userSignature: [UInt8](userSignature)
+      userSignature: userSignature
     )
   }
 
@@ -156,7 +155,7 @@ public struct zkLoginSignature: SuiBCSBridged, Equatable {
   /// - Parameters:
   ///   - transactionData: The transaction data to verify
   /// - Returns: True if verification can be initiated, but actual verification must be done externally
-  public func verify(transactionData: [UInt8]) -> Bool {
+  public func verify(transactionData: SuiData) -> Bool {
     // This is just a placeholder - actual verification requires GraphQL
     // This simply confirms that we have all the necessary signature components
     return !self.serialize().isEmpty && !transactionData.isEmpty
@@ -175,11 +174,22 @@ public struct zkLoginSignature: SuiBCSBridged, Equatable {
 }
 
 /// Default implementation of GraphQLClient
-public final class SuiGraphQLClient: GraphQLClientProtocol {
+public final class SuiGraphQLClient: @unchecked Sendable {
   private let url: URL
   private let session: URLSession
 
-  public init(url: URL, session: URLSession = .shared) {
+  /// Bridge-friendly initializer: takes the GraphQL endpoint as a `String`
+  /// (`URL`/`URLSession` don't cross the swift-java boundary).
+  public init(urlString: String) throws {
+    guard let url = URL(string: urlString) else {
+      throw SuiError.customError(message: "Invalid GraphQL URL: \(urlString)")
+    }
+    self.url = url
+    self.session = .shared
+  }
+
+  // Internal: `URL`/`URLSession` are not bridgeable; used by Swift callers/tests.
+  init(url: URL, session: URLSession = .shared) {
     self.url = url
     self.session = session
   }

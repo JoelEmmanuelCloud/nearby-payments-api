@@ -26,6 +26,7 @@
 import BigInt
 import Foundation
 import LeanSuiApi
+import LeanSuiBCS
 
 public class TransactionBlock {
   /// A boolean value representing the transaction brand.
@@ -228,10 +229,11 @@ public class TransactionBlock {
   /// `pure(data:)`.
   func pure(value: SuiJsonValue) throws -> TransactionBlockInput {
     return try self.input(
-      type: .pure, value: .callArg(Input.init(type: .pure(PureCallArg(value: try value.toData())))))
+      type: .pure,
+      value: .callArg(Input.init(type: .pure(PureCallArg(value: try value.toData().suiData)))))
   }
 
-  public func pure(data: Data) throws -> TransactionBlockInput {
+  public func pure(data: SuiData) throws -> TransactionBlockInput {
     return try self.input(
       type: .pure, value: .callArg(Input.init(type: .pure(PureCallArg(value: data)))))
   }
@@ -519,9 +521,9 @@ public class TransactionBlock {
   ///   - provider: A `SuiProvider` representing the provider to build the block with.
   ///   - onlyTransactionKind: An optional `Bool` representing whether only transaction kind should be considered while building.
   /// - Throws: Can throw an error if preparation or block building fails.
-  /// - Returns: A `Data` object representing the built block.
+  /// - Returns: Serialized transaction bytes.
   public func build(_ provider: GraphQLSuiProvider, _ onlyTransactionKind: Bool? = nil) async throws
-    -> Data
+    -> SuiData
   {
     try await self.prepare(
       BuildOptions(provider: provider, onlyTransactionKind: onlyTransactionKind))
@@ -943,7 +945,7 @@ public class TransactionBlock {
         )
 
         let dryRunResult = try await provider.dryRunTransactionBlock(
-          txBytes: [UInt8](blockData.build(overrides: txBlockDataBuilder))
+          txBytes: blockData.build(overrides: txBlockDataBuilder).bytes
         )
 
         guard dryRunResult.status != .failure else {

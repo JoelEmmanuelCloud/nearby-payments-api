@@ -25,6 +25,7 @@
 
 import BigInt
 import Foundation
+import HSM
 import LeanSuiApi
 import LeanSuiBCS
 
@@ -36,13 +37,25 @@ public class ZkLoginAuthenticator {
     self.provider = provider
   }
 
-  /// Generate an ephemeral Ed25519 keypair for zkLogin.
+  /// Generate a **software** ephemeral Ed25519 keypair for zkLogin.
   ///
-  /// This lean build only supports Ed25519 ephemeral keys (the scheme used by
-  /// the zkLogin ephemeral-key flow).
-  /// - Returns: A new Ed25519 keypair.
-  public func generateEphemeralKeypair() throws -> Account {
+  /// The private key lives in app memory. Prefer ``generateHardwareEphemeralKeypair(hsm:)``
+  /// where a secure element is available; use this for unsupported devices or testing.
+  /// - Returns: A new in-memory Ed25519 keypair.
+  public func generateSoftwareEphemeralKeypair() throws -> Account {
     return try Account(accountType: .ed25519)
+  }
+
+  /// Generate a **hardware-backed** ephemeral P-256 (secp256r1) keypair for zkLogin.
+  ///
+  /// The private key is generated and held in the platform secure element (Secure Enclave /
+  /// Android Keystore StrongBox) and never enters app memory; signing is delegated to the HSM.
+  /// zkLogin accepts secp256r1 ephemeral keys (scheme flag `0x02`).
+  ///
+  /// - Parameter hsm: The platform HSM that owns (or will generate) the P-256 key.
+  /// - Returns: An `Account` whose signing is backed by `hsm`.
+  public func generateHardwareEphemeralKeypair(hsm: any HardwareSecurityModule) throws -> Account {
+    return try Account(hsm: hsm)
   }
 
   /// Generate a nonce for the OAuth flow based on the ephemeral public key
@@ -64,6 +77,28 @@ public class ZkLoginAuthenticator {
       publicKey: publicKey,
       maxEpoch: Int(maxEpoch),
       randomness: randomnessString
+    )
+  }
+
+  /// Bridge-friendly nonce generation for the OAuth flow.
+  ///
+  /// Takes the ephemeral `Account` (which bridges cleanly) and derives its public
+  /// key internally, avoiding the `any PublicKeyProtocol` existential parameter and
+  /// the optional-array `randomness` that prevent ``generateNonce(publicKey:maxEpoch:randomness:)``
+  /// from crossing the Swift↔Java boundary. Produces the same nonce.
+  ///
+  /// - Parameters:
+  ///   - ephemeralKeyPair: The ephemeral keypair the nonce commits to.
+  ///   - maxEpoch: The maximum epoch until which this nonce is valid.
+  ///   - randomness: The random bytes used in the nonce (keep these for proof generation).
+  /// - Returns: The base64-encoded zkLogin nonce string for use in OAuth.
+  public func generateZkNonce(
+    ephemeralKeyPair: Account, maxEpoch: UInt64, randomness: [UInt8]
+  ) throws -> String {
+    try generateNonce(
+      publicKey: ephemeralKeyPair.publicKey,
+      maxEpoch: maxEpoch,
+      randomness: randomness
     )
   }
 
@@ -105,18 +140,63 @@ public class ZkLoginAuthenticator {
   ///   - randomness: The randomness used in nonce generation
   ///   - proofService: Optional service for ZK proof generation
   /// - Returns: A zkLogin signature object
+  func processJWT(
+    jwt: String,
+    userSalt: String,
+    ephemeralKeyPair: Account,
+    maxEpoch: UInt64,
+    randomness: [UInt8],
+    proofService: any ZkProofService
+  ) async throws -> zkLoginSignature {
+    let proof = try await proofService.generateProof(
+      jwt: jwt,
+      userSalt: userSalt,
+      ephemeralPublicKey: try ephemeralKeyPair.publicKey.toSuiBytes().bytes,
+      maxEpoch: maxEpoch,
+      jwtRandomness: randomness
+    )
+
+    return try buildSignature(
+      jwt: jwt,
+      userSalt: userSalt,
+      maxEpoch: maxEpoch,
+      proof: proof
+    )
+  }
+
+  /// Bridge-friendly JWT processing with a concrete proof service.
   public func processJWT(
     jwt: String,
     userSalt: String,
     ephemeralKeyPair: Account,
     maxEpoch: UInt64,
     randomness: [UInt8],
-    proofService: ZkProofService? = nil
+    remoteProofService: RemoteZkProofService
   ) async throws -> zkLoginSignature {
-    // Parse JWT to extract claims
+    let proof = try await remoteProofService.generateProof(
+      jwt: jwt,
+      userSalt: userSalt,
+      ephemeralPublicKey: try ephemeralKeyPair.publicKey.toSuiBytes().bytes,
+      maxEpoch: maxEpoch,
+      jwtRandomness: randomness
+    )
+
+    return try buildSignature(
+      jwt: jwt,
+      userSalt: userSalt,
+      maxEpoch: maxEpoch,
+      proof: proof
+    )
+  }
+
+  private func buildSignature(
+    jwt: String,
+    userSalt: String,
+    maxEpoch: UInt64,
+    proof: ZkProof
+  ) throws -> zkLoginSignature {
     let jwtClaims = try JWTUtilities.extractClaims(from: jwt)
 
-    // Calculate address seed
     _ = try zkLoginUtilities.generateAddressSeed(
       salt: userSalt,
       keyClaimName: "sub",
@@ -124,41 +204,17 @@ public class ZkLoginAuthenticator {
       audience: jwtClaims.audienceString() ?? ""
     )
 
-    // Get ZK proof (either from service or directly)
-    let proofPoints: zkLoginSignatureInputsProofPoints
-    let headerBase64: String
-    let issBase64Details: zkLoginSignatureInputsClaim
-
-    if let service = proofService {
-      // Get proof from external service
-      let proof = try await service.generateProof(
-        jwt: jwt,
-        userSalt: userSalt,
-        ephemeralPublicKey: ephemeralKeyPair.publicKey.toSuiBytes(),
-        maxEpoch: maxEpoch,
-        jwtRandomness: randomness
-      )
-
-      proofPoints = proof.proofPoints
-      headerBase64 = proof.headerBase64
-      issBase64Details = proof.issBase64Details
-    } else {
-      throw SuiError.error(code: .missingProofService)
-    }
-
-    // Create signature inputs
     let inputs = zkLoginSignatureInputs(
-      proofPoints: proofPoints,
-      issBase64Details: issBase64Details,
-      headerBase64: headerBase64,
-      addressSeed: ""  // Will be populated from the proofPoints
+      proofPoints: proof.proofPoints,
+      issBase64Details: proof.issBase64Details,
+      headerBase64: proof.headerBase64,
+      addressSeed: ""
     )
 
-    // Create the zkLoginSignature (without user signature, that will be added at transaction time)
     return zkLoginSignature(
       inputs: inputs,
       maxEpoch: maxEpoch,
-      userSignature: [UInt8]()  // Empty signature, will be filled at transaction time
+      userSignature: SuiData([])
     )
   }
 
@@ -188,13 +244,15 @@ public class ZkLoginAuthenticator {
   public func createSigner(
     ephemeralKeyPair: Account,
     zkLoginSignature: zkLoginSignature,
-    userAddress: String
+    userAddress: String,
+    graphQLClient: SuiGraphQLClient
   ) -> ZkLoginSigner {
     return ZkLoginSigner(
       provider: provider,
       ephemeralKeyPair: ephemeralKeyPair,
       zkLoginSignature: zkLoginSignature,
-      userAddress: userAddress
+      userAddress: userAddress,
+      graphQLClient: graphQLClient
     )
   }
 
@@ -209,7 +267,7 @@ public class ZkLoginAuthenticator {
     ephemeralKeyPair: Account,
     zkLoginSignature: zkLoginSignature,
     userAddress: String,
-    graphQLClient: GraphQLClientProtocol? = nil
+    graphQLClient: SuiGraphQLClient
   ) -> ZkLoginSigner {
     return ZkLoginSigner(
       provider: provider,

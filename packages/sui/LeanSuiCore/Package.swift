@@ -21,8 +21,9 @@ let package = Package(
     .package(url: "https://github.com/MarcoDotIO/UInt256.git", from: "1.0.0"),
     .package(url: "https://github.com/attaswift/BigInt.git", from: "5.3.0"),
     .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0"..<"4.0.0"),
-    .package(name: "LeanSuiApi", path: "../../sui-api"),
-    .package(name: "LeanSuiBCS", path: "../../sui-bcs"),
+    .package(name: "HSM", path: "../../hsm/HSMCore"),
+    .package(name: "LeanSuiApi", path: "../../sui-api/LeanSuiApiCore"),
+    .package(name: "LeanSuiBCS", path: "../../sui-bcs/LeanSuiBCSCore"),
   ],
   targets: [
     .target(
@@ -31,6 +32,7 @@ let package = Package(
         .product(name: "BigInt", package: "BigInt"),
         .product(name: "UInt256", package: "UInt256"),
         .product(name: "Crypto", package: "swift-crypto"),
+        .product(name: "HSM", package: "HSM"),
         .product(name: "LeanSuiApi", package: "LeanSuiApi"),
         .product(name: "LeanSuiBCS", package: "LeanSuiBCS"),
       ],

@@ -29,7 +29,7 @@ import LeanSuiBCS
 
 /// Represents an ED25519 private key and provides functionality for signing and path derivation.
 public struct ED25519PrivateKey: Equatable, PrivateKeyProtocol {
-  public typealias DataValue = Data
+  public typealias DataValue = SuiData
   public typealias PublicKeyType = ED25519PublicKey
 
   /// Length of the private key.
@@ -37,7 +37,7 @@ public struct ED25519PrivateKey: Equatable, PrivateKeyProtocol {
 
   public var key: DataValue
 
-  public init(key: Data) throws {
+  public init(key: SuiData) throws {
     guard key.count == Self.LENGTH else {
       throw AccountError.invalidLength
     }
@@ -49,17 +49,17 @@ public struct ED25519PrivateKey: Equatable, PrivateKeyProtocol {
     if hexString.hasPrefix("0x") {
       hexValue = String(hexString.dropFirst(2))
     }
-    self.key = Data(hex: hexValue)
+    self.key = Data(hex: hexValue).suiData
   }
 
   public init() {
     let privateKey = Crypto.Curve25519.Signing.PrivateKey()
-    self.key = privateKey.rawRepresentation
+    self.key = privateKey.rawRepresentation.suiData
   }
 
   public init(value: String) throws {
     guard let data = Data.fromBase64(value) else { throw AccountError.invalidData }
-    self.key = data
+    self.key = data.suiData
   }
 
   public static func == (lhs: ED25519PrivateKey, rhs: ED25519PrivateKey) -> Bool {
@@ -71,44 +71,44 @@ public struct ED25519PrivateKey: Equatable, PrivateKeyProtocol {
   }
 
   public func hex() -> String {
-    return "0x\(self.key.hexEncodedString())"
+    return "0x\(self.key.data.hexEncodedString())"
   }
 
   public func base64() -> String {
-    return self.key.base64EncodedString()
+    return self.key.data.base64EncodedString()
   }
 
   public func publicKey() throws -> PublicKeyType {
-    let privateKey = try Crypto.Curve25519.Signing.PrivateKey(rawRepresentation: self.key)
-    return try ED25519PublicKey(data: privateKey.publicKey.rawRepresentation)
+    let privateKey = try Crypto.Curve25519.Signing.PrivateKey(rawRepresentation: self.key.data)
+    return try ED25519PublicKey(data: privateKey.publicKey.rawRepresentation.suiData)
   }
 
-  public func sign(data: Data) throws -> Signature {
-    let privateKey = try Crypto.Curve25519.Signing.PrivateKey(rawRepresentation: self.key)
-    let signedMessage = try privateKey.signature(for: data)
+  public func sign(data: SuiData) throws -> Signature {
+    let privateKey = try Crypto.Curve25519.Signing.PrivateKey(rawRepresentation: self.key.data)
+    let signedMessage = try privateKey.signature(for: data.data)
     return Signature(
-      signature: Data(signedMessage),
+      signature: Data(signedMessage).suiData,
       publickey: try self.publicKey().key,
       signatureScheme: .zkLogin
     )
   }
 
-  public func signWithIntent(_ bytes: [UInt8], _ intent: IntentScope) throws -> Signature {
-    let intentMessage = IntentHelper.messageWithIntent(intent, Data(bytes))
+  public func signWithIntent(_ bytes: SuiData, _ intent: IntentScope) throws -> Signature {
+    let intentMessage = IntentHelper.messageWithIntent(intent, bytes.data)
     let digest = try BLAKE2b.hash(data: intentMessage, digestLength: 32)
 
-    let signature = try self.sign(data: digest)
+    let signature = try self.sign(data: digest.suiData)
     return signature
   }
 
-  public func signTransactionBlock(_ bytes: [UInt8]) throws -> Signature {
+  public func signTransactionBlock(_ bytes: SuiData) throws -> Signature {
     return try self.signWithIntent(bytes, .TransactionData)
   }
 
-  public func signPersonalMessage(_ bytes: [UInt8]) throws -> Signature {
+  public func signPersonalMessage(_ bytes: SuiData) throws -> Signature {
     let ser = Serializer()
-    try ser.sequence(bytes, Serializer.u8)
-    return try self.signWithIntent([UInt8](ser.output()), .PersonalMessage)
+    try ser.sequence(bytes.bytes, Serializer.u8)
+    return try self.signWithIntent(ser.output(), .PersonalMessage)
   }
 
   public static func deserialize(from deserializer: Deserializer) throws -> ED25519PrivateKey {

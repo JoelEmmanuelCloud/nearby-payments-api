@@ -80,20 +80,20 @@ public struct AccountAddress: SuiBCSBridged, Equatable, CustomStringConvertible,
     guard let data = Data.fromHex(addr) else {
       throw SuiError.customError(message: "Invalid hex string")
     }
-    return try AccountAddress(address: data)
+    return try AccountAddress(address: Data(data))
   }
 
   public static func deserialize(from deserializer: Deserializer) throws -> AccountAddress {
-    if deserializer.output()[0] == Self.length {
-      let data = try Deserializer.toBytes(deserializer)
-      return try AccountAddress(address: data)
+    if deserializer.output().bytes[0] == Self.length {
+      let data = try Deserializer.toBytes(deserializer).bytes
+      return try AccountAddress(address: Data(data))
     }
     return try AccountAddress(
-      address: deserializer.fixedBytes(length: AccountAddress.length)
+      address: Data(deserializer.fixedBytes(length: AccountAddress.length).bytes)
     )
   }
 
   public func serialize(_ serializer: Serializer) throws {
-    serializer.fixedBytes(self.address)
+    serializer.fixedBytes([UInt8](self.address))
   }
 }

@@ -23,7 +23,6 @@
 //  THE SOFTWARE.
 //
 
-import Foundation
 import LeanSuiBCS
 
 /// Protocol defining the requirements for a private key type.
@@ -32,7 +31,7 @@ public protocol PrivateKeyProtocol: KeyProtocol, CustomStringConvertible, Hashab
   associatedtype PublicKeyType: PublicKeyProtocol
 
   /// The type of data value that represents the key.
-  associatedtype DataValue = Data
+  associatedtype DataValue = SuiData
 
   /// The actual private key data.
   var key: DataValue { get }
@@ -55,7 +54,7 @@ public protocol PrivateKeyProtocol: KeyProtocol, CustomStringConvertible, Hashab
   /// - Parameter data: The message to be signed.
   /// - Returns: A Signature instance representing the signature for the message.
   /// - Throws: An error if the signing operation fails or if the resulting signature cannot be used to create a Signature instance.
-  func sign(data: Data) throws -> Signature
+  func sign(data: SuiData) throws -> Signature
 
   /// Signs the input bytes with the specified intent.
   /// - Parameters:
@@ -63,19 +62,19 @@ public protocol PrivateKeyProtocol: KeyProtocol, CustomStringConvertible, Hashab
   ///   - intent: The intended scope of the signature.
   /// - Throws: An error if the signing operation fails.
   /// - Returns: A `Signature` object representing the digital signature.
-  func signWithIntent(_ bytes: [UInt8], _ intent: IntentScope) throws -> Signature
+  func signWithIntent(_ bytes: SuiData, _ intent: IntentScope) throws -> Signature
 
   /// Signs the transaction block with the specified bytes.
   /// - Parameters:
   ///   - bytes: The input bytes of the transaction block to sign.
   /// - Throws: An error if the signing operation fails.
   /// - Returns: A `Signature` object representing the digital signature of the transaction block.
-  func signTransactionBlock(_ bytes: [UInt8]) throws -> Signature
+  func signTransactionBlock(_ bytes: SuiData) throws -> Signature
 
   /// Signs a personal message with the specified bytes.
   /// - Parameters:
   ///   - bytes: The input bytes of the personal message to sign.
   /// - Throws: An error if the signing operation fails.
   /// - Returns: A `Signature` object representing the digital signature of the personal message.
-  func signPersonalMessage(_ bytes: [UInt8]) throws -> Signature
+  func signPersonalMessage(_ bytes: SuiData) throws -> Signature
 }

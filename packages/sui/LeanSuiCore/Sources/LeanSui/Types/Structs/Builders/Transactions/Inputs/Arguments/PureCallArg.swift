@@ -28,21 +28,21 @@ import LeanSuiBCS
 
 /// A structure representing an argument for a Pure Call, conforming to `KeyProtocol`.
 public struct PureCallArg: SuiBCSBridged {
-  /// An array of `UInt8` representing the value of the argument.
-  public var value: [UInt8]
+  /// Serialized pure argument bytes.
+  public var value: SuiData
 
   /// Initializes a new instance of `PureCallArg`.
   ///
-  /// - Parameter value: An array of `UInt8` representing the value of the argument.
-  public init(value: [UInt8]) {
+  /// - Parameter value: Serialized pure argument bytes.
+  public init(value: SuiData) {
     self.value = value
   }
 
   /// Initializes a new instance of `PureCallArg`.
   ///
   /// - Parameter value: A `Data` object representing the value of the argument.
-  public init(value: Data) {
-    self.value = [UInt8](value)
+  init(value: Data) {
+    self.value = value.suiData
   }
 
   /// Initializes a new instance of `PureCallArg` from the provided JSON object.
@@ -53,16 +53,16 @@ public struct PureCallArg: SuiBCSBridged {
     guard let value = SuiJsonValue.fromJSON(input["value"]) else { return nil }
     let ser = Serializer()
     guard (try? Serializer._struct(ser, value: value)) != nil else { return nil }
-    self.value = [UInt8](ser.output())
+    self.value = ser.output()
   }
 
   public func serialize(_ serializer: Serializer) throws {
-    try serializer.sequence(self.value, Serializer.u8)
+    try serializer.sequence(self.value.bytes, Serializer.u8)
   }
 
   public static func deserialize(from deserializer: Deserializer) throws -> PureCallArg {
     return PureCallArg(
-      value: try deserializer.sequence(valueDecoder: Deserializer.u8)
+      value: SuiData(try deserializer.sequence(valueDecoder: Deserializer.u8))
     )
   }
 }

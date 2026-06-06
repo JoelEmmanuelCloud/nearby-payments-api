@@ -71,9 +71,9 @@ final class TransactionSerializationTests: XCTestCase {
           ProgrammableTransaction(
             inputs: [
               Input(type: .object(.immOrOwned(ImmOrOwned(ref: self.ref())))),
-              Input(type: .pure(PureCallArg(value: [UInt8](arguments)))),
-              Input(type: .pure(PureCallArg(value: [UInt8](values)))),
-              Input(type: .pure(PureCallArg(value: [UInt8](account)))),
+              Input(type: .pure(PureCallArg(value: arguments))),
+              Input(type: .pure(PureCallArg(value: values))),
+              Input(type: .pure(PureCallArg(value: account))),
             ],
             transactions: [
               .moveCall(

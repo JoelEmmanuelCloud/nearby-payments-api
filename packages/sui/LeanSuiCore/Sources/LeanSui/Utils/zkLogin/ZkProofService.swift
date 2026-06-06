@@ -66,7 +66,7 @@ public struct ZkProof {
 }
 
 /// Default implementation of ZkProofService using a REST API
-public class RemoteZkProofService: ZkProofService {
+public class RemoteZkProofService {
   private let url: URL
   private let session: URLSession
 

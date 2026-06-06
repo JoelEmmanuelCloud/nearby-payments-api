@@ -20,6 +20,7 @@
 
 import Foundation
 import LeanSuiApi
+import LeanSuiBCS
 import XCTest
 
 @testable import LeanSui
@@ -110,7 +111,7 @@ final class LiveProviderSmokeTests: XCTestCase {
 
     let coin = try tx.splitCoin(
       coin: .gasCoin,
-      amounts: [.input(try tx.pure(data: Data([1, 0, 0, 0, 0, 0, 0, 0])))]
+      amounts: [.input(try tx.pure(data: SuiData([1, 0, 0, 0, 0, 0, 0, 0])))]
     )
     _ = try tx.transferObject(objects: [coin], address: sender)
 
@@ -136,7 +137,7 @@ final class LiveProviderSmokeTests: XCTestCase {
     // ascii::string(bytes: vector<u8>) — pass the bytes of "hi" as a pure arg.
     _ = try tx.moveCall(
       target: "0x1::ascii::string",
-      arguments: [.input(try tx.pure(data: Data([2, 104, 105])))]  // ULEB len 2 + "hi"
+      arguments: [.input(try tx.pure(data: SuiData([2, 104, 105])))]  // ULEB len 2 + "hi"
     )
 
     let txBytes = try await tx.build(provider, nil)
