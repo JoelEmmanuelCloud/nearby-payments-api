@@ -37,6 +37,27 @@ extension SuiSystemStateSummary {
       validatorSetJSON: e.validatorSet?.contents?.json?.string
     )
   }
+
+  /// Minimal mapping for the `getEpochId` query: only the epoch id and timestamps
+  /// are present; all heavier system-state fields are left nil.
+  init(graphql e: GetEpochIdQuery.Data.Epoch) throws {
+    self.init(
+      epoch: try Scalars.uInt64(e.epochId, field: "epoch.epochId"),
+      protocolVersion: nil,
+      referenceGasPrice: nil,
+      totalGasFees: nil,
+      totalStakeRewards: nil,
+      totalStakeSubsidies: nil,
+      totalTransactions: nil,
+      storageFundSize: nil,
+      startTimestamp: try e.startTimestamp.map {
+        try Scalars.date($0, field: "epoch.startTimestamp")
+      },
+      endTimestamp: try e.endTimestamp.map { try Scalars.date($0, field: "epoch.endTimestamp") },
+      systemStateJSON: nil,
+      validatorSetJSON: nil
+    )
+  }
 }
 
 extension ProtocolConfig {

@@ -13,6 +13,9 @@ public struct AuthSession: Codable, Sendable, Equatable {
   public let refreshExpiresAt: Int64
   public let maxEpoch: UInt64
   public let provider: OAuthProvider
+  /// Cached, serialized zkLogin signature inputs (the expensive proof), or `nil` until the
+  /// background warm-up has generated and persisted it. Used to reconstruct the signer JIT.
+  public let proof: String?
 
   public init(
     accessToken: String,
@@ -24,7 +27,8 @@ public struct AuthSession: Codable, Sendable, Equatable {
     accessExpiresAt: Int64,
     refreshExpiresAt: Int64,
     maxEpoch: UInt64,
-    provider: OAuthProvider
+    provider: OAuthProvider,
+    proof: String? = nil
   ) {
     self.accessToken = accessToken
     self.refreshToken = refreshToken
@@ -36,5 +40,6 @@ public struct AuthSession: Codable, Sendable, Equatable {
     self.refreshExpiresAt = refreshExpiresAt
     self.maxEpoch = maxEpoch
     self.provider = provider
+    self.proof = proof
   }
 }

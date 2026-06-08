@@ -37,6 +37,10 @@ public final class SuiNetwork: Sendable {
   /// The GraphQL endpoint this network resolves to.
   let graphQLEndpoint: URL
 
+  /// The GraphQL endpoint as a bridge-friendly string (a `URL` doesn't cross the swift-java
+  /// boundary). Use this when constructing clients that take a URL string (e.g. `SuiGraphQLClient`).
+  public var graphQLEndpointString: String { graphQLEndpoint.absoluteString }
+
   /// - Parameters:
   ///   - kind: The well-known network.
   ///   - endpoint: An optional GraphQL endpoint URL string that overrides the

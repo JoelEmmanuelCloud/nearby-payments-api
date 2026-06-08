@@ -13,4 +13,6 @@ object AppConstants {
 
     // / Number of epochs ahead of the current epoch that a zkLogin ephemeral key stays valid.
     const val SUI_MAX_EPOCH_BUFFER = 2L
+
+    const val REMOTE_ZK_PROVER = "https://variance.outray.app/v1"
 }

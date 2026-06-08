@@ -378,6 +378,20 @@ public struct GraphQLSuiProvider: Sendable {
     return try SuiSystemStateSummary(graphql: epoch)
   }
 
+  /// Return just the current epoch id and its timestamps.
+  ///
+  /// Lightweight counterpart to ``getLatestSuiSystemState()`` for the zkLogin nonce
+  /// flow: it omits the multi-megabyte `systemState`/`validatorSet` JSON payloads,
+  /// so it is dramatically faster when only the epoch is needed.
+  public func getCurrentEpoch() async throws -> SuiSystemStateSummary {
+    let result = try await GraphQLClient.fetchQuery(
+      client: apollo,
+      query: GetEpochIdQuery()
+    )
+    let epoch = try require(result.data?.epoch, "epoch")
+    return try SuiSystemStateSummary(graphql: epoch)
+  }
+
   /// Return the protocol configuration for a version (latest if `nil`).
   public func getProtocolConfig(version: UInt64? = nil) async throws -> ProtocolConfig {
     let result = try await GraphQLClient.fetchQuery(

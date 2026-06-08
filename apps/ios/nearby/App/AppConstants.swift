@@ -17,4 +17,6 @@ enum AppConstants {
 
   /// Number of epochs ahead of the current epoch that a zkLogin ephemeral key stays valid.
   static let suiMaxEpochBuffer: UInt64 = 2
+
+  static let remoteZkProverURL = "https://variance.outray.app/v1"
 }

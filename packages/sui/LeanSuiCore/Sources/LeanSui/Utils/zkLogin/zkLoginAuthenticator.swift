@@ -117,7 +117,7 @@ public class ZkLoginAuthenticator {
   /// Get the current epoch from the network
   /// - Returns: The current epoch and related information
   public func getCurrentEpoch() async throws -> EpochInfo {
-    let systemState = try await provider.getLatestSuiSystemState()
+    let systemState = try await provider.getCurrentEpoch()
     let startMs = systemState.startTimestamp.map { UInt64($0.timeIntervalSince1970 * 1000) } ?? 0
     // `SuiSystemStateSummary` exposes start/end timestamps rather than a raw
     // duration; derive the epoch duration from them when both are present
@@ -201,7 +201,10 @@ public class ZkLoginAuthenticator {
   ) throws -> zkLoginSignature {
     let jwtClaims = try JWTUtilities.extractClaims(from: jwt)
 
-    _ = try zkLoginUtilities.generateAddressSeed(
+    // The address seed is a required public input to the zkLogin proof: the on-chain
+    // verifier checks the Groth16 proof against it. It is computed client-side from the
+    // salt + `sub` + `aud` (the prover never returns it), and is stable for the session.
+    let addressSeed = try zkLoginUtilities.generateAddressSeed(
       salt: userSalt,
       keyClaimName: "sub",
       keyClaimValue: jwtClaims.sub ?? "",
@@ -212,7 +215,7 @@ public class ZkLoginAuthenticator {
       proofPoints: proof.proofPoints,
       issBase64Details: proof.issBase64Details,
       headerBase64: proof.headerBase64,
-      addressSeed: ""
+      addressSeed: addressSeed
     )
 
     return zkLoginSignature(

@@ -41,7 +41,7 @@ final class AppViewModel: ObservableObject {
   let authManager: AppleAuthManager
 
   /// Service managing temporary cryptographic state and nonce values for zkLogin.
-  let zkLoginService = ZkLoginService()
+  let zkLoginService: ZkLoginService
 
   /// Notification token for observing external Apple ID credential revocation.
   private var revocationObserver: NSObjectProtocol?
@@ -72,6 +72,7 @@ final class AppViewModel: ObservableObject {
       gateway: gateway
     )
     self.sessionManager = sessionManager
+    self.zkLoginService = ZkLoginService(hsm: hsm, sessionManager: sessionManager)
 
     let bundleId = Bundle.main.bundleIdentifier ?? "com.variance.nearby"
     let authManager = AppleAuthManager(
@@ -118,6 +119,10 @@ final class AppViewModel: ObservableObject {
     self.userName = userName
     store.saveUserName(userName)
     route = .home
+
+    // Warm up the zkLogin signer in the background so the multi-second proof is ready
+    // before the user attempts to sign. Fire-and-forget; failures are non-fatal here.
+    Task { try? await zkLoginService.warmUpSigner() }
   }
 
   /// Performs a sign-out by revoking backend session tokens, clearing local data, and resetting navigation routes.
@@ -176,7 +181,7 @@ final class AppViewModel: ObservableObject {
   /// Attaches notifications for when the user revokes Apple sign-in privileges from their device Settings.
   private func observeProviderRevocation() {
     revocationObserver = authManager.observeAppleCredentialRevocation { [weak self] in
-      Task { @MainActor in
+      Task { @MainActor [weak self] in
         guard let self else { return }
         self.store.clearUserName()
         self.userName = self.store.userName()

@@ -233,6 +233,28 @@ extension ZkLoginAuthenticator {
     return try signature.getSignature()
   }
 
+  /// Serialize just the zkLogin signature inputs (proof points, claim, header, address seed)
+  /// to a base64 string for caching. Unlike ``serializeSignature(_:)`` this omits `maxEpoch`
+  /// and the per-transaction user signature, which are supplied when reconstructing the signer.
+  /// - Parameter inputs: The zkLogin signature inputs.
+  /// - Returns: A base64-encoded BCS encoding of the inputs.
+  public static func serializeInputs(_ inputs: zkLoginSignatureInputs) throws -> String {
+    let ser = Serializer()
+    try inputs.serialize(ser)
+    return Data(ser.output().bytes).base64EncodedString()
+  }
+
+  /// Parse a base64 string produced by ``serializeInputs(_:)`` back into zkLogin signature inputs.
+  /// - Parameter serialized: The base64-encoded BCS inputs.
+  /// - Returns: The decoded zkLogin signature inputs.
+  public static func parseInputs(_ serialized: String) throws -> zkLoginSignatureInputs {
+    guard let data = Data(base64Encoded: serialized) else {
+      throw SuiError.customError(message: "Failed to decode base64 zkLogin inputs")
+    }
+    let der = Deserializer(bytes: [UInt8](data))
+    return try zkLoginSignatureInputs.deserialize(from: der)
+  }
+
   /// Parse a serialized zkLogin signature and extract the public key
   /// - Parameters:
   ///   - serializedSignature: The serialized signature string

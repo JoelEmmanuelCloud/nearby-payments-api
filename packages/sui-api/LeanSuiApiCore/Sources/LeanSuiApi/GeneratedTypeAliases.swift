@@ -25,6 +25,7 @@ typealias GetCommitteeInfoQuery = SuiGraphQL.GetCommitteeInfoQuery
 typealias GetCurrentEpochQuery = SuiGraphQL.GetCurrentEpochQuery
 typealias GetDynamicFieldObjectQuery = SuiGraphQL.GetDynamicFieldObjectQuery
 typealias GetDynamicFieldsQuery = SuiGraphQL.GetDynamicFieldsQuery
+typealias GetEpochIdQuery = SuiGraphQL.GetEpochIdQuery
 typealias GetLatestCheckpointSequenceNumberQuery = SuiGraphQL.GetLatestCheckpointSequenceNumberQuery
 typealias GetLatestSuiSystemStateQuery = SuiGraphQL.GetLatestSuiSystemStateQuery
 typealias GetMoveFunctionArgTypesQuery = SuiGraphQL.GetMoveFunctionArgTypesQuery

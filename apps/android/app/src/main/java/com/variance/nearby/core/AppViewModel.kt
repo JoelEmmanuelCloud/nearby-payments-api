@@ -13,6 +13,8 @@ import com.variance.nearby.biometrics.BiometricGateController
 import com.variance.nearby.gateway.APIGateway
 import com.variance.nearby.hsm.HardwareSecurityModule
 import com.variance.nearby.hsm.StrongBoxHSM
+import com.variance.nearby.leansui.api.SuiNetwork
+import com.variance.nearby.leansui.api.SuiNetworkKind
 import com.variance.nearby.services.zk.ZkLoginService
 import com.variance.nearby.storage.PreferencesProvider
 import kotlinx.coroutines.Dispatchers
@@ -66,8 +68,12 @@ class AppViewModel(
         StrongBoxHSM(appContext, biometricGate)
     private val sessionStore = AppSessionStore(preferencesProvider, swiftArena)
 
-    /** Service managing temporary cryptographic state and nonce values for zkLogin. */
-    val zkLoginService = ZkLoginService(swiftArena, hsm)
+    /** The Sui network this app targets (epoch lookups, proofs, transactions). */
+    private val suiNetwork: SuiNetwork = when (AppConstants.SUI_NETWORK) {
+        SuiNetworkKind.Discriminator.MAINNET -> SuiNetwork.getMainnet(swiftArena)
+        SuiNetworkKind.Discriminator.DEVNET -> SuiNetwork.getDevnet(swiftArena)
+        SuiNetworkKind.Discriminator.TESTNET -> SuiNetwork.getTestnet(swiftArena)
+    }
 
     /** The network client gateway coordinating API requests. */
     val gateway: APIGateway = APIGateway.init(
@@ -83,6 +89,10 @@ class AppViewModel(
         gateway,
         swiftArena,
     )
+
+    /** Service managing the full zkLogin lifecycle (nonce, proof, persistence, JIT signer). */
+    val zkLoginService = ZkLoginService(swiftArena, hsm, suiNetwork, sessionManager, viewModelScope)
+
     private val googleAuthManager: GoogleAuthManager = GoogleAuthManager(
         context = appContext,
         scope = viewModelScope,
@@ -120,6 +130,15 @@ class AppViewModel(
         userName = name
         sessionStore.saveUserName(name)
         route = AppRoute.HOME
+
+        // Warm up the zkLogin signer in the background so the multi-second proof is ready before
+        // the user attempts to sign. Fire-and-forget; failures are non-fatal here.
+        viewModelScope.launch {
+            try {
+                zkLoginService.warmUpSigner()
+            } catch (_: Exception) {
+            }
+        }
     }
 
     /** Performs a sign-out by revoking backend session tokens, clearing local data, and resetting navigation routes. */
