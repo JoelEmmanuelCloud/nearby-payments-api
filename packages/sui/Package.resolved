@@ -1,5 +1,5 @@
 {
-  "originHash" : "cff2d584e32f731ebab99b8f5161aa629796df0551d0b74530b57c33d72e2324",
+  "originHash" : "82491e06ac5667b4772e05183e4bedee74c938cbc3cdd9c6e58f36ef4fb5d322",
   "pins" : [
     {
       "identity" : "bigint",
@@ -52,7 +52,7 @@
       "location" : "https://github.com/vaariance/swift-java.git",
       "state" : {
         "branch" : "peter/swift-java-callbackdeps",
-        "revision" : "9c6d7e9e76fbfcaff9c56665bd7d099e1bba73bc"
+        "revision" : "871dc0efa62730907d43ad9308a5dfb0c52de7b6"
       }
     },
     {

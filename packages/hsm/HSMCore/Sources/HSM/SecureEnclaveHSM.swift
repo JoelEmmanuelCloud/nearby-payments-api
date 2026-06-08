@@ -92,6 +92,10 @@ public final class SecureEnclaveHSM: HardwareSecurityModule {
     return DEREncodedItem(value: sig.map { Int8(bitPattern: $0) })
   }
 
+  public func validateKeyForSigning() throws -> Bool {
+    return try getPrivateKeyReference() != nil
+  }
+
   /// Deletes the private key reference from the iOS Keychain.
   ///
   /// - Throws: `HSMError.keyDeletionFailed` if Keychain deletion fails.

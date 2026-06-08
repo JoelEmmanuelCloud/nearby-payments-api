@@ -1,4 +1,4 @@
-package com.variance.nearby
+package com.variance.nearby.core
 
 import com.variance.nearby.storage.SecureStorage
 import com.variance.nearby.storage.StorageItem

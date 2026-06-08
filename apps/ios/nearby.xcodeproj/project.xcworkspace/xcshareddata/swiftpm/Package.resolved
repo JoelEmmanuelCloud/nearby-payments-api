@@ -1,5 +1,5 @@
 {
-  "originHash" : "eed481afdd98f336119bc9220ae229137750ea0e9d727eb18f70981963277b69",
+  "originHash" : "9be8b7c4a2d08f0c5ba2415c1455125dc00c41a9c3411c6cbbf9a0f23557a152",
   "pins" : [
     {
       "identity" : "app-check",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "145104f5ea9d58ae21b60add007c33c1cc0c948e",
         "version" : "2.0.0"
+      }
+    },
+    {
+      "identity" : "bigint",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/attaswift/BigInt.git",
+      "state" : {
+        "revision" : "e07e00fa1fd435143a2dcf8b7eec9a7710b2fdfe",
+        "version" : "5.7.0"
       }
     },
     {
@@ -80,6 +89,15 @@
       "state" : {
         "revision" : "95ba0316a9b733e92bb6b071255ff46263bbe7dc",
         "version" : "3.15.1"
+      }
+    },
+    {
+      "identity" : "uint256",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/MarcoDotIO/UInt256.git",
+      "state" : {
+        "revision" : "ea633500311c4fd0711ff58ea8182d28745dee6e",
+        "version" : "1.0.0"
       }
     }
   ],

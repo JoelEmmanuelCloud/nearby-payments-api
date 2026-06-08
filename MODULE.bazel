@@ -124,6 +124,8 @@ maven.install(
         "androidx.activity:activity:1.13.0",
         "androidx.activity:activity-compose:1.13.0",
         "androidx.activity:activity-ktx:1.13.0",
+        "androidx.biometric:biometric:1.4.0-alpha07",
+        "androidx.biometric:biometric-compose:1.4.0-alpha07",
 
         # Compose compiler plugin for the Bazel Kotlin target.
         "org.jetbrains.kotlin:kotlin-compose-compiler-plugin-embeddable:2.3.20",

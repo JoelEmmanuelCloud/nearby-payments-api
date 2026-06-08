@@ -16,6 +16,7 @@ kt_android_library(
     visibility = ["//visibility:public"],
     deps = [
         "//apps/android/bridge:bridge_aar",
+        artifact("androidx.biometric:biometric"),
         "@maven//:androidx_core_core",
         artifact("org.swift.swiftkit:swiftkit-core"),
     ],

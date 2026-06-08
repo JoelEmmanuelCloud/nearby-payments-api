@@ -20,6 +20,7 @@ struct HSMTests {
 
     let fetchedKey = try hsm.getPublicKey()
     #expect(fetchedKey == publicKey)
+    #expect(try hsm.validateKeyForSigning())
 
     let payload = Array("payload".utf8).map { Int8(bitPattern: $0) }
     let signature = try hsm.sign(payload)
@@ -29,6 +30,7 @@ struct HSMTests {
 
     let afterDelete = try hsm.getPublicKey()
     #expect(afterDelete == nil)
+    #expect(try !hsm.validateKeyForSigning())
   }
 }
 
@@ -59,6 +61,12 @@ final class MockHSM: HardwareSecurityModule, @unchecked Sendable {
         throw NoKeyError()
       }
       return DEREncodedItem(value: Array("mock-signature".utf8).map { Int8(bitPattern: $0) })
+    }
+  }
+
+  func validateKeyForSigning() throws -> Bool {
+    lock.withLock {
+      hasKey
     }
   }
 

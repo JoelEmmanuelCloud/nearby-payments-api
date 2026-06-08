@@ -2,7 +2,8 @@ import SwiftUI
 import UI
 
 struct HomeView: View {
-  @ObservedObject var viewModel: AppViewModel
+  let userName: String
+  let onSignOut: () -> Void
 
   var body: some View {
     NavigationStack {
@@ -12,7 +13,7 @@ struct HomeView: View {
             Title("Home")
               .font(.title.weight(.semibold))
 
-            MutedText("Signed in as \(viewModel.userName).")
+            MutedText("Signed in as \(userName).")
           }
 
           Card {
@@ -43,7 +44,7 @@ struct HomeView: View {
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button("Sign out") {
-            viewModel.signOut()
+            onSignOut()
           }
         }
       }
@@ -52,5 +53,5 @@ struct HomeView: View {
 }
 
 #Preview {
-  HomeView(viewModel: AppViewModel(store: AppSessionStore(defaults: .standard)))
+  HomeView(userName: "Preview User", onSignOut: {})
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Looper
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import androidx.biometric.BiometricPrompt
 import org.swift.swiftkit.core.SwiftArena
@@ -14,6 +15,8 @@ import java.security.spec.ECGenParameterSpec
 import java.util.Optional
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * Android implementation of the `HardwareSecurityModule` protocol.
@@ -124,10 +127,12 @@ class StrongBoxHSM(
         // completion (success, error, cancellation, or its own timeout), so this never hangs.
         val authenticated =
             try {
-                gate.authenticate(BiometricPrompt.CryptoObject(signature)).get()
+                gate.authenticate(BiometricPrompt.CryptoObject(signature)).get(SIGN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: ExecutionException) {
                 // Surface the underlying cause (cancellation, biometric error, timeout) directly.
                 throw e.cause ?: e
+            } catch (e: TimeoutException) {
+                throw TimeoutException("Biometric authentication timed out after ${SIGN_TIMEOUT_SECONDS}s.")
             }
 
         val authenticatedSignature =
@@ -138,6 +143,18 @@ class StrongBoxHSM(
         return DEREncodedItem.init(authenticatedSignature.sign(), swiftArena)
     }
 
+    override fun validateKeyForSigning(): Boolean {
+        val entry = keyStore.getEntry(keyAlias, null) as? KeyStore.PrivateKeyEntry ?: return false
+        return try {
+            Signature.getInstance("SHA256withECDSA").initSign(entry.privateKey)
+            true
+        } catch (_: KeyPermanentlyInvalidatedException) {
+            false
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     /**
      * Deletes the cryptographic key entry from the AndroidKeyStore.
      */
@@ -145,6 +162,10 @@ class StrongBoxHSM(
         if (keyStore.containsAlias(keyAlias)) {
             keyStore.deleteEntry(keyAlias)
         }
+    }
+
+    private companion object {
+        const val SIGN_TIMEOUT_SECONDS = 65L
     }
 }
 

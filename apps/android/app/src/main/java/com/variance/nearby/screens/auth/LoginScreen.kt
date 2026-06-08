@@ -1,4 +1,4 @@
-package com.variance.nearby.screens
+package com.variance.nearby.screens.auth
 
 import android.content.Intent
 import androidx.compose.foundation.background
@@ -11,34 +11,43 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import com.variance.nearby.AppViewModel
 import com.variance.nearby.ui.Card
 import com.variance.nearby.ui.MutedText
 import com.variance.nearby.ui.Title
 
 @Composable
 fun LoginScreen(
-    viewModel: AppViewModel,
+    viewModel: LoginViewModel,
+    onSignInSuccess: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
 
+    LaunchedEffect(viewModel) {
+        viewModel.prepareZkNonce()
+    }
+
     LoginContent(
         isSigningIn = viewModel.isSigningIn,
         statusMessage = viewModel.statusMessage,
-        onSignInWithGoogle = { viewModel.signInWithGoogle() },
+        isReadyToSignIn = viewModel.isReadyToSignIn,
+        onSignInWithGoogle = { viewModel.signInWithGoogle(onSignInSuccess) },
         onSignInWithApple = {
-            viewModel.signInWithApple { url ->
-                val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-            }
+            viewModel.signInWithApple(
+                launchCustomTabs = { url ->
+                    val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                },
+                onSuccess = onSignInSuccess,
+            )
         },
         modifier = modifier,
     )
@@ -48,6 +57,7 @@ fun LoginScreen(
 fun LoginContent(
     isSigningIn: Boolean,
     statusMessage: String?,
+    isReadyToSignIn: Boolean,
     onSignInWithGoogle: () -> Unit,
     onSignInWithApple: () -> Unit,
     modifier: Modifier = Modifier,
@@ -77,14 +87,14 @@ fun LoginContent(
             Spacer(modifier = Modifier.height(8.dp))
 
             AppleSignInButton(
-                isDisabled = isSigningIn,
+                isDisabled = isSigningIn || !isReadyToSignIn,
                 onClick = onSignInWithApple,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             GoogleSignInButton(
-                isDisabled = isSigningIn,
+                isDisabled = isSigningIn || !isReadyToSignIn,
                 onClick = onSignInWithGoogle,
             )
 
@@ -104,6 +114,7 @@ private fun LoginScreenPreview() {
     LoginContent(
         isSigningIn = false,
         statusMessage = null,
+        isReadyToSignIn = true,
         onSignInWithGoogle = {},
         onSignInWithApple = {},
     )
@@ -115,6 +126,7 @@ private fun LoginScreenSigningInPreview() {
     LoginContent(
         isSigningIn = true,
         statusMessage = "Starting Google Sign-In...",
+        isReadyToSignIn = false,
         onSignInWithGoogle = {},
         onSignInWithApple = {},
     )

@@ -3,7 +3,8 @@ import SwiftUI
 import UI
 
 struct LoginView: View {
-  @ObservedObject var viewModel: AppViewModel
+  @ObservedObject var viewModel: LoginViewModel
+  let onSignInSuccess: (String) -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
@@ -23,15 +24,19 @@ struct LoginView: View {
           SignInWithAppleButton(
             .continue,
             onRequest: viewModel.prepareAppleSignInRequest,
-            onCompletion: viewModel.completeAppleSignIn
+            onCompletion: { result in
+              viewModel.completeAppleSignIn(result, onSuccess: onSignInSuccess)
+            }
           )
           .signInWithAppleButtonStyle(.black)
           .frame(height: 48)
           .clipShape(Capsule())
-          .disabled(viewModel.isSigningIn)
+          .disabled(viewModel.isSigningIn || !viewModel.isReadyToSignIn)
 
-          GoogleSignInPillButton(isDisabled: viewModel.isSigningIn) {
-            viewModel.signInWithGoogle()
+          GoogleSignInPillButton(
+            isDisabled: viewModel.isSigningIn || !viewModel.isReadyToSignIn
+          ) {
+            viewModel.signInWithGoogle(onSuccess: onSignInSuccess)
           }
 
           if let statusMessage = viewModel.statusMessage {
@@ -43,9 +48,8 @@ struct LoginView: View {
       Spacer(minLength: 24)
     }
     .padding(24)
+    .task {
+      await viewModel.prepareZkNonce()
+    }
   }
-}
-
-#Preview {
-  LoginView(viewModel: AppViewModel(store: AppSessionStore(defaults: .standard)))
 }

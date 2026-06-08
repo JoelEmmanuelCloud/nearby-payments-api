@@ -27,6 +27,7 @@ kt_android_library(
         "//packages/storage:StorageAndroid",
         "//packages/ui:UIAndroid",
         artifact("androidx.activity:activity-compose"),
+        artifact("androidx.biometric:biometric-compose"),
         artifact("androidx.concurrent:concurrent-futures"),
         artifact("androidx.compose.material3:material3"),
         artifact("androidx.compose.ui:ui"),

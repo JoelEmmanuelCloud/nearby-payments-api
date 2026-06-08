@@ -11,11 +11,17 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.variance.nearby.screens.HomeScreen
-import com.variance.nearby.screens.LoginScreen
-import com.variance.nearby.screens.OnboardingScreen
+import com.variance.nearby.biometrics.BiometricGateHost
+import com.variance.nearby.core.AppRoute
+import com.variance.nearby.core.AppViewModel
+import com.variance.nearby.screens.auth.LoginScreen
+import com.variance.nearby.screens.auth.LoginViewModel
+import com.variance.nearby.screens.home.HomeScreen
+import com.variance.nearby.screens.onboarding.OnboardingScreen
+import com.variance.nearby.screens.security.DeviceSecurityScreen
 import com.variance.nearby.ui.theme.NearbyTheme
 
 class MainActivity : ComponentActivity() {
@@ -32,6 +38,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
+                    // Always mounted so a signing request can present a prompt from any screen.
+                    BiometricGateHost(viewModel.biometricGate)
                     Nearby(viewModel)
                 }
             }
@@ -42,6 +50,11 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.refreshDeviceSecurityGate()
     }
 
     private fun handleIntent(intent: Intent?) {
@@ -58,6 +71,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun Nearby(viewModel: AppViewModel) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     when (viewModel.route) {
         AppRoute.LOADING -> {
             Box(
@@ -67,8 +82,25 @@ private fun Nearby(viewModel: AppViewModel) {
                 CircularProgressIndicator()
             }
         }
-        AppRoute.ONBOARDING -> OnboardingScreen(viewModel)
-        AppRoute.LOGIN -> LoginScreen(viewModel)
+        AppRoute.ONBOARDING -> OnboardingScreen(
+            onFinished = { viewModel.finishOnboarding() },
+        )
+        AppRoute.DEVICE_SECURITY -> DeviceSecurityScreen()
+        AppRoute.LOGIN -> {
+            val loginViewModel = remember(viewModel) {
+                LoginViewModel(
+                    context = context.applicationContext,
+                    gateway = viewModel.gateway,
+                    sessionManager = viewModel.sessionManager,
+                    zkLoginService = viewModel.zkLoginService,
+                    swiftArena = viewModel.swiftArena,
+                )
+            }
+            LoginScreen(
+                viewModel = loginViewModel,
+                onSignInSuccess = { name -> viewModel.handleSignInSuccess(name) },
+            )
+        }
         AppRoute.HOME -> HomeScreen(viewModel)
     }
 }

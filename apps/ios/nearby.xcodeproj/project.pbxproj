@@ -10,6 +10,11 @@
 		D03134342FCDA4A000A3F665 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = D03134332FCDA4A000A3F665 /* Auth */; };
 		D03134372FCDBDA000A3F665 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D03134362FCDBDA000A3F665 /* UI */; };
 		D031343A2FCDF26000A3F665 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D03134382FCDF26000A3F665 /* GoogleSignIn */; };
+		D04619232FD2C1A4000625E1 /* LeanSui in Frameworks */ = {isa = PBXBuildFile; productRef = D04619222FD2C1A4000625E1 /* LeanSui */; };
+		D04619262FD34113000625E1 /* LeanSuiApi in Frameworks */ = {isa = PBXBuildFile; productRef = D04619252FD34113000625E1 /* LeanSuiApi */; };
+		D04619292FD4707F000625E1 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = D04619282FD4707F000625E1 /* Storage */; };
+		D046192C2FD4709F000625E1 /* HSM in Frameworks */ = {isa = PBXBuildFile; productRef = D046192B2FD4709F000625E1 /* HSM */; };
+		D046192F2FD470D6000625E1 /* Gateway in Frameworks */ = {isa = PBXBuildFile; productRef = D046192E2FD470D6000625E1 /* Gateway */; };
 		D04646672FC60F4900B6B6E1 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D04646662FC60F4900B6B6E1 /* UI */; };
 		D05617CC2FC618910052C487 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D05617CB2FC618910052C487 /* UI */; };
 		D05617CF2FC61A440052C487 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D05617CE2FC61A440052C487 /* UI */; };
@@ -64,7 +69,12 @@
 				D03134372FCDBDA000A3F665 /* UI in Frameworks */,
 				D05617CC2FC618910052C487 /* UI in Frameworks */,
 				D05617CF2FC61A440052C487 /* UI in Frameworks */,
+				D04619232FD2C1A4000625E1 /* LeanSui in Frameworks */,
+				D046192F2FD470D6000625E1 /* Gateway in Frameworks */,
 				D03134342FCDA4A000A3F665 /* Auth in Frameworks */,
+				D046192C2FD4709F000625E1 /* HSM in Frameworks */,
+				D04619262FD34113000625E1 /* LeanSuiApi in Frameworks */,
+				D04619292FD4707F000625E1 /* Storage in Frameworks */,
 				D031343A2FCDF26000A3F665 /* GoogleSignIn in Frameworks */,
 				D04646672FC60F4900B6B6E1 /* UI in Frameworks */,
 			);
@@ -133,6 +143,11 @@
 				D03134332FCDA4A000A3F665 /* Auth */,
 				D03134382FCDF26000A3F665 /* GoogleSignIn */,
 				D03134362FCDBDA000A3F665 /* UI */,
+				D04619222FD2C1A4000625E1 /* LeanSui */,
+				D04619252FD34113000625E1 /* LeanSuiApi */,
+				D04619282FD4707F000625E1 /* Storage */,
+				D046192B2FD4709F000625E1 /* HSM */,
+				D046192E2FD470D6000625E1 /* Gateway */,
 			);
 			productName = nearby;
 			productReference = D07F3CDF2FBE35C1001B5E0B /* nearby.app */;
@@ -220,6 +235,11 @@
 				D03134322FCDA4A000A3F665 /* XCLocalSwiftPackageReference "../../packages/auth/AuthCore" */,
 				D03134352FCDBDA000A3F665 /* XCLocalSwiftPackageReference "../../packages/ui" */,
 				D031343C2FCDF26000A3F665 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				D04619212FD2C1A4000625E1 /* XCLocalSwiftPackageReference "../../packages/sui/LeanSuiCore" */,
+				D04619242FD34113000625E1 /* XCLocalSwiftPackageReference "../../packages/sui-api/LeanSuiApiCore" */,
+				D04619272FD4707F000625E1 /* XCLocalSwiftPackageReference "../../packages/storage/StorageCore" */,
+				D046192A2FD4709F000625E1 /* XCLocalSwiftPackageReference "../../packages/hsm/HSMCore" */,
+				D046192D2FD470D6000625E1 /* XCLocalSwiftPackageReference "../../packages/gateway/GatewayCore" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D07F3CE02FBE35C1001B5E0B /* Products */;
@@ -620,6 +640,26 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../packages/ui;
 		};
+		D04619212FD2C1A4000625E1 /* XCLocalSwiftPackageReference "../../packages/sui/LeanSuiCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/sui/LeanSuiCore;
+		};
+		D04619242FD34113000625E1 /* XCLocalSwiftPackageReference "../../packages/sui-api/LeanSuiApiCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../packages/sui-api/LeanSuiApiCore";
+		};
+		D04619272FD4707F000625E1 /* XCLocalSwiftPackageReference "../../packages/storage/StorageCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/storage/StorageCore;
+		};
+		D046192A2FD4709F000625E1 /* XCLocalSwiftPackageReference "../../packages/hsm/HSMCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/hsm/HSMCore;
+		};
+		D046192D2FD470D6000625E1 /* XCLocalSwiftPackageReference "../../packages/gateway/GatewayCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/gateway/GatewayCore;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -646,6 +686,26 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D031343C2FCDF26000A3F665 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
+		};
+		D04619222FD2C1A4000625E1 /* LeanSui */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LeanSui;
+		};
+		D04619252FD34113000625E1 /* LeanSuiApi */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LeanSuiApi;
+		};
+		D04619282FD4707F000625E1 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Storage;
+		};
+		D046192B2FD4709F000625E1 /* HSM */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HSM;
+		};
+		D046192E2FD470D6000625E1 /* Gateway */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Gateway;
 		};
 		D04646662FC60F4900B6B6E1 /* UI */ = {
 			isa = XCSwiftPackageProductDependency;

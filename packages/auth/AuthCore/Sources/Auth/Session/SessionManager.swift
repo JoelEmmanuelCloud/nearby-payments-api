@@ -146,7 +146,7 @@ public final class SessionManager: @unchecked Sendable {
     guard let session = try getCurrentSession() else {
       return false
     }
-    return currentEpoch < session.maxEpoch
+    return try currentEpoch < session.maxEpoch && hsm.validateKeyForSigning()
   }
 
   /// Updates the Sui properties (max epoch and derived Sui address) in the current session.

@@ -1,4 +1,4 @@
-package com.variance.nearby.screens
+package com.variance.nearby.screens.onboarding
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,29 +17,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.variance.nearby.AppViewModel
-import com.variance.nearby.OnboardingPage
 import com.variance.nearby.ui.MutedText
 import com.variance.nearby.ui.Title
 import com.variance.nearby.ui.UIButton
 
 @Composable
 fun OnboardingScreen(
-    viewModel: AppViewModel,
+    onFinished: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: OnboardingViewModel = remember { OnboardingViewModel() },
 ) {
     OnboardingContent(
         currentStep = viewModel.onboardingStep,
         pages = viewModel.onboardingPages,
-        onNext = { viewModel.nextOnboardingStep() },
-        onBack = { viewModel.previousOnboardingStep() },
-        onSkip = { viewModel.finishOnboarding() },
-        canGoBack = viewModel.canGoBackInOnboarding,
-        isLastStep = viewModel.isLastOnboardingStep,
+        onNext = { viewModel.nextStep(onFinished) },
+        onBack = { viewModel.previousStep() },
+        onSkip = onFinished,
+        canGoBack = viewModel.canGoBack,
+        isLastStep = viewModel.isLastStep,
         modifier = modifier,
     )
 }

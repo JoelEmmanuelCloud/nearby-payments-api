@@ -2,7 +2,8 @@ import SwiftUI
 import UI
 
 struct OnboardingView: View {
-  @ObservedObject var viewModel: AppViewModel
+  @StateObject private var viewModel = OnboardingViewModel()
+  let onFinished: () -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
@@ -18,21 +19,21 @@ struct OnboardingView: View {
       Spacer(minLength: 24)
 
       VStack(spacing: 12) {
-        UIButton(viewModel.isLastOnboardingStep ? "Continue" : "Next") {
-          viewModel.nextOnboardingStep()
+        UIButton(viewModel.isLastStep ? "Continue" : "Next") {
+          viewModel.nextStep(onFinished: onFinished)
         }
 
         HStack(spacing: 12) {
-          if viewModel.canGoBackInOnboarding {
+          if viewModel.canGoBack {
             Button("Back") {
-              viewModel.previousOnboardingStep()
+              viewModel.previousStep()
             }
           }
 
           Spacer()
 
           Button("Skip") {
-            viewModel.finishOnboarding()
+            onFinished()
           }
         }
         .font(.subheadline.weight(.medium))
@@ -43,5 +44,5 @@ struct OnboardingView: View {
 }
 
 #Preview {
-  OnboardingView(viewModel: AppViewModel(store: AppSessionStore(defaults: .standard)))
+  OnboardingView(onFinished: {})
 }

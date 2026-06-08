@@ -32,30 +32,34 @@ import LeanSuiBCS
 /// Manages the zkLogin authentication flow
 public class ZkLoginAuthenticator {
   private let provider: GraphQLSuiProvider
+  private let hsm: (any HardwareSecurityModule)?
 
   public init(provider: GraphQLSuiProvider) {
     self.provider = provider
+    self.hsm = nil
   }
 
-  /// Generate a **software** ephemeral Ed25519 keypair for zkLogin.
-  ///
-  /// The private key lives in app memory. Prefer ``generateHardwareEphemeralKeypair(hsm:)``
-  /// where a secure element is available; use this for unsupported devices or testing.
-  /// - Returns: A new in-memory Ed25519 keypair.
-  public func generateSoftwareEphemeralKeypair() throws -> Account {
-    return try Account(accountType: .ed25519)
+  public init(provider: GraphQLSuiProvider, hsm: any HardwareSecurityModule) {
+    self.provider = provider
+    self.hsm = hsm
   }
 
-  /// Generate a **hardware-backed** ephemeral P-256 (secp256r1) keypair for zkLogin.
+  /// Generate an ephemeral keypair for zkLogin.
   ///
-  /// The private key is generated and held in the platform secure element (Secure Enclave /
-  /// Android Keystore StrongBox) and never enters app memory; signing is delegated to the HSM.
-  /// zkLogin accepts secp256r1 ephemeral keys (scheme flag `0x02`).
-  ///
-  /// - Parameter hsm: The platform HSM that owns (or will generate) the P-256 key.
-  /// - Returns: An `Account` whose signing is backed by `hsm`.
-  public func generateHardwareEphemeralKeypair(hsm: any HardwareSecurityModule) throws -> Account {
-    return try Account(hsm: hsm)
+  /// `.ed25519` returns an in-memory software keypair. `.secp256r1` requires this
+  /// authenticator to have been initialized with a platform HSM.
+  public func generateEphemeralKeypair(scheme: SignatureScheme = .ed25519) throws -> Account {
+    switch scheme {
+    case .ed25519:
+      return try Account(accountType: .ed25519)
+    case .secp256r1:
+      guard let hsm else {
+        throw AccountError.invalidContext
+      }
+      return try Account(hsm: hsm)
+    case .zkLogin:
+      throw AccountError.invalidContext
+    }
   }
 
   /// Generate a nonce for the OAuth flow based on the ephemeral public key

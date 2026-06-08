@@ -1,4 +1,4 @@
-package com.variance.nearby.screens
+package com.variance.nearby.screens.auth
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
