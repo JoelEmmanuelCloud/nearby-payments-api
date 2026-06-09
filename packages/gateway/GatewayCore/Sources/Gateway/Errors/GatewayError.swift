@@ -41,3 +41,33 @@ extension GatewayError: LocalizedError {
     }
   }
 }
+
+extension GatewayError {
+  /// Stable, globally-unique, machine-readable code for each case (the case kind, not its payload).
+  public enum Code: String, Sendable, CaseIterable {
+    case invalidURL = "gateway.invalid_url"
+    case encodingFailed = "gateway.encoding_failed"
+    case networkFailure = "gateway.network_failure"
+    case serverError = "gateway.server_error"
+    case decodingFailed = "gateway.decoding_failed"
+    case invalidResponse = "gateway.invalid_response"
+  }
+
+  /// The stable code identifying this error's kind.
+  public var code: Code {
+    switch self {
+    case .invalidURL: .invalidURL
+    case .encodingFailed: .encodingFailed
+    case .networkFailure: .networkFailure
+    case .serverError: .serverError
+    case .decodingFailed: .decodingFailed
+    case .invalidResponse: .invalidResponse
+    }
+  }
+}
+
+extension GatewayError: CustomStringConvertible {
+  /// String form is the `code` raw value, so the exact code survives the swift-java bridge.
+  /// (Human-readable detail remains available via `errorDescription`.)
+  public var description: String { code.rawValue }
+}

@@ -104,3 +104,72 @@ public enum AccountError: Error, Equatable {
 
   case keychainReadFail(message: String)
 }
+
+extension AccountError {
+  /// Stable, globally-unique, machine-readable code for each case (the case kind, not its payload).
+  public enum Code: String, Sendable, CaseIterable {
+    case invalidPublicKey = "account.invalid_public_key"
+    case lengthMismatch = "account.length_mismatch"
+    case invalidLength = "account.invalid_length"
+    case invalidSignature = "account.invalid_signature"
+    case invalidSerializedSignature = "account.invalid_serialized_signature"
+    case invalidParsedSignature = "account.invalid_parsed_signature"
+    case invalidParsedPublicKey = "account.invalid_parsed_public_key"
+    case invalidData = "account.invalid_data"
+    case invalidContext = "account.invalid_context"
+    case invalidPubKeyCreation = "account.invalid_pub_key_creation"
+    case invalidGeneratedKey = "account.invalid_generated_key"
+    case invalidDerivationPath = "account.invalid_derivation_path"
+    case invalidMnemonicSeed = "account.invalid_mnemonic_seed"
+    case invalidHDNode = "account.invalid_hd_node"
+    case invalidHardenedPath = "account.invalid_hardened_path"
+    case invalidCurveData = "account.invalid_curve_data"
+    case keysCountOutOfRange = "account.keys_count_out_of_range"
+    case thresholdOutOfRange = "account.threshold_out_of_range"
+    case noContentInKey = "account.no_content_in_key"
+    case failedData = "account.failed_data"
+    case cannotBeDeserialized = "account.cannot_be_deserialized"
+    case cannotBeSerialized = "account.cannot_be_serialized"
+    case cannotBeExported = "account.cannot_be_exported"
+    case cannotCreateP256Key = "account.cannot_create_p256_key"
+    case incompatibleOS = "account.incompatible_os"
+    case keychainReadFail = "account.keychain_read_fail"
+  }
+
+  /// The stable code identifying this error's kind.
+  public var code: Code {
+    switch self {
+    case .invalidPublicKey: .invalidPublicKey
+    case .lengthMismatch: .lengthMismatch
+    case .invalidLength: .invalidLength
+    case .invalidSignature: .invalidSignature
+    case .invalidSerializedSignature: .invalidSerializedSignature
+    case .invalidParsedSignature: .invalidParsedSignature
+    case .invalidParsedPublicKey: .invalidParsedPublicKey
+    case .invalidData: .invalidData
+    case .invalidContext: .invalidContext
+    case .invalidPubKeyCreation: .invalidPubKeyCreation
+    case .invalidGeneratedKey: .invalidGeneratedKey
+    case .invalidDerivationPath: .invalidDerivationPath
+    case .invalidMnemonicSeed: .invalidMnemonicSeed
+    case .invalidHDNode: .invalidHDNode
+    case .invalidHardenedPath: .invalidHardenedPath
+    case .invalidCurveData: .invalidCurveData
+    case .keysCountOutOfRange: .keysCountOutOfRange
+    case .thresholdOutOfRange: .thresholdOutOfRange
+    case .noContentInKey: .noContentInKey
+    case .failedData: .failedData
+    case .cannotBeDeserialized: .cannotBeDeserialized
+    case .cannotBeSerialized: .cannotBeSerialized
+    case .cannotBeExported: .cannotBeExported
+    case .cannotCreateP256Key: .cannotCreateP256Key
+    case .incompatibleOS: .incompatibleOS
+    case .keychainReadFail: .keychainReadFail
+    }
+  }
+}
+
+extension AccountError: CustomStringConvertible {
+  /// String form is the `code` raw value, so the exact code survives the swift-java bridge.
+  public var description: String { code.rawValue }
+}

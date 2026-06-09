@@ -59,8 +59,8 @@ public struct SuiError: Error, CustomStringConvertible {
   /// Indicates that a feature or operation is not yet implemented.
   public static let notImplemented = SuiError(code: .notImplementedError)
 
-  /// A string representation of the error.
-  public var description: String {
+  /// Human-readable detail. The `description` carries the stable `errorCode` for bridge identification.
+  public var message: String {
     switch code {
     case .error(let message):
       return message
@@ -100,6 +100,35 @@ public struct SuiError: Error, CustomStringConvertible {
       return "Salt service returned an error"
     case .invalidSaltServiceResponse:
       return "Invalid response from salt service"
+    }
+  }
+
+  /// String form is the stable `errorCode`, so the exact code survives the swift-java bridge
+  /// (human-readable detail is available via `message`).
+  public var description: String { errorCode }
+
+  /// Stable, globally-unique, machine-readable code identifying this error's kind.
+  public var errorCode: String {
+    switch code {
+    case .error: "sui.error"
+    case .notImplementedError: "sui.not_implemented"
+    case .customError: "sui.custom_error"
+    case .invalidTransaction: "sui.invalid_transaction"
+    case .objectNotFound: "sui.object_not_found"
+    case .unsupportedSignatureScheme: "sui.unsupported_signature_scheme"
+    case .saltMissing: "sui.salt_missing"
+    case .failedToGenerateRandomData: "sui.failed_to_generate_random_data"
+    case .missingProofService: "sui.missing_proof_service"
+    case .missingKeyItem: "sui.missing_key_item"
+    case .dataEncodingFailed: "sui.data_encoding_failed"
+    case .keyChainError: "sui.keychain_error"
+    case .keychainOperationFailed: "sui.keychain_operation_failed"
+    case .proofServiceError: "sui.proof_service_error"
+    case .invalidProofServiceResponse: "sui.invalid_proof_service_response"
+    case .missingGraphQLData: "sui.missing_graphql_data"
+    case .missingJWTClaim: "sui.missing_jwt_claim"
+    case .saltServiceError: "sui.salt_service_error"
+    case .invalidSaltServiceResponse: "sui.invalid_salt_service_response"
     }
   }
 

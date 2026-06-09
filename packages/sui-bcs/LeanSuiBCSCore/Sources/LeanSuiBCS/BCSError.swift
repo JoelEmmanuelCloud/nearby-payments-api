@@ -53,3 +53,38 @@ public enum BCSError: Error, Equatable {
 
   case customError(String)
 }
+
+extension BCSError {
+  /// Stable, globally-unique, machine-readable code for each case (the case kind, not its payload).
+  public enum Code: String, Sendable, CaseIterable {
+    case unexpectedValue = "bcs.unexpected_value"
+    case stringToDataFailure = "bcs.string_to_data_failure"
+    case stringToUInt256Failure = "bcs.string_to_uint256_failure"
+    case unexpectedLargeULEB128Value = "bcs.unexpected_large_uleb128_value"
+    case unexpectedEndOfInput = "bcs.unexpected_end_of_input"
+    case invalidDataValue = "bcs.invalid_data_value"
+    case doesNotConformTo = "bcs.does_not_conform_to"
+    case invalidLength = "bcs.invalid_length"
+    case customError = "bcs.custom_error"
+  }
+
+  /// The stable code identifying this error's kind.
+  public var code: Code {
+    switch self {
+    case .unexpectedValue: .unexpectedValue
+    case .stringToDataFailure: .stringToDataFailure
+    case .stringToUInt256Failure: .stringToUInt256Failure
+    case .unexpectedLargeULEB128Value: .unexpectedLargeULEB128Value
+    case .unexpectedEndOfInput: .unexpectedEndOfInput
+    case .invalidDataValue: .invalidDataValue
+    case .doesNotConformTo: .doesNotConformTo
+    case .invalidLength: .invalidLength
+    case .customError: .customError
+    }
+  }
+}
+
+extension BCSError: CustomStringConvertible {
+  /// String form is the `code` raw value, so the exact code survives the swift-java bridge.
+  public var description: String { code.rawValue }
+}

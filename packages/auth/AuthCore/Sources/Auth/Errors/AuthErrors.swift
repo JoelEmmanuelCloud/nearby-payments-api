@@ -14,3 +14,28 @@ public enum AuthError: String, Error, Sendable {
   /// An unknown or unexpected error occurred.
   case unknown = "unknown"
 }
+
+extension AuthError {
+  /// Stable, globally-unique, machine-readable code for each case.
+  public enum Code: String, Sendable, CaseIterable {
+    case invalidPayload = "auth.invalid_payload"
+    case stateMismatch = "auth.state_mismatch"
+    case unsupportedProvider = "auth.unsupported_provider"
+    case unknown = "auth.unknown"
+  }
+
+  /// The stable code identifying this error.
+  public var code: Code {
+    switch self {
+    case .invalidPayload: .invalidPayload
+    case .stateMismatch: .stateMismatch
+    case .unsupportedProvider: .unsupportedProvider
+    case .unknown: .unknown
+    }
+  }
+}
+
+extension AuthError: CustomStringConvertible {
+  /// String form is the `code` raw value, so the exact code survives the swift-java bridge.
+  public var description: String { code.rawValue }
+}
