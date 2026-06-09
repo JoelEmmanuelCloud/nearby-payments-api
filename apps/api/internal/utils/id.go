@@ -39,6 +39,15 @@ func RandomHex(n int) (string, error) {
 	return encodeHex(b), nil
 }
 
+func RandomZkLoginSalt() (string, error) {
+	max := new(big.Int).Lsh(big.NewInt(1), 128)
+	n, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		return "", err
+	}
+	return n.String(), nil
+}
+
 func RandomInt64() (int64, error) {
 	n, err := rand.Int(rand.Reader, big.NewInt(1<<62))
 	if err != nil {

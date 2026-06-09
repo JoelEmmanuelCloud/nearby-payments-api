@@ -241,7 +241,7 @@ Expected: `200`
   "refreshExpiresAt": 1234567890,
   "userId": "...",
   "jwt": "<google id token>",
-  "salt": "<zklogin salt hex>"
+  "salt": "<zklogin salt, 128-bit decimal string>"
 }
 ```
 

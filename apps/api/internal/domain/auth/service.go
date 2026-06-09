@@ -295,7 +295,7 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 		return nil, fmt.Errorf("get zklogin salt: %w", err)
 	}
 	if salt == nil {
-		saltHex, err := utils.RandomHex(32)
+		saltValue, err := utils.RandomZkLoginSalt()
 		if err != nil {
 			return nil, apperr.ErrInternal
 		}
@@ -305,7 +305,7 @@ func (s *Service) OAuthComplete(ctx context.Context, req OAuthCompleteRequest) (
 			Issuer:    iss,
 			Subject:   sub,
 			Audience:  aud,
-			Salt:      saltHex,
+			Salt:      saltValue,
 			CreatedAt: now,
 		}
 		if err := s.store.CreateZkLoginSalt(ctx, salt); err != nil {
