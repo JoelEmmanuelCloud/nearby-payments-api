@@ -266,8 +266,11 @@ public final class SessionManager: @unchecked Sendable {
       try saveSession(refreshed)
       return refreshed
     } catch let error as GatewayError {
+      // A terminal failure wipes the session — surface it as `sessionExpired` so every wipe path
+      // (this and the usability guard above) is identified by the single `auth.session_expired` code.
       if error.isTerminalSessionFailure {
         try clearSession(mode: .current)
+        throw SessionError.sessionExpired
       }
       throw error
     } catch {

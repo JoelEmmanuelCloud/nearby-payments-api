@@ -4,4 +4,5 @@ enum AppRoute: Equatable {
   case deviceSecurity
   case login
   case home
+  case profile(isSetupMode: Bool)
 }

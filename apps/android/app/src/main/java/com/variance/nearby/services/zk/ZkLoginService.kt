@@ -82,6 +82,21 @@ class ZkLoginService(
     }
 
     /**
+     * Derives the (stable) zkLogin Sui address and persists it together with the current `maxEpoch`.
+     *
+     * This is the **single writer** of the session's Sui properties: the address is a pure function of
+     * `iss/sub/aud/salt` (never changes), while `maxEpoch` is renewed by each (re-)auth. Called by the
+     * login flow right after OAuth completes, before binding/warm-up. Identity must not write these.
+     */
+    suspend fun commitSessionIdentity() = withContext(Dispatchers.IO) {
+        val session = sessionManager.getCurrentSession(swiftArena).orElse(null)
+            ?: throw IllegalStateException("No active zkLogin session")
+        val address = zkAuth.derivezkLoginAddress(session.jwt, session.salt)
+        val maxEpoch = pendingZKEphemeral?.maxEpoch ?: session.maxEpoch
+        sessionManager.updateSuiProperties(maxEpoch, java.util.Optional.of(address))
+    }
+
+    /**
      * Eagerly prepares a usable signer in the background after login, so the expensive proof is ready
      * before the user attempts to sign. Shares the in-flight construction with [signer].
      *

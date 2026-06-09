@@ -11,7 +11,7 @@ import Apollo
 import ApolloAPI
 import Foundation
 
-public struct GraphQLSuiProvider: Sendable {
+public struct GraphQLSuiProvider: Sendable, SuiNSResolverProtocol {
   internal let apollo: ApolloClient
 
   /// Create a provider for the given Sui network.

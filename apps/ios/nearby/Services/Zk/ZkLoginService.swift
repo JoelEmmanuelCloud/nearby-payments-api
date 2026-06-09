@@ -68,6 +68,22 @@ final class ZkLoginService: ObservableObject {
     return nonce
   }
 
+  /// Derives the (stable) zkLogin Sui address and persists it together with the current `maxEpoch`.
+  ///
+  /// This is the **single writer** of the session's Sui properties: the address is a pure function of
+  /// `iss/sub/aud/salt` (never changes), while `maxEpoch` is renewed by each (re-)auth. Called by the
+  /// login flow right after OAuth completes, before binding/warm-up. Identity must not write these.
+  ///
+  /// - Throws: `ZkLoginServiceError.noSession` if no session is present, or a derivation/storage error.
+  func commitSessionIdentity() throws {
+    guard let session = try sessionManager.getCurrentSession() else {
+      throw ZkLoginServiceError.noSession
+    }
+    let address = try zkAuth.derivezkLoginAddress(jwt: session.jwt, userSalt: session.salt)
+    let maxEpoch = pendingZKEphemeral?.maxEpoch ?? session.maxEpoch
+    try sessionManager.updateSuiProperties(maxEpoch: maxEpoch, suiAddress: address)
+  }
+
   /// Eagerly prepares a usable signer in the background after login, so the expensive proof is ready
   /// before the user attempts to sign. Discardable: callers may fire-and-forget or await the result.
   ///

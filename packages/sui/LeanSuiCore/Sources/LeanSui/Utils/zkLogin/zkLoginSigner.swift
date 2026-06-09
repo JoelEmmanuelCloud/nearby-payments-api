@@ -29,7 +29,9 @@ import LeanSuiApi
 import LeanSuiBCS
 
 /// A comprehensive zkLogin signer that can sign transactions and personal messages
-public class ZkLoginSigner {
+/// A signer is effectively immutable after construction — the template is set once and only read
+/// (per-signature it's copied locally), so it is safe to share across isolation domains.
+public final class ZkLoginSigner: @unchecked Sendable {
   /// The Sui provider for network operations
   private let provider: GraphQLSuiProvider
 
@@ -37,7 +39,7 @@ public class ZkLoginSigner {
   private let ephemeralKeyPair: Account
 
   /// The zkLogin signature structure (contains proof, metadata, but not user signature until signing)
-  private var zkLoginSignatureTemplate: zkLoginSignature
+  private let zkLoginSignatureTemplate: zkLoginSignature
 
   /// The user's zkLogin address
   private let userAddress: String

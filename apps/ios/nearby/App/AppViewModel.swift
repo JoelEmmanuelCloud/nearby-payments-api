@@ -4,6 +4,7 @@ import Combine
 import Foundation
 import Gateway
 import HSM
+import Identity
 import LeanSui
 import LeanSuiApi
 import LocalAuthentication
@@ -17,10 +18,15 @@ import Storage
 @MainActor
 final class AppViewModel: ObservableObject {
   /// The active navigation route in the application UI.
-  @Published private(set) var route: AppRoute
+  @Published var route: AppRoute
 
   /// The display name of the currently authenticated user.
   @Published private(set) var userName: String
+
+  /// The current user's id (for keying the app-side profile cache), or "" if no session.
+  var currentUserId: String {
+    (try? sessionManager.getCurrentSession()?.userId) ?? ""
+  }
 
   /// An optional status or error message shown at the root layout level.
   @Published var statusMessage: String?
@@ -39,6 +45,9 @@ final class AppViewModel: ObservableObject {
 
   /// Platform coordinator orchestrating native OAuth (Google and Apple) authentication.
   let authManager: AppleAuthManager
+
+  /// Orchestrator for profile, avatar caching, wallet binding, and SuiNS resolution.
+  let identityManager: IdentityManager
 
   /// Service managing temporary cryptographic state and nonce values for zkLogin.
   let zkLoginService: ZkLoginService
@@ -82,6 +91,13 @@ final class AppViewModel: ObservableObject {
     )
     self.authManager = authManager
 
+    let identityManager = IdentityManager(
+      gateway: gateway,
+      nsResolver: GraphQLSuiProvider(network: SuiNetwork(kind: AppConstants.suiNetwork)),
+      sessionManager: sessionManager
+    )
+    self.identityManager = identityManager
+
     self.userName = store.userName()
 
     if !store.didCompleteOnboarding() {
@@ -112,17 +128,36 @@ final class AppViewModel: ObservableObject {
     routeAfterDeviceSecurityCheck()
   }
 
-  /// Handles sign-in events by saving the username and navigating to the home route.
+  /// Handles sign-in events by saving the username and navigating to the home route or profile setup.
   ///
   /// - Parameter userName: The authenticated user's display name.
   func handleSignInSuccess(userName: String) {
     self.userName = userName
     store.saveUserName(userName)
-    route = .home
 
-    // Warm up the zkLogin signer in the background so the multi-second proof is ready
-    // before the user attempts to sign. Fire-and-forget; failures are non-fatal here.
-    Task { try? await zkLoginService.warmUpSigner() }
+    // Single writer of Sui properties: derive + persist the (stable) address synchronously now,
+    // so `suiAddress` is available for routing, binding, and the signer.
+    try? zkLoginService.commitSessionIdentity()
+
+    // `suiAddress` is now always present post-login, so route on completed-setup instead.
+    route = store.didCompleteProfileSetup() ? .home : .profile(isSetupMode: true)
+
+    // Background: record the address with the backend (idempotent) then warm up the signer.
+    // A forced logout from token refresh routes to login instead of being swallowed.
+    Task {
+      do {
+        try await identityManager.rebind()
+        try await zkLoginService.warmUpSigner()
+      } catch {
+        // Transient / non-session failure → best-effort, no-op (signer simply not cached yet).
+      }
+    }
+  }
+
+  /// Marks first-run profile setup complete and returns to Home. Called when the setup flow finishes.
+  func finishProfileSetup() {
+    store.completeProfileSetup()
+    route = .home
   }
 
   /// Performs a sign-out by revoking backend session tokens, clearing local data, and resetting navigation routes.
@@ -136,29 +171,42 @@ final class AppViewModel: ObservableObject {
         statusMessage = error.localizedDescription
       }
 
-      store.clearUserName()
-      userName = store.userName()
-      zkLoginService.clearPending()
-      statusMessage = nil
+      clearLocalState()
       routeAfterDeviceSecurityCheck()
     }
   }
 
   /// Validates the stored authentication state and routes the user to either Home or Login.
   private func checkStoredSession() {
-    do {
-      if try authManager.sessionManager.isLoggedIn() {
-        route = .home
-      } else {
-        store.clearUserName()
-        userName = store.userName()
-        route = .login
-      }
-    } catch {
-      store.clearUserName()
-      userName = store.userName()
+    // "Not logged in" and "session wiped during rebind" converge on the single `clearLocalState`.
+    guard (try? authManager.sessionManager.isLoggedIn()) == true else {
+      clearLocalState()
       route = .login
+      return
     }
+
+    route = store.didCompleteProfileSetup() ? .home : .profile(isSetupMode: true)
+
+    // Best-effort idempotent rebind + warm-up.
+    Task {
+      do {
+        try await identityManager.rebind()
+        try await zkLoginService.warmUpSigner()
+      } catch let error as SessionError where error == .sessionExpired {
+        clearLocalState()
+        route = .login
+      } catch {
+      }
+    }
+  }
+
+  /// Clears local session state and routes to login. Called when a background maintenance task
+  /// (rebind/warm-up) hits a forced session invalidation (`SessionError`) from token refresh.
+  private func clearLocalState() {
+    store.clearUserName()
+    userName = store.userName()
+    zkLoginService.clearPending()
+    statusMessage = nil
   }
 
   /// Verifies that system-level device protection is enabled before checking authentication state.

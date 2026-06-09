@@ -79,4 +79,5 @@ public actor AppAttestProvider: IntegrityProvider {
     )
   }
 
+  public static let provider = "apple_app_attest"
 }

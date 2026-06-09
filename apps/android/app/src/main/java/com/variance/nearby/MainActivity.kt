@@ -21,6 +21,8 @@ import com.variance.nearby.screens.auth.LoginScreen
 import com.variance.nearby.screens.auth.LoginViewModel
 import com.variance.nearby.screens.home.HomeScreen
 import com.variance.nearby.screens.onboarding.OnboardingScreen
+import com.variance.nearby.screens.profile.ProfileScreen
+import com.variance.nearby.screens.profile.ProfileViewModel
 import com.variance.nearby.screens.security.DeviceSecurityScreen
 import com.variance.nearby.ui.theme.NearbyTheme
 
@@ -102,5 +104,33 @@ private fun Nearby(viewModel: AppViewModel) {
             )
         }
         AppRoute.HOME -> HomeScreen(viewModel)
+        AppRoute.PROFILE_SETUP -> {
+            val profileViewModel = remember(viewModel) {
+                ProfileViewModel(
+                    identityManager = viewModel.identityManager,
+                    sessionManager = viewModel.sessionManager,
+                    store = viewModel.sessionStore,
+                    userId = viewModel.currentUserId,
+                    isSetupMode = true,
+                    swiftArena = viewModel.swiftArena,
+                    onFinish = { viewModel.finishProfileSetup() },
+                )
+            }
+            ProfileScreen(viewModel = profileViewModel)
+        }
+        AppRoute.PROFILE -> {
+            val profileViewModel = remember(viewModel) {
+                ProfileViewModel(
+                    identityManager = viewModel.identityManager,
+                    sessionManager = viewModel.sessionManager,
+                    store = viewModel.sessionStore,
+                    userId = viewModel.currentUserId,
+                    isSetupMode = false,
+                    swiftArena = viewModel.swiftArena,
+                    onFinish = { viewModel.route = AppRoute.HOME },
+                )
+            }
+            ProfileScreen(viewModel = profileViewModel)
+        }
     }
 }

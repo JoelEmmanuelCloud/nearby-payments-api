@@ -1,5 +1,5 @@
 {
-  "originHash" : "9be8b7c4a2d08f0c5ba2415c1455125dc00c41a9c3411c6cbbf9a0f23557a152",
+  "originHash" : "259639f0dc4786fc74f072217ee0863b9d2da164f3bf33b90b468c0368bb0994",
   "pins" : [
     {
       "identity" : "app-check",
@@ -89,6 +89,15 @@
       "state" : {
         "revision" : "95ba0316a9b733e92bb6b071255ff46263bbe7dc",
         "version" : "3.15.1"
+      }
+    },
+    {
+      "identity" : "swiftcache-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SudhirGadhvi/SwiftCache-SDK.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "ca608b16334c2db42e091d1c5b749d00f77ab2bc"
       }
     },
     {

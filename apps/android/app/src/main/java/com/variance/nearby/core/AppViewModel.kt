@@ -8,16 +8,20 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.variance.nearby.auth.GoogleAuthManager
+import com.variance.nearby.auth.SessionError
 import com.variance.nearby.auth.SessionManager
 import com.variance.nearby.biometrics.BiometricGateController
 import com.variance.nearby.gateway.APIGateway
 import com.variance.nearby.hsm.HardwareSecurityModule
 import com.variance.nearby.hsm.StrongBoxHSM
+import com.variance.nearby.identity.IdentityManager
+import com.variance.nearby.leansui.api.GraphQLSuiProvider
 import com.variance.nearby.leansui.api.SuiNetwork
 import com.variance.nearby.leansui.api.SuiNetworkKind
 import com.variance.nearby.services.zk.ZkLoginService
 import com.variance.nearby.storage.PreferencesProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.swift.swiftkit.core.ClosableSwiftArena
@@ -39,7 +43,6 @@ class AppViewModel(
 
     /** The active navigation route in the application UI. */
     var route by mutableStateOf(AppRoute.ONBOARDING)
-        private set
 
     /** The display name of the currently authenticated user. */
     var userName by mutableStateOf("Nearby user")
@@ -66,7 +69,16 @@ class AppViewModel(
     /** The StrongBox-backed Hardware Security Module used for device signing key generation. */
     val hsm: HardwareSecurityModule =
         StrongBoxHSM(appContext, biometricGate)
-    private val sessionStore = AppSessionStore(preferencesProvider, swiftArena)
+    val sessionStore = AppSessionStore(preferencesProvider, swiftArena)
+
+    /** The current user's id (for keying the app-side profile cache), or "" if no session. */
+    val currentUserId: String
+        get() = try {
+            val opt = sessionManager.getCurrentSession(swiftArena)
+            if (opt.isPresent) opt.get().userId else ""
+        } catch (e: Exception) {
+            ""
+        }
 
     /** The Sui network this app targets (epoch lookups, proofs, transactions). */
     private val suiNetwork: SuiNetwork = when (AppConstants.SUI_NETWORK) {
@@ -102,6 +114,13 @@ class AppViewModel(
         swiftArena = swiftArena,
     )
 
+    val identityManager: IdentityManager = IdentityManager.init(
+        gateway,
+        GraphQLSuiProvider.init(suiNetwork, swiftArena),
+        sessionManager,
+        swiftArena,
+    )
+
     init {
         userName = sessionStore.userName()
 
@@ -125,20 +144,31 @@ class AppViewModel(
         }
     }
 
-    /** Handles sign-in events by saving the username and navigating to the home route. */
+    /** Handles sign-in events by saving the username and navigating to the home route or profile setup. */
     fun handleSignInSuccess(name: String) {
         userName = name
         sessionStore.saveUserName(name)
-        route = AppRoute.HOME
 
-        // Warm up the zkLogin signer in the background so the multi-second proof is ready before
-        // the user attempts to sign. Fire-and-forget; failures are non-fatal here.
+        // `suiAddress` is now derived synchronously by the zkLogin layer, so route on completed-setup.
+        route = if (sessionStore.didCompleteProfileSetup()) AppRoute.HOME else AppRoute.PROFILE_SETUP
+
+        // Single writer of Sui properties (derive + persist the stable address), then record it with
+        // the backend (idempotent) and warm up the signer. A forced session wipe routes to login.
         viewModelScope.launch {
             try {
+                zkLoginService.commitSessionIdentity()
+                identityManager.rebind().await()
                 zkLoginService.warmUpSigner()
             } catch (_: Exception) {
+                // Transient / non-session failure → best-effort, no-op (signer simply not cached yet).
             }
         }
+    }
+
+    /** Marks first-run profile setup complete and returns to Home. Called when the setup flow finishes. */
+    fun finishProfileSetup() {
+        sessionStore.completeProfileSetup()
+        route = AppRoute.HOME
     }
 
     /** Performs a sign-out by revoking backend session tokens, clearing local data, and resetting navigation routes. */
@@ -148,11 +178,8 @@ class AppViewModel(
 
         googleAuthManager.signOut(
             onComplete = {
-                sessionStore.clearUserName()
-                userName = sessionStore.userName()
                 isSigningIn = false
-                statusMessage = null
-                zkLoginService.clearPending()
+                clearLocalState()
                 routeAfterDeviceSecurityCheck()
             },
             onError = { error ->
@@ -185,24 +212,44 @@ class AppViewModel(
     /** Validates the stored authentication state and routes the user to either Home or Login. */
     private fun checkStoredSession() {
         route = AppRoute.LOADING
-        viewModelScope.launch(Dispatchers.IO) {
-            val loggedIn =
+        // One coroutine on Main; only the blocking session read hops to IO. Both "not logged in"
+        // and "session wiped during rebind" converge on the single `clearLocalState` path.
+        viewModelScope.launch {
+            val loggedIn = withContext(Dispatchers.IO) {
                 try {
                     sessionManager.isLoggedIn
                 } catch (_: Exception) {
                     false
                 }
+            }
 
-            withContext(Dispatchers.Main) {
-                if (loggedIn) {
-                    route = AppRoute.HOME
-                } else {
-                    sessionStore.clearUserName()
-                    userName = sessionStore.userName()
+            if (!loggedIn) {
+                clearLocalState()
+                route = AppRoute.LOGIN
+                return@launch
+            }
+
+            route = if (sessionStore.didCompleteProfileSetup()) AppRoute.HOME else AppRoute.PROFILE_SETUP
+
+            // Best-effort idempotent rebind + warm-up.
+            try {
+                identityManager.rebind().await()
+                zkLoginService.warmUpSigner()
+            } catch (e: Exception) {
+                if (e.message == SessionError.sessionExpired(swiftArena).description) {
+                    clearLocalState()
                     route = AppRoute.LOGIN
                 }
             }
         }
+    }
+
+    /** Clears local session state and routes to login after a forced session invalidation. */
+    private fun clearLocalState() {
+        sessionStore.clearUserName()
+        userName = sessionStore.userName()
+        zkLoginService.clearPending()
+        statusMessage = null
     }
 
     /** Verifies that system-level device protection is enabled before checking authentication state. */

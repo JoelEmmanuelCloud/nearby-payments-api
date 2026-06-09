@@ -27,9 +27,30 @@ struct ContentView: View {
       case .home:
         HomeView(
           userName: viewModel.userName,
+          store: viewModel.store,
+          userId: viewModel.currentUserId,
+          onNavigateToProfile: {
+            viewModel.route = .profile(isSetupMode: false)
+          },
           onSignOut: {
             viewModel.signOut()
           }
+        )
+      case .profile(let isSetupMode):
+        ProfileView(
+          viewModel: ProfileViewModel(
+            identityManager: viewModel.identityManager,
+            sessionManager: viewModel.sessionManager,
+            store: viewModel.store,
+            isSetupMode: isSetupMode,
+            onFinish: {
+              if isSetupMode {
+                viewModel.finishProfileSetup()
+              } else {
+                viewModel.route = .home
+              }
+            }
+          )
         )
       }
     }

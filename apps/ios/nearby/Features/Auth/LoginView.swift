@@ -53,3 +53,11 @@ struct LoginView: View {
     }
   }
 }
+
+#Preview {
+  let viewmodel = AppViewModel()
+  LoginView(
+    viewModel: LoginViewModel(
+      authManager: viewmodel.authManager, zkLoginService: viewmodel.zkLoginService),
+    onSignInSuccess: { _ in })
+}
