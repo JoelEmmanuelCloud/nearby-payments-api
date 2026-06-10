@@ -11,6 +11,7 @@ var (
 	ErrTaskNotSubmittable = apperr.New("task_not_submittable", "Name operation task is not in a submittable state", http.StatusConflict)
 	ErrTaskExpired        = apperr.New("task_expired", "Name operation task has expired", http.StatusGone)
 	ErrNameInvalid        = apperr.New("name_invalid", "Leaf name is invalid", http.StatusBadRequest)
+	ErrNameTaken          = apperr.New("name_taken", "Name is already reserved or registered", http.StatusConflict)
 	ErrAVSUnauthorized    = apperr.New("avs_unauthorized", "AVS quorum authorization failed", http.StatusForbidden)
 	ErrRegistrationFailed = apperr.New("registration_failed", "Name registration transaction failed", http.StatusBadGateway)
 	ErrNoWalletBound      = apperr.New("no_wallet_bound", "No Sui wallet bound to this account", http.StatusBadRequest)

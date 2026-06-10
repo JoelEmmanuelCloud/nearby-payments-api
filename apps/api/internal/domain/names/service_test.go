@@ -13,9 +13,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/vaariance/nearby/internal/avs"
 	dbpkg "github.com/vaariance/nearby/internal/db"
 	"github.com/vaariance/nearby/internal/domain/auth"
 	"github.com/vaariance/nearby/internal/domain/names"
+	"github.com/vaariance/nearby/internal/sui"
 	"github.com/vaariance/nearby/internal/utils"
 )
 
@@ -39,10 +41,15 @@ func TestMain(m *testing.M) {
 
 	testAuthStore = auth.NewStore(testPool)
 	testStore = names.NewStore(testPool)
+	avsClient, err := avs.NewClient([]string{})
+	if err != nil {
+		panic("avs client: " + err.Error())
+	}
 	testSvc = names.NewService(names.ServiceDeps{
 		Store:     testStore,
 		AuthStore: testAuthStore,
-		AVSClient: nil,
+		AVSClient: avsClient,
+		Sponsor:   sui.NewSponsor(nil, avsClient),
 	})
 
 	os.Exit(m.Run())
@@ -294,6 +301,120 @@ func TestGetTask_Handler_NotFound(t *testing.T) {
 
 	if rr.Code != http.StatusNotFound {
 		t.Fatalf("expected 404, got %d", rr.Code)
+	}
+}
+
+func TestService_RegisterLeaf_DedupSameUser(t *testing.T) {
+	userID := insertTestUser(t)
+	insertWalletBinding(t, userID, "0x"+utils.SHA256HexString(userID)[:62])
+	now := utils.NowUnix()
+	nameHash := "0x" + utils.SHA256HexString("alice.nearby")
+
+	task := &names.NameOperationTask{
+		ID:          utils.NewID(),
+		UserID:      userID,
+		Action:      "leaf_name.register_initial",
+		PayloadHash: nameHash,
+		Nonce:       utils.NewID(),
+		Status:      "authorized",
+		AVSTaskID:   utils.NewID(),
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		ExpiresAt:   now + 300,
+	}
+	if err := testStore.CreateTask(context.Background(), task); err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+
+	resp, err := testSvc.RegisterLeaf(context.Background(), userID, names.RegisterLeafRequest{LeafName: "alice"})
+	if err != nil {
+		t.Fatalf("register leaf: %v", err)
+	}
+	if resp.TaskID != task.ID {
+		t.Fatalf("expected existing task id %s, got %s", task.ID, resp.TaskID)
+	}
+}
+
+func TestService_RegisterLeaf_NameTakenByOther(t *testing.T) {
+	ownerID := insertTestUser(t)
+	registrantID := insertTestUser(t)
+	insertWalletBinding(t, registrantID, "0x"+utils.SHA256HexString(registrantID)[:62])
+	now := utils.NowUnix()
+	nameHash := "0x" + utils.SHA256HexString("alice.nearby")
+
+	task := &names.NameOperationTask{
+		ID:          utils.NewID(),
+		UserID:      ownerID,
+		Action:      "leaf_name.register_initial",
+		PayloadHash: nameHash,
+		Nonce:       utils.NewID(),
+		Status:      "authorized",
+		AVSTaskID:   utils.NewID(),
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		ExpiresAt:   now + 300,
+	}
+	if err := testStore.CreateTask(context.Background(), task); err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+
+	_, err := testSvc.RegisterLeaf(context.Background(), registrantID, names.RegisterLeafRequest{LeafName: "alice"})
+	if !errors.Is(err, names.ErrNameTaken) {
+		t.Fatalf("expected ErrNameTaken, got %v", err)
+	}
+}
+
+func TestStore_GetActiveTaskByPayloadHash(t *testing.T) {
+	userID := insertTestUser(t)
+	now := utils.NowUnix()
+	activeHash := "0x" + utils.SHA256HexString("active.nearby")
+	expiredHash := "0x" + utils.SHA256HexString("expired.nearby")
+
+	active := &names.NameOperationTask{
+		ID:          utils.NewID(),
+		UserID:      userID,
+		Action:      "leaf_name.register_initial",
+		PayloadHash: activeHash,
+		Nonce:       utils.NewID(),
+		Status:      "authorized",
+		AVSTaskID:   utils.NewID(),
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		ExpiresAt:   now + 300,
+	}
+	expired := &names.NameOperationTask{
+		ID:          utils.NewID(),
+		UserID:      userID,
+		Action:      "leaf_name.register_initial",
+		PayloadHash: expiredHash,
+		Nonce:       utils.NewID(),
+		Status:      "authorized",
+		AVSTaskID:   utils.NewID(),
+		CreatedAt:   now - 600,
+		UpdatedAt:   now - 600,
+		ExpiresAt:   now - 300,
+	}
+	if err := testStore.CreateTask(context.Background(), active); err != nil {
+		t.Fatalf("create active task: %v", err)
+	}
+	if err := testStore.CreateTask(context.Background(), expired); err != nil {
+		t.Fatalf("create expired task: %v", err)
+	}
+
+	got, err := testStore.GetActiveTaskByPayloadHash(context.Background(), activeHash, now)
+	if err != nil {
+		t.Fatalf("get active task: %v", err)
+	}
+	if got == nil || got.ID != active.ID {
+		t.Fatalf("expected active task %s, got %v", active.ID, got)
+	}
+
+	gotExpired, err := testStore.GetActiveTaskByPayloadHash(context.Background(), expiredHash, now)
+	if err != nil {
+		t.Fatalf("get expired task: %v", err)
+	}
+	if gotExpired != nil {
+		t.Fatalf("expected nil for expired task, got %s", gotExpired.ID)
 	}
 }
 
