@@ -13,6 +13,7 @@ swift_library(
         "//packages/auth:Auth",
         "//packages/gateway:Gateway",
         "//packages/hsm:HSM",
+        "//packages/identity:Identity",
         "//packages/storage:Storage",
         "//packages/sui:LeanSui",
         "//packages/sui-api:LeanSuiApi",

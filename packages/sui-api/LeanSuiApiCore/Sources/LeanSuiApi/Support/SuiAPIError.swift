@@ -31,8 +31,33 @@ public enum SuiAPIError: Error, Sendable, Equatable {
   case custom(message: String)
 }
 
-extension SuiAPIError: CustomStringConvertible {
-  public var description: String {
+extension SuiAPIError {
+  /// Stable, globally-unique, machine-readable code for each case (the case kind, not its payload).
+  public enum Code: String, Sendable, CaseIterable {
+    case missingData = "sui_api.missing_data"
+    case missingField = "sui_api.missing_field"
+    case graphQL = "sui_api.graphql"
+    case scalarDecoding = "sui_api.scalar_decoding"
+    case notImplemented = "sui_api.not_implemented"
+    case custom = "sui_api.custom"
+  }
+
+  /// The stable code identifying this error's kind.
+  public var code: Code {
+    switch self {
+    case .missingData: .missingData
+    case .missingField: .missingField
+    case .graphQL: .graphQL
+    case .scalarDecoding: .scalarDecoding
+    case .notImplemented: .notImplemented
+    case .custom: .custom
+    }
+  }
+}
+
+extension SuiAPIError: LocalizedError {
+  /// Human-readable detail (the `description` carries the stable `code` for bridge identification).
+  public var errorDescription: String? {
     switch self {
     case .missingData:
       return "GraphQL response contained no data."
@@ -48,4 +73,9 @@ extension SuiAPIError: CustomStringConvertible {
       return message
     }
   }
+}
+
+extension SuiAPIError: CustomStringConvertible {
+  /// String form is the `code` raw value, so the exact code survives the swift-java bridge.
+  public var description: String { code.rawValue }
 }

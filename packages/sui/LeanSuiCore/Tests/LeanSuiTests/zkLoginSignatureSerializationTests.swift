@@ -38,6 +38,22 @@ final class zkLoginSignatureSerializationTests: XCTestCase {
     XCTAssertEqual(serialized, sampleSignature)
   }
 
+  func testRoundTripInputsSerialization() throws {
+    // The inputs-only helpers used by the signer cache must round-trip byte-exact.
+    let inputs = try zkLoginSignature.parse(serialized: sampleSignature).inputs
+
+    let serialized = try ZkLoginAuthenticator.serializeInputs(inputs)
+    let reparsed = try ZkLoginAuthenticator.parseInputs(serialized)
+
+    XCTAssertEqual(reparsed.addressSeed, inputs.addressSeed)
+    XCTAssertEqual(reparsed.headerBase64, inputs.headerBase64)
+    XCTAssertEqual(reparsed.issBase64Details.value, inputs.issBase64Details.value)
+    XCTAssertEqual(reparsed.issBase64Details.indexMod4, inputs.issBase64Details.indexMod4)
+    XCTAssertEqual(reparsed.proofPoints.a, inputs.proofPoints.a)
+    XCTAssertEqual(reparsed.proofPoints.b, inputs.proofPoints.b)
+    XCTAssertEqual(reparsed.proofPoints.c, inputs.proofPoints.c)
+  }
+
   func testRoundTripzkLoginSignature() throws {
     let inputs = zkLoginSignatureInputs(
       proofPoints: zkLoginSignatureInputsProofPoints(

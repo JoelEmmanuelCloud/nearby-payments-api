@@ -23,3 +23,26 @@ public enum StorageError: Error, LocalizedError, Equatable {
     }
   }
 }
+
+extension StorageError {
+  /// Stable, globally-unique, machine-readable code for each case (the case kind, not its payload).
+  public enum Code: String, Sendable, CaseIterable {
+    case unhandledError = "storage.unhandled_error"
+    case unexpectedDataFormat = "storage.unexpected_data_format"
+    case androidException = "storage.android_exception"
+  }
+
+  /// The stable code identifying this error's kind.
+  public var code: Code {
+    switch self {
+    case .unhandledError: .unhandledError
+    case .unexpectedDataFormat: .unexpectedDataFormat
+    case .androidException: .androidException
+    }
+  }
+}
+
+extension StorageError: CustomStringConvertible {
+  /// String form is the `code` raw value, so the exact code survives the swift-java bridge.
+  public var description: String { code.rawValue }
+}

@@ -202,6 +202,18 @@ public final class APIGateway: APIGatewayProtocol {
     )
   }
 
+  public func uploadAvatar(
+    data: [UInt8],
+    contentType: String,
+    accessToken: String
+  ) async throws -> AvatarUploadResponse {
+    try await uploadAvatar(
+      data: Data(data),
+      contentType: contentType,
+      accessToken: accessToken
+    )
+  }
+
   /// Checks the availability of a leaf name under nearby.sui.
   ///
   /// - Parameters:

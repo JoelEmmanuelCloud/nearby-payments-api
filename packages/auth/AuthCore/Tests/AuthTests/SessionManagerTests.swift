@@ -150,7 +150,9 @@ struct SessionManagerTests {
       maxEpoch: 5
     )
 
-    await #expect(throws: GatewayError.self) {
+    // A terminal refresh failure wipes the session and surfaces as `sessionExpired` (not the raw
+    // GatewayError), so every wipe path is identified by the single `auth.session_expired` code.
+    await #expect(throws: SessionError.sessionExpired) {
       _ = try await manager.getAccessToken()
     }
 
@@ -251,6 +253,10 @@ private final class MockHSM: HardwareSecurityModule, @unchecked Sendable {
 
   func deleteKey() throws {
     didDeleteKey = true
+  }
+
+  func validateKeyForSigning() throws -> Bool {
+    true
   }
 }
 

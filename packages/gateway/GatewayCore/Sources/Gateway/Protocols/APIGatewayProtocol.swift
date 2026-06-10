@@ -108,6 +108,12 @@ public protocol APIGatewayProtocol: Sendable {
     accessToken: String
   ) async throws -> AvatarUploadResponse
 
+  func uploadAvatar(
+    data: [UInt8],
+    contentType: String,
+    accessToken: String
+  ) async throws -> AvatarUploadResponse
+
   /// Checks the availability of a leaf name under nearby.sui.
   ///
   /// - Parameters:

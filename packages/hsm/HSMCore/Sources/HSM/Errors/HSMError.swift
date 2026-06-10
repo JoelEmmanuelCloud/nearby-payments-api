@@ -24,3 +24,28 @@ public enum HSMError: Error, LocalizedError, Equatable {
     }
   }
 }
+
+extension HSMError {
+  /// Stable, globally-unique, machine-readable code for each case (the case kind, not its payload).
+  public enum Code: String, Sendable, CaseIterable {
+    case keyNotFound = "hsm.key_not_found"
+    case keyGenerationFailed = "hsm.key_generation_failed"
+    case keyRetrievalFailed = "hsm.key_retrieval_failed"
+    case keyDeletionFailed = "hsm.key_deletion_failed"
+  }
+
+  /// The stable code identifying this error's kind.
+  public var code: Code {
+    switch self {
+    case .keyNotFound: .keyNotFound
+    case .keyGenerationFailed: .keyGenerationFailed
+    case .keyRetrievalFailed: .keyRetrievalFailed
+    case .keyDeletionFailed: .keyDeletionFailed
+    }
+  }
+}
+
+extension HSMError: CustomStringConvertible {
+  /// String form is the `code` raw value, so the exact code survives the swift-java bridge.
+  public var description: String { code.rawValue }
+}

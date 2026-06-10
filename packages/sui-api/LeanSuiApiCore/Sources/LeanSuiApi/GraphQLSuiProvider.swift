@@ -11,7 +11,7 @@ import Apollo
 import ApolloAPI
 import Foundation
 
-public struct GraphQLSuiProvider: Sendable {
+public struct GraphQLSuiProvider: Sendable, SuiNSResolverProtocol {
   internal let apollo: ApolloClient
 
   /// Create a provider for the given Sui network.
@@ -373,6 +373,20 @@ public struct GraphQLSuiProvider: Sendable {
     let result = try await GraphQLClient.fetchQuery(
       client: apollo,
       query: GetLatestSuiSystemStateQuery()
+    )
+    let epoch = try require(result.data?.epoch, "epoch")
+    return try SuiSystemStateSummary(graphql: epoch)
+  }
+
+  /// Return just the current epoch id and its timestamps.
+  ///
+  /// Lightweight counterpart to ``getLatestSuiSystemState()`` for the zkLogin nonce
+  /// flow: it omits the multi-megabyte `systemState`/`validatorSet` JSON payloads,
+  /// so it is dramatically faster when only the epoch is needed.
+  public func getCurrentEpoch() async throws -> SuiSystemStateSummary {
+    let result = try await GraphQLClient.fetchQuery(
+      client: apollo,
+      query: GetEpochIdQuery()
     )
     let epoch = try require(result.data?.epoch, "epoch")
     return try SuiSystemStateSummary(graphql: epoch)

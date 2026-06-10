@@ -16,6 +16,7 @@ public final class SessionManager: @unchecked Sendable {
     static let refreshExpiresAt = "refresh_expires_at"
     static let maxEpoch = "max_epoch"
     static let provider = "provider"
+    static let proof = "proof"
 
     static let currentSessionKeys = [
       accessToken,
@@ -28,6 +29,7 @@ public final class SessionManager: @unchecked Sendable {
       refreshExpiresAt,
       maxEpoch,
       provider,
+      proof,
     ]
   }
 
@@ -121,7 +123,8 @@ public final class SessionManager: @unchecked Sendable {
       accessExpiresAt: accessExpiresAt,
       refreshExpiresAt: refreshExpiresAt,
       maxEpoch: maxEpoch,
-      provider: provider
+      provider: provider,
+      proof: try readString(forKey: Key.proof)
     )
   }
 
@@ -169,7 +172,32 @@ public final class SessionManager: @unchecked Sendable {
       accessExpiresAt: session.accessExpiresAt,
       refreshExpiresAt: session.refreshExpiresAt,
       maxEpoch: maxEpoch,
-      provider: session.provider
+      provider: session.provider,
+      proof: session.proof
+    )
+    try saveSession(updated)
+  }
+
+  /// Persists the cached zkLogin proof (serialized signature inputs) onto the current session.
+  ///
+  /// - Parameter serializedInputs: The base64-encoded zkLogin signature inputs to cache.
+  /// - Throws: `SessionError.sessionExpired` if no active session exists, or a storage write error.
+  public func updateProof(_ serializedInputs: String) throws {
+    guard let session = try getCurrentSession() else {
+      throw SessionError.sessionExpired
+    }
+    let updated = AuthSession(
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      userId: session.userId,
+      jwt: session.jwt,
+      salt: session.salt,
+      suiAddress: session.suiAddress,
+      accessExpiresAt: session.accessExpiresAt,
+      refreshExpiresAt: session.refreshExpiresAt,
+      maxEpoch: session.maxEpoch,
+      provider: session.provider,
+      proof: serializedInputs
     )
     try saveSession(updated)
   }
@@ -231,14 +259,18 @@ public final class SessionManager: @unchecked Sendable {
         accessExpiresAt: response.expiresAt,
         refreshExpiresAt: response.refreshExpiresAt,
         maxEpoch: session.maxEpoch,
-        provider: session.provider
+        provider: session.provider,
+        proof: session.proof
       )
 
       try saveSession(refreshed)
       return refreshed
     } catch let error as GatewayError {
+      // A terminal failure wipes the session — surface it as `sessionExpired` so every wipe path
+      // (this and the usability guard above) is identified by the single `auth.session_expired` code.
       if error.isTerminalSessionFailure {
         try clearSession(mode: .current)
+        throw SessionError.sessionExpired
       }
       throw error
     } catch {
@@ -300,6 +332,7 @@ public final class SessionManager: @unchecked Sendable {
     try saveString(String(session.refreshExpiresAt), forKey: Key.refreshExpiresAt)
     try saveString(String(session.maxEpoch), forKey: Key.maxEpoch)
     try saveString(session.provider.rawValue, forKey: Key.provider)
+    try saveString(session.proof, forKey: Key.proof)
   }
 
   /// Evaluates if a session is valid based on its refresh expiration.

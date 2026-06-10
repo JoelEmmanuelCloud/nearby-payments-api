@@ -16,8 +16,13 @@ playServicesTasks = "18.4.1"
 credentials = "1.6.0"
 googleid = "1.2.0"
 biometric = "1.4.0-alpha07"
+coil = "3.1.0"
+sonner = "0.3.9"
 
 [libraries]
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+sonner = { group = "io.github.dokar3", name = "sonner", version.ref = "sonner" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

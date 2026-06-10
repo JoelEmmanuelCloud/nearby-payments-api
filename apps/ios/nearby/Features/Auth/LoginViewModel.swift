@@ -3,6 +3,7 @@ import AuthenticationServices
 import Combine
 import Foundation
 import HSM
+import UI
 import UIKit
 
 /// UI state controller coordinating Google and Apple OAuth processes on iOS.
@@ -13,12 +14,10 @@ import UIKit
 final class LoginViewModel: ObservableObject {
   private let authManager: AppleAuthManager
   private let zkLoginService: ZkLoginService
+  private let toastController: ToastController
 
   /// Indicates whether an active network sign-in operation is currently in progress.
   @Published private(set) var isSigningIn = false
-
-  /// An optional status, progress, or validation error message displayed in the UI.
-  @Published private(set) var statusMessage: String?
 
   /// Temporarily cached Apple OAuth nonce used to finalize Apple Sign-In callbacks.
   private var appleSignInNonce: String?
@@ -33,9 +32,12 @@ final class LoginViewModel: ObservableObject {
   ///   - authManager: Platform authenticator coordinator.
   ///   - hsm: Secure Enclave interface.
   ///   - zkLoginService: zkLogin ephemeral credentials service.
-  init(authManager: AppleAuthManager, zkLoginService: ZkLoginService) {
+  init(
+    authManager: AppleAuthManager, zkLoginService: ZkLoginService, toastController: ToastController
+  ) {
     self.authManager = authManager
     self.zkLoginService = zkLoginService
+    self.toastController = toastController
 
     // Bind isReadyToSignIn to whether ZkLoginService has a pending session
     zkLoginService.$pendingZKEphemeral
@@ -49,7 +51,7 @@ final class LoginViewModel: ObservableObject {
     do {
       _ = try await zkLoginService.prepareNonce()
     } catch {
-      statusMessage = "Could not prepare sign in: \(error.localizedDescription)"
+      toastController.show("Could not prepare sign in", tone: .warning)
     }
   }
 
@@ -58,7 +60,7 @@ final class LoginViewModel: ObservableObject {
   /// - Parameter request: The authorization request to configure.
   func prepareAppleSignInRequest(_ request: ASAuthorizationAppleIDRequest) {
     guard let nonce = zkLoginService.pendingZKEphemeral?.nonce else {
-      statusMessage = "Still preparing sign in, please retry"
+      toastController.show("Still preparing sign in, please retry", tone: .neutral)
       return
     }
     appleSignInNonce = nonce
@@ -74,21 +76,19 @@ final class LoginViewModel: ObservableObject {
     _ result: Result<ASAuthorization, Error>, onSuccess: @escaping (String) -> Void
   ) {
     guard let nonce = appleSignInNonce else {
-      statusMessage = "Apple sign in could not start"
+      toastController.show("Apple sign in could not start", tone: .danger)
       return
     }
 
     isSigningIn = true
-    statusMessage = "Completing Apple sign in"
 
     Task {
       do {
         try await authManager.signInWithApple(result, nonce: nonce)
         let userName = "Apple account"
-        statusMessage = nil
         onSuccess(userName)
       } catch {
-        statusMessage = error.localizedDescription
+        toastController.show(error.localizedDescription, tone: .danger)
       }
 
       appleSignInNonce = nil
@@ -101,12 +101,11 @@ final class LoginViewModel: ObservableObject {
   /// - Parameter onSuccess: Callback invoked with the user name upon successful login.
   func signInWithGoogle(onSuccess: @escaping (String) -> Void) {
     guard let presentationAnchor = Self.presentationAnchor() else {
-      statusMessage = "Google sign in could not start"
+      toastController.show("Google sign in could not start", tone: .danger)
       return
     }
 
     isSigningIn = true
-    statusMessage = "Completing Google sign in"
 
     Task {
       if zkLoginService.pendingZKEphemeral == nil {
@@ -123,10 +122,9 @@ final class LoginViewModel: ObservableObject {
           presentationAnchor: presentationAnchor
         )
         let userName = "Google account"
-        statusMessage = nil
         onSuccess(userName)
       } catch {
-        statusMessage = error.localizedDescription
+        toastController.show(error.localizedDescription, tone: .danger)
       }
 
       isSigningIn = false

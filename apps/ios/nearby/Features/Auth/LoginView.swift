@@ -21,26 +21,23 @@ struct LoginView: View {
         VStack(alignment: .leading, spacing: 16) {
           MutedText("Account")
 
-          SignInWithAppleButton(
-            .continue,
-            onRequest: viewModel.prepareAppleSignInRequest,
-            onCompletion: { result in
-              viewModel.completeAppleSignIn(result, onSuccess: onSignInSuccess)
-            }
-          )
-          .signInWithAppleButtonStyle(.black)
-          .frame(height: 48)
-          .clipShape(Capsule())
-          .disabled(viewModel.isSigningIn || !viewModel.isReadyToSignIn)
+          // TODO: backend not configured
+          // SignInWithAppleButton(
+          //   .continue,
+          //   onRequest: viewModel.prepareAppleSignInRequest,
+          //   onCompletion: { result in
+          //     viewModel.completeAppleSignIn(result, onSuccess: onSignInSuccess)
+          //   }
+          // )
+          // .signInWithAppleButtonStyle(.black)
+          // .frame(height: 48)
+          // .clipShape(Capsule())
+          // .disabled(viewModel.isSigningIn || !viewModel.isReadyToSignIn)
 
           GoogleSignInPillButton(
             isDisabled: viewModel.isSigningIn || !viewModel.isReadyToSignIn
           ) {
             viewModel.signInWithGoogle(onSuccess: onSignInSuccess)
-          }
-
-          if let statusMessage = viewModel.statusMessage {
-            MutedText(statusMessage)
           }
         }
       }
@@ -52,4 +49,13 @@ struct LoginView: View {
       await viewModel.prepareZkNonce()
     }
   }
+}
+
+#Preview {
+  let viewmodel = AppViewModel()
+  LoginView(
+    viewModel: LoginViewModel(
+      authManager: viewmodel.authManager, zkLoginService: viewmodel.zkLoginService,
+      toastController: viewmodel.toastController),
+    onSignInSuccess: { _ in })
 }
