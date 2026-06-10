@@ -25,7 +25,8 @@ final class HomeViewModel: ObservableObject {
   init(
     suiAddress: String?,
     store: AppSessionStore,
-    service: BalanceService = BalanceService()
+    service: BalanceService = BalanceService(
+      network: AppConstants.suiNetwork, coinType: AppConstants.usdSuiCoinType)
   ) {
     self.suiAddress = suiAddress
     self.store = store

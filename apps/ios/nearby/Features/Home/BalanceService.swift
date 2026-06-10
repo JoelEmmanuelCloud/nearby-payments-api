@@ -10,10 +10,7 @@ actor BalanceService {
 
   private var cachedDecimals: Int?
 
-  init(
-    network: SuiNetworkKind = AppConstants.suiNetwork,
-    coinType: String = AppConstants.usdSuiCoinType
-  ) {
+  init(network: SuiNetworkKind, coinType: String) {
     self.provider = GraphQLSuiProvider(network: SuiNetwork(kind: network))
     self.coinType = coinType
   }

@@ -6,10 +6,13 @@
 import Foundation
 import LeanSuiApi
 
-enum AppConstants {
+/// Global, immutable, `Sendable` configuration. Explicitly `nonisolated` so it reads from any
+/// isolation (the app target defaults to `@MainActor`, which would otherwise isolate these constants
+/// and break access from actors / nonisolated default-argument contexts, e.g. `BalanceService`).
+nonisolated enum AppConstants {
   static let baseURLString = "https://nearby-api.variance.space"
   static let apiVersion = "v1"
-  static let googleClientID =
+  static let googleServerClientID =
     "565533426961-glfffimsek0cni5pq7e7hfmi2umm0e5i.apps.googleusercontent.com"
 
   /// The Sui network used for zkLogin (epoch lookups, proofs, transactions) and the on-chain balance.
