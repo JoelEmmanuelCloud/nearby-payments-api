@@ -62,6 +62,9 @@ func (s *Sponsor) SubmitSponsoredTransaction(ctx context.Context, txBytes []byte
 	if err != nil {
 		return nil, fmt.Errorf("execute sponsored transaction: %w", err)
 	}
+	if err := resp.ExecutionError(); err != nil {
+		return nil, err
+	}
 
 	return resp, nil
 }
@@ -71,6 +74,9 @@ func (s *Sponsor) RelayUserTransaction(ctx context.Context, txBytes []byte, user
 	resp, err := s.suiClient.ExecuteTransactionBlock(ctx, txBytesB64, []string{userSignature})
 	if err != nil {
 		return nil, fmt.Errorf("relay transaction: %w", err)
+	}
+	if err := resp.ExecutionError(); err != nil {
+		return nil, err
 	}
 	return resp, nil
 }
