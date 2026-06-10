@@ -139,7 +139,7 @@ func (c *Client) ResolveNameServiceAddress(ctx context.Context, name string) (st
 	var result *string
 	err := c.call(ctx, "suix_resolveNameServiceAddress", []interface{}{name}, &result)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	if result == nil {
 		return "", nil
