@@ -2,12 +2,14 @@ package names
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/vaariance/nearby/internal/avs"
 	"github.com/vaariance/nearby/internal/domain/auth"
+	apperr "github.com/vaariance/nearby/internal/errors"
 	"github.com/vaariance/nearby/internal/sui"
 	"github.com/vaariance/nearby/internal/utils"
 )
@@ -21,6 +23,7 @@ type ServiceDeps struct {
 	AuthStore *auth.Store
 	AVSClient *avs.Client
 	SuiClient *sui.Client
+	Sponsor   *sui.Sponsor
 }
 
 type Service struct {
@@ -28,6 +31,7 @@ type Service struct {
 	authStore *auth.Store
 	avsClient *avs.Client
 	suiClient *sui.Client
+	sponsor   *sui.Sponsor
 }
 
 func NewService(deps ServiceDeps) *Service {
@@ -36,6 +40,7 @@ func NewService(deps ServiceDeps) *Service {
 		authStore: deps.AuthStore,
 		avsClient: deps.AVSClient,
 		suiClient: deps.SuiClient,
+		sponsor:   deps.Sponsor,
 	}
 }
 
@@ -95,11 +100,47 @@ func (s *Service) RegisterLeaf(ctx context.Context, userID string, req RegisterL
 	}
 
 	return &RegisterLeafResponse{
-		TaskID:    task.ID,
-		NameHash:  nameHash,
-		Action:    task.Action,
-		Status:    task.Status,
-		ExpiresAt: task.ExpiresAt,
+		TaskID:         task.ID,
+		NameHash:       nameHash,
+		Action:         task.Action,
+		Status:         task.Status,
+		SponsorAddress: s.sponsor.Address(),
+		ExpiresAt:      task.ExpiresAt,
+	}, nil
+}
+
+func (s *Service) SubmitLeafRegistration(ctx context.Context, taskID, userID string, req SubmitLeafRequest) (*SubmitLeafResponse, error) {
+	task, err := s.store.GetTaskByID(ctx, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("get task: %w", err)
+	}
+	if task == nil || task.UserID != userID {
+		return nil, ErrTaskNotFound
+	}
+	if task.Status != "authorized" {
+		return nil, ErrTaskNotSubmittable
+	}
+	if task.ExpiresAt < utils.NowUnix() {
+		return nil, ErrTaskExpired
+	}
+
+	txBytes, err := base64.StdEncoding.DecodeString(req.TxBytes)
+	if err != nil {
+		return nil, apperr.ErrBadRequest
+	}
+
+	execResp, err := s.sponsor.SubmitSponsoredTransaction(ctx, txBytes, req.UserSignature)
+	if err != nil {
+		_ = s.store.UpdateTaskStatus(ctx, task.ID, "failed", utils.NowUnix())
+		return nil, ErrRegistrationFailed
+	}
+
+	_ = s.store.UpdateTaskStatus(ctx, task.ID, "submitted", utils.NowUnix())
+
+	return &SubmitLeafResponse{
+		TaskID:   task.ID,
+		TxDigest: execResp.Digest,
+		Status:   "submitted",
 	}, nil
 }
 

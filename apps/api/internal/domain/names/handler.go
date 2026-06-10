@@ -69,6 +69,39 @@ func (h *Handler) CheckAvailability(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+func (h *Handler) SubmitLeaf(w http.ResponseWriter, r *http.Request) {
+	sessCtx := auth.GetSession(r.Context())
+	if sessCtx == nil {
+		apperr.Write(w, apperr.ErrUnauthorized)
+		return
+	}
+
+	taskID := chi.URLParam(r, "id")
+	if taskID == "" {
+		apperr.Write(w, apperr.ErrBadRequest)
+		return
+	}
+
+	var req SubmitLeafRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apperr.Write(w, apperr.ErrBadRequest)
+		return
+	}
+	if req.TxBytes == "" || req.UserSignature == "" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "txBytes and userSignature are required")
+		return
+	}
+
+	resp, err := h.svc.SubmitLeafRegistration(r.Context(), taskID, sessCtx.User.ID, req)
+	if err != nil {
+		apperr.Write(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
 func (h *Handler) GetTask(w http.ResponseWriter, r *http.Request) {
 	sessCtx := auth.GetSession(r.Context())
 	if sessCtx == nil {

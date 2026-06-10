@@ -95,6 +95,7 @@ func New(deps Deps) http.Handler {
 			r.Group(func(r chi.Router) {
 				r.Use(auth.Middleware(deps.AuthService, "high"))
 				r.Post("/leaf", deps.NamesHandler.RegisterLeaf)
+				r.Post("/tasks/{id}/submit", deps.NamesHandler.SubmitLeaf)
 				r.Get("/tasks/{id}", deps.NamesHandler.GetTask)
 			})
 		})

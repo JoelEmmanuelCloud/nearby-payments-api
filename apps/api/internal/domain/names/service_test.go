@@ -297,6 +297,105 @@ func TestGetTask_Handler_NotFound(t *testing.T) {
 	}
 }
 
+func TestService_SubmitLeaf_NotFound(t *testing.T) {
+	userID := insertTestUser(t)
+	_, err := testSvc.SubmitLeafRegistration(context.Background(), utils.NewID(), userID, names.SubmitLeafRequest{
+		TxBytes:       "AA==",
+		UserSignature: "sig",
+	})
+	if !errors.Is(err, names.ErrTaskNotFound) {
+		t.Fatalf("expected ErrTaskNotFound, got %v", err)
+	}
+}
+
+func TestService_SubmitLeaf_WrongUser(t *testing.T) {
+	userID := insertTestUser(t)
+	otherUserID := insertTestUser(t)
+	now := utils.NowUnix()
+
+	task := &names.NameOperationTask{
+		ID:          utils.NewID(),
+		UserID:      userID,
+		Action:      "leaf_name.register_initial",
+		PayloadHash: "0xhash",
+		Nonce:       utils.NewID(),
+		Status:      "authorized",
+		AVSTaskID:   utils.NewID(),
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		ExpiresAt:   now + 3600,
+	}
+	if err := testStore.CreateTask(context.Background(), task); err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+
+	_, err := testSvc.SubmitLeafRegistration(context.Background(), task.ID, otherUserID, names.SubmitLeafRequest{
+		TxBytes:       "AA==",
+		UserSignature: "sig",
+	})
+	if !errors.Is(err, names.ErrTaskNotFound) {
+		t.Fatalf("expected ErrTaskNotFound for wrong user, got %v", err)
+	}
+}
+
+func TestService_SubmitLeaf_NotSubmittable(t *testing.T) {
+	userID := insertTestUser(t)
+	now := utils.NowUnix()
+
+	task := &names.NameOperationTask{
+		ID:          utils.NewID(),
+		UserID:      userID,
+		Action:      "leaf_name.register_initial",
+		PayloadHash: "0xhash",
+		Nonce:       utils.NewID(),
+		Status:      "submitted",
+		AVSTaskID:   utils.NewID(),
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		ExpiresAt:   now + 3600,
+	}
+	if err := testStore.CreateTask(context.Background(), task); err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+
+	_, err := testSvc.SubmitLeafRegistration(context.Background(), task.ID, userID, names.SubmitLeafRequest{
+		TxBytes:       "AA==",
+		UserSignature: "sig",
+	})
+	if !errors.Is(err, names.ErrTaskNotSubmittable) {
+		t.Fatalf("expected ErrTaskNotSubmittable, got %v", err)
+	}
+}
+
+func TestService_SubmitLeaf_Expired(t *testing.T) {
+	userID := insertTestUser(t)
+	now := utils.NowUnix()
+
+	task := &names.NameOperationTask{
+		ID:          utils.NewID(),
+		UserID:      userID,
+		Action:      "leaf_name.register_initial",
+		PayloadHash: "0xhash",
+		Nonce:       utils.NewID(),
+		Status:      "authorized",
+		AVSTaskID:   utils.NewID(),
+		CreatedAt:   now - 7200,
+		UpdatedAt:   now - 7200,
+		ExpiresAt:   now - 3600,
+	}
+	if err := testStore.CreateTask(context.Background(), task); err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+
+	_, err := testSvc.SubmitLeafRegistration(context.Background(), task.ID, userID, names.SubmitLeafRequest{
+		TxBytes:       "AA==",
+		UserSignature: "sig",
+	})
+	if !errors.Is(err, names.ErrTaskExpired) {
+		t.Fatalf("expected ErrTaskExpired, got %v", err)
+	}
+}
+
 func TestStore_CreateAndGetTask(t *testing.T) {
 	userID := insertTestUser(t)
 	now := utils.NowUnix()
