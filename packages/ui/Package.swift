@@ -15,13 +15,14 @@ let package = Package(
     )
   ],
   dependencies: [
-    .package(url: "https://github.com/elai950/AlertToast", from: "1.3.9")
+    .package(url: "https://github.com/sunghyun-k/swiftui-toasts", from: "1.1.2")
   ],
   targets: [
     .target(
       name: "UI",
       dependencies: [
-        .product(name: "AlertToast", package: "AlertToast")
+        // iOS-only (UIKit window overlay); macOS gets a passthrough `ToastHost`.
+        .product(name: "Toasts", package: "swiftui-toasts", condition: .when(platforms: [.iOS]))
       ]
     ),
     .testTarget(

@@ -1,15 +1,6 @@
 {
-  "originHash" : "bfeda47c5a1aab7d179929b378066482f913017516fe34bb18fb13cdfa9ef19a",
+  "originHash" : "f7f2155376eb2ca7de504ab8f616c3f68733c3ed2fc04579c56b17f622dcf759",
   "pins" : [
-    {
-      "identity" : "alerttoast",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/elai950/AlertToast",
-      "state" : {
-        "revision" : "b39252eacd159904afd7d718bba0afabb87f2f2f",
-        "version" : "1.3.9"
-      }
-    },
     {
       "identity" : "app-check",
       "kind" : "remoteSourceControl",
@@ -107,6 +98,24 @@
       "state" : {
         "branch" : "main",
         "revision" : "ca608b16334c2db42e091d1c5b749d00f77ab2bc"
+      }
+    },
+    {
+      "identity" : "swiftui-toasts",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sunghyun-k/swiftui-toasts",
+      "state" : {
+        "revision" : "2b3b062f4d485de6ddc03797e5dbb81c261bf78b",
+        "version" : "1.1.2"
+      }
+    },
+    {
+      "identity" : "swiftui-window-overlay",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sunghyun-k/swiftui-window-overlay.git",
+      "state" : {
+        "revision" : "46739300713772a62a3bf31d77f8f23ba9cf61f7",
+        "version" : "1.0.2"
       }
     },
     {
