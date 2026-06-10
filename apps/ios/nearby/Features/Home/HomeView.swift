@@ -1,5 +1,4 @@
 import Identity
-import SwiftCache
 import SwiftUI
 import UI
 
@@ -97,10 +96,7 @@ struct HomeView: View {
           Button(action: onNavigateToProfile) {
             Avatar(size: 32) {
               if let urlString = avatarUrl, let url = URL(string: urlString) {
-                CachedImage(url: url) {
-                  EmptyView()
-                }
-                .scaledToFill()
+                RemoteImage(url: url)
               }
             }
           }

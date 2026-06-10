@@ -16,7 +16,6 @@
 		D046192C2FD4709F000625E1 /* HSM in Frameworks */ = {isa = PBXBuildFile; productRef = D046192B2FD4709F000625E1 /* HSM */; };
 		D046192F2FD470D6000625E1 /* Gateway in Frameworks */ = {isa = PBXBuildFile; productRef = D046192E2FD470D6000625E1 /* Gateway */; };
 		D04619322FD47100000625E1 /* Identity in Frameworks */ = {isa = PBXBuildFile; productRef = D04619312FD47100000625E1 /* Identity */; };
-		D0461AAA2FD864FF000625E1 /* SwiftCache in Frameworks */ = {isa = PBXBuildFile; productRef = D0461AA92FD864FF000625E1 /* SwiftCache */; };
 		D04646672FC60F4900B6B6E1 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D04646662FC60F4900B6B6E1 /* UI */; };
 		D05617CC2FC618910052C487 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D05617CB2FC618910052C487 /* UI */; };
 		D05617CF2FC61A440052C487 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D05617CE2FC61A440052C487 /* UI */; };
@@ -73,7 +72,6 @@
 				D05617CC2FC618910052C487 /* UI in Frameworks */,
 				D05617CF2FC61A440052C487 /* UI in Frameworks */,
 				D04619232FD2C1A4000625E1 /* LeanSui in Frameworks */,
-				D0461AAA2FD864FF000625E1 /* SwiftCache in Frameworks */,
 				D046192F2FD470D6000625E1 /* Gateway in Frameworks */,
 				D04619322FD47100000625E1 /* Identity in Frameworks */,
 				D03134342FCDA4A000A3F665 /* Auth in Frameworks */,
@@ -155,7 +153,6 @@
 				D046192B2FD4709F000625E1 /* HSM */,
 				D046192E2FD470D6000625E1 /* Gateway */,
 				D04619312FD47100000625E1 /* Identity */,
-				D0461AA92FD864FF000625E1 /* SwiftCache */,
 				D08DE94F2FD8D8500022CDCC /* DeviceIntegrity */,
 			);
 			productName = nearby;
@@ -250,7 +247,6 @@
 				D046192A2FD4709F000625E1 /* XCLocalSwiftPackageReference "../../packages/hsm/HSMCore" */,
 				D046192D2FD470D6000625E1 /* XCLocalSwiftPackageReference "../../packages/gateway/GatewayCore" */,
 				D04619302FD47100000625E1 /* XCLocalSwiftPackageReference "../../packages/identity/IdentityCore" */,
-				D0461AA82FD864FF000625E1 /* XCRemoteSwiftPackageReference "SwiftCache-SDK" */,
 				D08DE94E2FD8D8500022CDCC /* XCLocalSwiftPackageReference "../../packages/device-integrity" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -691,14 +687,6 @@
 				minimumVersion = 9.0.0;
 			};
 		};
-		D0461AA82FD864FF000625E1 /* XCRemoteSwiftPackageReference "SwiftCache-SDK" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SudhirGadhvi/SwiftCache-SDK.git";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -738,11 +726,6 @@
 		D04619312FD47100000625E1 /* Identity */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Identity;
-		};
-		D0461AA92FD864FF000625E1 /* SwiftCache */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = D0461AA82FD864FF000625E1 /* XCRemoteSwiftPackageReference "SwiftCache-SDK" */;
-			productName = SwiftCache;
 		};
 		D04646662FC60F4900B6B6E1 /* UI */ = {
 			isa = XCSwiftPackageProductDependency;

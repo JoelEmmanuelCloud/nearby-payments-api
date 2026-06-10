@@ -14,6 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import com.variance.nearby.biometrics.BiometricGateHost
 import com.variance.nearby.core.AppRoute
 import com.variance.nearby.core.AppViewModel
@@ -25,9 +28,11 @@ import com.variance.nearby.screens.home.HomeViewModel
 import com.variance.nearby.screens.onboarding.OnboardingScreen
 import com.variance.nearby.screens.profile.ProfileScreen
 import com.variance.nearby.screens.profile.ProfileViewModel
+import com.variance.nearby.screens.profile.WalrusInterceptor
 import com.variance.nearby.screens.security.DeviceSecurityScreen
 import com.variance.nearby.ui.ToastHost
 import com.variance.nearby.ui.theme.NearbyTheme
+import okhttp3.OkHttpClient
 
 class MainActivity : ComponentActivity() {
     private val viewModel by lazy { AppViewModel(applicationContext) }
@@ -36,6 +41,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         handleIntent(intent)
+
+        // Coil's singleton ImageLoader, with an OkHttp client carrying WalrusInterceptor — it rewrites
+        // the Walrus aggregator's missing/octet-stream Content-Type to image/jpeg so the avatar blob
+        // decodes. setSafe is a no-op if the loader was already created, so it must run before any
+        // AsyncImage; onCreate (pre-setContent) is the first entry point.
+        SingletonImageLoader.setSafe { context ->
+            ImageLoader.Builder(context)
+                .components {
+                    add(
+                        OkHttpNetworkFetcherFactory(
+                            callFactory = {
+                                OkHttpClient.Builder()
+                                    .addInterceptor(WalrusInterceptor())
+                                    .build()
+                            },
+                        ),
+                    )
+                }
+                .build()
+        }
 
         setContent {
             NearbyTheme {

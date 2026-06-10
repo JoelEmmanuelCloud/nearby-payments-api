@@ -1,10 +1,9 @@
-import SwiftCache
 import SwiftUI
 import UI
 
 /// The circular profile avatar — a thin app-level wrapper over the `ui.Avatar` primitive that maps the
-/// app's image state (just-picked bytes, else a remote URL via SwiftCache) into the primitive's image
-/// slot. When neither is present the primitive shows a monogram.
+/// app's image state (just-picked bytes, else a remote URL via `RemoteImage`) into the primitive's
+/// image slot. When neither is present the primitive shows its person-icon placeholder.
 struct AvatarThumbnailView: View {
   let pickedAvatarData: Data?
   let avatarUrl: String?
@@ -16,10 +15,7 @@ struct AvatarThumbnailView: View {
           .resizable()
           .scaledToFill()
       } else if let urlString = avatarUrl, let url = URL(string: urlString) {
-        CachedImage(url: url) {
-          EmptyView()
-        }
-        .scaledToFill()
+        RemoteImage(url: url)
       }
     }
   }
