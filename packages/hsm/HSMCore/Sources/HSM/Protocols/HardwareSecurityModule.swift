@@ -38,6 +38,15 @@ public protocol HardwareSecurityModule {
   /// - Returns: The DER-encoded ECDSA signature.
   func sign(_ data: [Int8]) throws -> DEREncodedItem
 
+  /// Validates that the existing key can be used for signing without prompting the user.
+  ///
+  /// Implementations should perform a silent key usability check, such as initializing
+  /// a signing operation against the private key. They must not present biometric UI
+  /// and must not delete keys or mutate app session state.
+  ///
+  /// - Returns: `true` if an existing key is present and usable for signing.
+  func validateKeyForSigning() throws -> Bool
+
   /// Deletes the hardware-backed key from the secure storage.
   func deleteKey() throws
 }

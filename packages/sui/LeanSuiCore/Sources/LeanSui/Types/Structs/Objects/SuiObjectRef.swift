@@ -80,7 +80,7 @@ public struct SuiObjectRef: SuiBCSBridged {
     try Serializer._struct(serializer, value: account)
     try Serializer.u64(serializer, UInt64(version) ?? 0)
     if let dataDigest = digest.base58DecodedData {
-      try Serializer.toBytes(serializer, Data(dataDigest))
+      try Serializer.toBytes(serializer, [UInt8](dataDigest))
     }
   }
 
@@ -90,7 +90,7 @@ public struct SuiObjectRef: SuiBCSBridged {
     return SuiObjectRef(
       objectId: try Deserializer._struct(deserializer),
       version: "\(try Deserializer.u64(deserializer))",
-      digest: ([UInt8](try Deserializer.toBytes(deserializer))).base58EncodedString
+      digest: (try Deserializer.toBytes(deserializer).bytes).base58EncodedString
     )
   }
 }

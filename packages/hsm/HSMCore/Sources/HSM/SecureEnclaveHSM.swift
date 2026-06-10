@@ -22,7 +22,23 @@ public final class SecureEnclaveHSM: HardwareSecurityModule {
   public func generateKey() throws -> DEREncodedItem {
     try deleteKey()
 
-    let privateKey = try SecureEnclave.P256.Signing.PrivateKey()
+    // Require user presence (biometry, with passcode fallback) to *use* the key for signing.
+    // The flag is baked into the Secure Enclave key blob, so reconstructing the key for a
+    // `signature(for:)` call makes the OS present Face/Touch ID and block inline until the
+    // user authenticates. Public-key access and key reconstruction do not prompt.
+    var accessError: Unmanaged<CFError>?
+    guard
+      let access = SecAccessControlCreateWithFlags(
+        nil,
+        kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+        [.privateKeyUsage, .userPresence],
+        &accessError
+      )
+    else {
+      throw HSMError.keyGenerationFailed(status: -1)
+    }
+
+    let privateKey = try SecureEnclave.P256.Signing.PrivateKey(accessControl: access)
 
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
@@ -74,6 +90,10 @@ public final class SecureEnclaveHSM: HardwareSecurityModule {
     let sig = try signData(value)
 
     return DEREncodedItem(value: sig.map { Int8(bitPattern: $0) })
+  }
+
+  public func validateKeyForSigning() throws -> Bool {
+    return try getPrivateKeyReference() != nil
   }
 
   /// Deletes the private key reference from the iOS Keychain.

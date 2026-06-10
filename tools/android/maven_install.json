@@ -4,6 +4,8 @@
     "androidx.activity:activity": 1783982748,
     "androidx.activity:activity-compose": -152059593,
     "androidx.activity:activity-ktx": 880973142,
+    "androidx.biometric:biometric": -1206410654,
+    "androidx.biometric:biometric-compose": -1209011971,
     "androidx.collection:collection": 946917680,
     "androidx.collection:collection-jvm": 2104437724,
     "androidx.compose.animation:animation-core": -1594154999,
@@ -60,11 +62,12 @@
     "androidx.annotation:annotation-experimental:aar": -1989754810,
     "androidx.annotation:annotation-jvm": 142229340,
     "androidx.appcompat:appcompat-resources:aar": 858310274,
-    "androidx.appcompat:appcompat:aar": 810259481,
+    "androidx.appcompat:appcompat:aar": 318963053,
     "androidx.arch.core:core-common": 696343201,
     "androidx.arch.core:core-runtime:aar": -869779353,
     "androidx.autofill:autofill:aar": -1581706053,
-    "androidx.biometric:biometric:aar": -1542618531,
+    "androidx.biometric:biometric-compose:aar": -196665200,
+    "androidx.biometric:biometric:aar": -892554788,
     "androidx.collection:collection": 2121380817,
     "androidx.collection:collection-jvm": -1037407891,
     "androidx.collection:collection-ktx": 1854977490,
@@ -109,8 +112,8 @@
     "androidx.core:core-ktx:aar": 2092397611,
     "androidx.core:core-viewtree:aar": 1464319354,
     "androidx.core:core:aar": 1780404901,
-    "androidx.credentials:credentials-play-services-auth:aar": 1142712906,
-    "androidx.credentials:credentials:aar": 1914005560,
+    "androidx.credentials:credentials-play-services-auth:aar": -1706931663,
+    "androidx.credentials:credentials:aar": -1438665262,
     "androidx.cursoradapter:cursoradapter:aar": -1191509835,
     "androidx.customview:customview-poolingcontainer:aar": -98134934,
     "androidx.customview:customview:aar": -2096333123,
@@ -118,7 +121,7 @@
     "androidx.drawerlayout:drawerlayout:aar": 1533585050,
     "androidx.dynamicanimation:dynamicanimation:aar": 648820247,
     "androidx.emoji2:emoji2:aar": 1053449458,
-    "androidx.fragment:fragment:aar": 458122727,
+    "androidx.fragment:fragment:aar": 1735832014,
     "androidx.graphics:graphics-path:aar": 1853672910,
     "androidx.interpolator:interpolator:aar": 1807687909,
     "androidx.legacy:legacy-support-core-utils:aar": 1401638178,
@@ -167,18 +170,18 @@
     "androidx.window:window-core": -128449246,
     "androidx.window:window-core-jvm": -1375629659,
     "androidx.window:window:aar": 872183049,
-    "com.google.android.gms:play-services-auth-api-phone:aar": -858944035,
-    "com.google.android.gms:play-services-auth-base:aar": -1680267831,
-    "com.google.android.gms:play-services-auth-blockstore:aar": 697964821,
-    "com.google.android.gms:play-services-auth:aar": 1039151351,
-    "com.google.android.gms:play-services-base:aar": 273717300,
-    "com.google.android.gms:play-services-basement:aar": -1749648569,
-    "com.google.android.gms:play-services-fido:aar": -1529398690,
-    "com.google.android.gms:play-services-identity-credentials:aar": -2095580832,
-    "com.google.android.gms:play-services-tasks:aar": -68867207,
-    "com.google.android.libraries.identity.googleid:googleid:aar": 265669424,
+    "com.google.android.gms:play-services-auth-api-phone:aar": -1647361307,
+    "com.google.android.gms:play-services-auth-base:aar": -1275882631,
+    "com.google.android.gms:play-services-auth-blockstore:aar": 1076148809,
+    "com.google.android.gms:play-services-auth:aar": -164837496,
+    "com.google.android.gms:play-services-base:aar": 2005910051,
+    "com.google.android.gms:play-services-basement:aar": -1728775169,
+    "com.google.android.gms:play-services-fido:aar": 303798612,
+    "com.google.android.gms:play-services-identity-credentials:aar": 2138894878,
+    "com.google.android.gms:play-services-tasks:aar": -2142580485,
+    "com.google.android.libraries.identity.googleid:googleid:aar": 1893407753,
     "com.google.android.play:core-common:aar": -943938307,
-    "com.google.android.play:integrity:aar": 1484844860,
+    "com.google.android.play:integrity:aar": -1367335329,
     "com.google.code.findbugs:jsr305": 870839855,
     "com.google.code.gson:gson": -1575757252,
     "com.google.crypto.tink:tink-android": -708841962,
@@ -282,11 +285,17 @@
       },
       "version": "1.0.0"
     },
+    "androidx.biometric:biometric-compose:aar": {
+      "shasums": {
+        "jar": "6710f35404a5e5f679ab2c7f7cb38d84f81c37980e822aac104c6531a1852ba3"
+      },
+      "version": "1.4.0-alpha07"
+    },
     "androidx.biometric:biometric:aar": {
       "shasums": {
-        "jar": "270c7b7d99942d5ec1dd88594e4648feb33d8e31d8c3c2ab2321d49d9abdfc1f"
+        "jar": "ed0399576543807f1685b217433637544140d609812e797a11c25ebfb1cb92a7"
       },
-      "version": "1.1.0"
+      "version": "1.4.0-alpha07"
     },
     "androidx.collection:collection": {
       "shasums": {
@@ -608,9 +617,9 @@
     },
     "androidx.fragment:fragment:aar": {
       "shasums": {
-        "jar": "59c74110b99378885ed06242f8a26da305ea4dca53ed60163540dd0e2e3c6675"
+        "jar": "df7ba73f377dbd7ccd28b112afd08d28b60ec2c6bc91ec658609c845442ace08"
       },
-      "version": "1.5.7"
+      "version": "1.6.2"
     },
     "androidx.graphics:graphics-path:aar": {
       "shasums": {
@@ -1179,14 +1188,28 @@
     "androidx.autofill:autofill:aar": [
       "androidx.core:core:aar"
     ],
+    "androidx.biometric:biometric-compose:aar": [
+      "androidx.activity:activity-compose:aar",
+      "androidx.biometric:biometric:aar",
+      "androidx.compose.runtime:runtime:aar",
+      "androidx.compose.ui:ui:aar",
+      "androidx.fragment:fragment:aar",
+      "androidx.lifecycle:lifecycle-viewmodel-compose:aar",
+      "androidx.lifecycle:lifecycle-viewmodel:aar",
+      "org.jetbrains.kotlin:kotlin-stdlib"
+    ],
     "androidx.biometric:biometric:aar": [
       "androidx.activity:activity:aar",
       "androidx.annotation:annotation",
       "androidx.appcompat:appcompat:aar",
       "androidx.core:core:aar",
       "androidx.fragment:fragment:aar",
+      "androidx.lifecycle:lifecycle-common-java8",
       "androidx.lifecycle:lifecycle-livedata-core:aar",
-      "androidx.lifecycle:lifecycle-viewmodel:aar"
+      "androidx.lifecycle:lifecycle-process:aar",
+      "androidx.lifecycle:lifecycle-viewmodel:aar",
+      "org.jetbrains.kotlin:kotlin-stdlib",
+      "org.jspecify:jspecify"
     ],
     "androidx.collection:collection": [
       "androidx.annotation:annotation",
@@ -1591,9 +1614,11 @@
       "androidx.collection:collection",
       "androidx.core:core-ktx:aar",
       "androidx.lifecycle:lifecycle-livedata-core:aar",
+      "androidx.lifecycle:lifecycle-runtime:aar",
       "androidx.lifecycle:lifecycle-viewmodel-savedstate:aar",
       "androidx.lifecycle:lifecycle-viewmodel:aar",
       "androidx.loader:loader:aar",
+      "androidx.profileinstaller:profileinstaller:aar",
       "androidx.savedstate:savedstate:aar",
       "androidx.viewpager:viewpager:aar",
       "org.jetbrains.kotlin:kotlin-stdlib"
@@ -2245,6 +2270,7 @@
       "androidx.arch.core:core-common",
       "androidx.arch.core:core-runtime:aar",
       "androidx.autofill:autofill:aar",
+      "androidx.biometric:biometric-compose:aar",
       "androidx.biometric:biometric:aar",
       "androidx.collection:collection",
       "androidx.collection:collection-jvm",
@@ -2395,6 +2421,7 @@
       "androidx.arch.core:core-common",
       "androidx.arch.core:core-runtime:aar",
       "androidx.autofill:autofill:aar",
+      "androidx.biometric:biometric-compose:aar",
       "androidx.biometric:biometric:aar",
       "androidx.collection:collection",
       "androidx.collection:collection-jvm",
@@ -2545,6 +2572,7 @@
       "androidx.arch.core:core-common",
       "androidx.arch.core:core-runtime:aar",
       "androidx.autofill:autofill:aar",
+      "androidx.biometric:biometric-compose:aar",
       "androidx.biometric:biometric:aar",
       "androidx.collection:collection",
       "androidx.collection:collection-jvm",

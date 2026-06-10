@@ -1,5 +1,6 @@
 import Crypto
 import Foundation
+import LeanSuiBCS
 
 extension Data {
   /// Returns the contents of the Data as an array of UInt8
@@ -167,5 +168,19 @@ extension Data {
   /// Create from base64 string
   public static func fromBase64(_ encoded: String) -> Data? {
     return Data(base64Encoded: encoded)
+  }
+
+  public var suiData: SuiData {
+    return SuiData(bytes)
+  }
+}
+
+extension SuiData {
+  public var data: Data {
+    return Data(bytes)
+  }
+
+  public init(data: Data) {
+    self.init(data.bytes)
   }
 }

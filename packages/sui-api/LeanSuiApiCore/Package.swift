@@ -19,7 +19,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/attaswift/BigInt.git", from: "5.3.0"),
-    .package(url: "https://github.com/vaariance/apollo-ios.git", branch: "jextract-portable"),
+    .package(path: "/Users/peter/Developer/apollo-ios"),
   ],
   targets: [
     .target(

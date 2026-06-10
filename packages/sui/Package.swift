@@ -24,6 +24,8 @@ let package = Package(
     // swift-crypto provides cross-platform Ed25519 (Curve25519.Signing),
     // replacing ed25519swift/CryptoSwift (both Darwin-locked).
     .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0"..<"4.0.0"),
+    // HSM provides the Java-callback protocol for hardware-backed signing.
+    .package(name: "HSM", path: "../hsm"),
     // The GraphQL Sui client lives in the sibling sui-api package (LeanSuiApi).
     .package(name: "LeanSuiApi", path: "../sui-api"),
     // The cross-platform BCS serializer lives in the sibling sui-bcs package.
@@ -37,6 +39,7 @@ let package = Package(
         .product(name: "BigInt", package: "BigInt"),
         .product(name: "UInt256", package: "UInt256"),
         .product(name: "Crypto", package: "swift-crypto"),
+        .product(name: "HSM", package: "HSM"),
         .product(name: "LeanSuiApi", package: "LeanSuiApi"),
         .product(name: "LeanSuiBCS", package: "LeanSuiBCS"),
       ],

@@ -26,6 +26,7 @@
 import BigInt
 import Foundation
 import LeanSuiApi
+import LeanSuiBCS
 
 /// A comprehensive zkLogin signer that can sign transactions and personal messages
 public class ZkLoginSigner {
@@ -42,9 +43,9 @@ public class ZkLoginSigner {
   private let userAddress: String
 
   /// Optional GraphQL client for signature verification
-  private let graphQLClient: GraphQLClientProtocol?
+  private let graphQLClient: SuiGraphQLClient?
 
-  /// Initialize a new ZkLoginAuthenticator
+  /// Initialize a new ZkLoginSigner.
   /// - Parameters:
   ///   - provider: The Sui provider for network operations
   ///   - ephemeralKeyPair: The ephemeral keypair used for signing
@@ -56,7 +57,7 @@ public class ZkLoginSigner {
     ephemeralKeyPair: Account,
     zkLoginSignature: zkLoginSignature,
     userAddress: String,
-    graphQLClient: GraphQLClientProtocol? = nil
+    graphQLClient: SuiGraphQLClient
   ) {
     self.provider = provider
     self.ephemeralKeyPair = ephemeralKeyPair
@@ -91,13 +92,13 @@ public class ZkLoginSigner {
   /// Sign raw bytes with the ephemeral keypair and create a complete zkLogin signature
   /// - Parameter bytes: The bytes to sign
   /// - Returns: A complete zkLogin signature
-  private func signBytes(_ bytes: [UInt8]) throws -> zkLoginSignature {
+  private func signBytes(_ bytes: SuiData) throws -> zkLoginSignature {
     // Sign with the ephemeral keypair
-    let ephemeralSignature = try ephemeralKeyPair.sign(Data(bytes))
+    let ephemeralSignature = try ephemeralKeyPair.sign(bytes)
 
     // Create a complete zkLogin signature with the user signature
     var completeSignature = zkLoginSignatureTemplate
-    completeSignature.userSignature = ephemeralSignature.signature.bytes
+    completeSignature.userSignature = ephemeralSignature.signature
 
     return completeSignature
   }
@@ -105,7 +106,7 @@ public class ZkLoginSigner {
   /// Sign a transaction block and return the serialized signature
   /// - Parameter transactionData: The transaction data bytes to sign
   /// - Returns: A serialized zkLogin signature string
-  public func signTransaction(_ transactionData: [UInt8]) throws -> String {
+  public func signTransaction(_ transactionData: SuiData) throws -> String {
     let signature = try signBytes(transactionData)
     return try signature.getSignature()
   }
@@ -113,10 +114,10 @@ public class ZkLoginSigner {
   /// Sign a personal message and return the serialized signature
   /// - Parameter message: The message bytes to sign
   /// - Returns: A serialized zkLogin signature string
-  public func signPersonalMessage(_ message: [UInt8]) throws -> String {
+  public func signPersonalMessage(_ message: SuiData) throws -> String {
     // For personal messages, we need to add the personal message prefix
-    let messageWithPrefix = IntentHelper.messageWithIntent(.PersonalMessage, Data(message))
-    let signature = try signBytes([UInt8](messageWithPrefix))
+    let messageWithPrefix = IntentHelper.messageWithIntent(.PersonalMessage, message.data)
+    let signature = try signBytes(messageWithPrefix.suiData)
     return try signature.getSignature()
   }
 
@@ -136,7 +137,7 @@ public class ZkLoginSigner {
     let bytes = try await transactionBlock.build(self.provider)
 
     // Sign the transaction data with our zkLogin signer
-    let serializedSignature = try signTransaction(bytes.bytes)
+    let serializedSignature = try signTransaction(bytes)
 
     // Execute the transaction with the zkLogin signature. The GraphQL
     // `executeTransaction` mutation waits for finality, so no separate
@@ -149,7 +150,7 @@ public class ZkLoginSigner {
   }
 
   public func executeTransaction(
-    transactionBlock: [UInt8],
+    transactionBlock: SuiData,
     options: GraphQLSuiProvider.TransactionResponseOptions = .init()
   ) async throws -> SuiTransactionBlockResponse {
     // Sign the transaction data with our zkLogin signer
@@ -157,7 +158,7 @@ public class ZkLoginSigner {
 
     // Execute the transaction with the zkLogin signature.
     return try await provider.executeTransactionBlock(
-      txBytes: transactionBlock,
+      txBytes: transactionBlock.bytes,
       signatures: [serializedSignature],
       options: options
     )
@@ -181,7 +182,7 @@ public class ZkLoginSigner {
   ///   - signature: The zkLogin signature to verify
   /// - Returns: True if signature is valid, false otherwise
   public func verifyTransaction(
-    transactionData: [UInt8],
+    transactionData: SuiData,
     signature: zkLoginSignature
   ) async throws -> Bool {
     guard self.graphQLClient != nil else {
@@ -201,7 +202,7 @@ public class ZkLoginSigner {
   ///   - signature: The zkLogin signature to verify
   /// - Returns: True if signature is valid, false otherwise
   public func verifyPersonalMessage(
-    message: [UInt8],
+    message: SuiData,
     signature: zkLoginSignature
   ) async throws -> Bool {
     guard self.graphQLClient != nil else {
@@ -239,7 +240,7 @@ extension ZkLoginAuthenticator {
   /// - Returns: A tuple containing the public key and signature
   public static func parseSerializedZkLoginSignature(
     _ serializedSignature: String,
-    graphQLClient: GraphQLClientProtocol? = nil
+    graphQLClient: SuiGraphQLClient
   ) throws -> (publicKey: zkLoginPublicIdentifier, signature: zkLoginSignature) {
     let signature = try parseSignature(serializedSignature)
 

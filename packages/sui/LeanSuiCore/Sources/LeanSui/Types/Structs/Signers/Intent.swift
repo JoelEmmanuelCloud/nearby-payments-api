@@ -63,11 +63,10 @@ public enum IntentHelper {
       throw SuiError.customError(
         message: "Cannot find signature type for \(signatureScheme.rawValue)")
     }
-    var serializedSignature = Data(count: signature.signature.count + pubKeyData.count)
-    serializedSignature[0] = encryptionType
-    serializedSignature[1..<signature.signature.count] = signature.signature
-    serializedSignature[
-      1 + signature.signature.count..<1 + signature.signature.count + pubKeyData.count] = pubKeyData
+    var serializedSignature = Data(capacity: 1 + signature.signature.count + pubKeyData.count)
+    serializedSignature.append(encryptionType)
+    serializedSignature.append(signature.signature.data)
+    serializedSignature.append(pubKeyData)
 
     return serializedSignature.base64EncodedString()
   }

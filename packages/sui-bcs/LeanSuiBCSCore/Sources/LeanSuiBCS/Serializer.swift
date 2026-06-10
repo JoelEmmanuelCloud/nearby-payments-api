@@ -23,14 +23,14 @@
 //  THE SOFTWARE.
 //
 
-import Foundation
+import Dispatch
 import UInt256
 
 /// A BCS (Binary Canonical Serialization) Serializer.
 ///
 /// Implements the canonical BCS wire format (little-endian integers, ULEB128
 /// length prefixes, in-order struct fields). Cross-platform: depends only on
-/// `Foundation` + `UInt256`, with no Darwin-only frameworks.
+/// `Dispatch` + `UInt256`, with no Darwin-only frameworks.
 public final class Serializer {
 
   // MARK: - Constants
@@ -86,9 +86,11 @@ public final class Serializer {
     containerDepth = 0
   }
 
-  /// Get the serialized data
-  public func output() -> Data {
-    return Data(bytes: buffer.baseAddress!, count: count)
+  /// Get the serialized bytes.
+  public func output() -> SuiData {
+    guard count > 0 else { return SuiData([]) }
+    let bytes = UnsafeRawBufferPointer(start: buffer.baseAddress!, count: count)
+    return SuiData(bytes)
   }
 
   // MARK: - Buffer Management
@@ -208,18 +210,21 @@ public final class Serializer {
     }
       ?? {
         // Fallback for non-contiguous storage
-        let data = Data(string.utf8)
-        data.withUnsafeBytes { bytes in
+        Array(string.utf8).withUnsafeBytes { bytes in
           writeBytes(bytes)
         }
       }()
   }
 
-  private func serializeData(_ data: Data) throws {
+  private func serializeData(_ data: SuiData) throws {
     try serializeULEB128(UInt32(data.count))
     data.withUnsafeBytes { bytes in
       writeBytes(bytes)
     }
+  }
+
+  private func serializeBytes(_ bytes: [UInt8]) throws {
+    try serializeData(SuiData(bytes))
   }
 
   // MARK: - ULEB128 Encoding (Optimized)
@@ -294,19 +299,30 @@ public final class Serializer {
     }
   }
 
-  /// Convert a Data value or an array of Data values into bytes using a custom Serializer.
+  /// Convert a byte value or an array of byte values into bytes using a custom Serializer.
   public static func toBytes<T: EncodingContainer>(_ serializer: Serializer, _ value: T) throws {
-    if let dataValue = value as? Data {
+    if let dataValue = value as? SuiData {
       try serializer.serializeData(dataValue)
-    } else if let dataArray = value as? [Data] {
+    } else if let bytes = value as? [UInt8] {
+      try serializer.serializeBytes(bytes)
+    } else if let dataArray = value as? [SuiData] {
       try serializer.sequence(dataArray, Serializer.toBytes)
+    } else if let byteArrays = value as? [[UInt8]] {
+      try serializer.sequence(byteArrays, Serializer.toBytes)
     } else {
-      throw BCSError.invalidDataValue(supportedType: "Data or [Data]")
+      throw BCSError.invalidDataValue(supportedType: "SuiData, [UInt8], [SuiData], or [[UInt8]]")
     }
   }
 
-  /// Appends a data value to the output buffer.
-  public func fixedBytes(_ value: Data) {
+  /// Appends bytes to the output buffer.
+  public func fixedBytes(_ value: SuiData) {
+    value.withUnsafeBytes { bytes in
+      writeBytes(bytes)
+    }
+  }
+
+  /// Appends bytes to the output buffer.
+  public func fixedBytes(_ value: [UInt8]) {
     value.withUnsafeBytes { bytes in
       writeBytes(bytes)
     }
@@ -327,7 +343,7 @@ public final class Serializer {
     keyEncoder: (Serializer, T) throws -> Void,
     valueEncoder: (Serializer, U) throws -> Void
   ) throws {
-    var encodedValues: [(Data, Data)] = []
+    var encodedValues: [(SuiData, SuiData)] = []
     for (key, value) in values {
       do {
         let keyData = try encoder(key, keyEncoder)
@@ -344,8 +360,8 @@ public final class Serializer {
     }
 
     // Remove duplicates (keep first occurrence)
-    var uniqueValues: [(Data, Data)] = []
-    var lastKey: Data?
+    var uniqueValues: [(SuiData, SuiData)] = []
+    var lastKey: SuiData?
 
     for (keyData, valueData) in encodedValues {
       if lastKey != keyData {
@@ -496,9 +512,8 @@ public final class Serializer {
   /// Write an unsigned integer value to the Serializer's output data buffer.
   private func writeInt(_ value: any UnsignedInteger, length: Int) {
     var _value = value
-    let valueData = withUnsafeBytes(of: &_value) { Data($0) }
-    valueData.prefix(length).withUnsafeBytes { bytes in
-      writeBytes(bytes)
+    withUnsafeBytes(of: &_value) { bytes in
+      writeBytes(UnsafeRawBufferPointer(start: bytes.baseAddress, count: length))
     }
   }
 
@@ -568,7 +583,7 @@ public final class SerializerPool: @unchecked Sendable {
 func encoder<T>(
   _ value: T,
   _ encoder: (Serializer, T) throws -> Void
-) throws -> Data {
+) throws -> SuiData {
   return try SerializerPool.shared.withSerializer { serializer in
     try encoder(serializer, value)
     return serializer.output()

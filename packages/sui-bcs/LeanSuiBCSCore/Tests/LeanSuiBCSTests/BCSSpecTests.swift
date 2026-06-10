@@ -16,7 +16,7 @@ import XCTest
 
 final class BCSSpecTests: XCTestCase {
 
-  private func hex(_ data: Data) -> String {
+  private func hex(_ data: SuiData) -> String {
     data.map { String(format: "%02x", $0) }.joined()
   }
 

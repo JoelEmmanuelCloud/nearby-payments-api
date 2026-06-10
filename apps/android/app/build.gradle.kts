@@ -66,6 +66,8 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.biometric.compose)
     implementation(project(":bridge"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

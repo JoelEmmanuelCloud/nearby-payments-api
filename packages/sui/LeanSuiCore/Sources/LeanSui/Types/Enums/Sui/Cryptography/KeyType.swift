@@ -28,8 +28,11 @@ import Foundation
 /// `KeyType` represents the type of cryptographic key being used.
 ///
 /// - `ed25519`: Represents the Ed25519 cryptographic algorithm.
-/// - `secp256k1`: Represents the SECP256K1 cryptographic algorithm.
+/// - `hsm`: Represents a hardware-backed P-256 cryptographic key.
 public enum KeyType: String, Equatable, Sendable {
   /// Represents the ED25519 cryptographic algorithm.
   case ed25519 = "ED25519"
+
+  /// Represents a hardware-backed P-256 key.
+  case hsm = "HSM"
 }

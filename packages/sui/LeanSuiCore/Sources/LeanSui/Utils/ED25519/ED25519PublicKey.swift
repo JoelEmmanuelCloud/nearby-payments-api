@@ -29,14 +29,14 @@ import LeanSuiBCS
 
 /// Represents a public key used in the ED25519 signature scheme.
 public struct ED25519PublicKey: Equatable, PublicKeyProtocol {
-  public typealias DataValue = Data
+  public typealias DataValue = SuiData
 
   /// The length of the public key.
   public static let LENGTH: Int = 32
 
   public var key: DataValue
 
-  public init(data: Data) throws {
+  public init(data: SuiData) throws {
     guard data.count == ED25519PublicKey.LENGTH else {
       throw AccountError.invalidPublicKey
     }
@@ -48,10 +48,11 @@ public struct ED25519PublicKey: Equatable, PublicKeyProtocol {
     if hexString.hasPrefix("0x") {
       hexValue = String(hexString.dropFirst(2))
     }
-    guard Data(hex: hexValue).count == ED25519PublicKey.LENGTH else {
+    let data = Data(hex: hexValue).suiData
+    guard data.count == ED25519PublicKey.LENGTH else {
       throw AccountError.invalidPublicKey
     }
-    self.key = Data(hex: hexValue)
+    self.key = data
   }
 
   public init(value: String) throws {
@@ -59,7 +60,7 @@ public struct ED25519PublicKey: Equatable, PublicKeyProtocol {
     guard result.count == ED25519PublicKey.LENGTH else {
       throw AccountError.invalidPublicKey
     }
-    self.key = result
+    self.key = result.suiData
   }
 
   public static func == (lhs: ED25519PublicKey, rhs: ED25519PublicKey) -> Bool {
@@ -71,22 +72,22 @@ public struct ED25519PublicKey: Equatable, PublicKeyProtocol {
   }
 
   public func base64() -> String {
-    return key.base64EncodedString()
+    return key.data.base64EncodedString()
   }
 
   public func hex() -> String {
-    return "0x\(self.key.hexEncodedString())"
+    return "0x\(self.key.data.hexEncodedString())"
   }
 
-  public func verify(data: Data, signature: Signature) throws -> Bool {
-    let publicKey = try Crypto.Curve25519.Signing.PublicKey(rawRepresentation: self.key)
-    return publicKey.isValidSignature(signature.signature, for: data)
+  public func verify(data: SuiData, signature: Signature) throws -> Bool {
+    let publicKey = try Crypto.Curve25519.Signing.PublicKey(rawRepresentation: self.key.data)
+    return publicKey.isValidSignature(signature.signature.data, for: data.data)
   }
 
   public func toSuiAddress() throws -> String {
     var tmp = Data(count: ED25519PublicKey.LENGTH + 1)
     try tmp.set([SignatureSchemeFlags.SIGNATURE_SCHEME_TO_FLAG["ED25519"]!])
-    try tmp.set([UInt8](self.key), offset: 1)
+    try tmp.set(self.key.bytes, offset: 1)
     let result = try Inputs.normalizeSuiAddress(
       value: String(
         try BLAKE2b.hash(data: tmp, digestLength: 32).hexEncodedString().prefix(
@@ -100,50 +101,49 @@ public struct ED25519PublicKey: Equatable, PublicKeyProtocol {
   /// - Returns: A string representing the Sui address.
   public func toSuiPublicKey() throws -> String {
     let bytes = try self.toSuiBytes()
-    return bytes.toBase64()
+    return bytes.bytes.toBase64()
   }
 
   /// Converts the public key to Sui bytes.
   /// - Throws: If any error occurs during conversion.
   /// - Returns: An array of bytes representing the Sui public key.
-  public func toSuiBytes() throws -> [UInt8] {
-    let rawBytes = self.key
+  public func toSuiBytes() throws -> SuiData {
+    let rawBytes = self.key.bytes
     var suiBytes = Data(count: rawBytes.count + 1)
     try suiBytes.set([SignatureSchemeFlags.SIGNATURE_SCHEME_TO_FLAG["ED25519"]!])
-    try suiBytes.set([UInt8](rawBytes), offset: 1)
+    try suiBytes.set(rawBytes, offset: 1)
 
-    return [UInt8](suiBytes)
+    return suiBytes.suiData
   }
 
   public func toSerializedSignature(signature: Signature) throws -> String {
-    var serializedSignature = Data(count: signature.signature.count + self.key.count)
-    serializedSignature[0] = SignatureSchemeFlags.SIGNATURE_SCHEME_TO_FLAG["ED25519"]!
-    serializedSignature[1..<signature.signature.count] = signature.signature
-    serializedSignature[
-      1 + signature.signature.count..<1 + signature.signature.count + self.key.count] = self.key
+    var serializedSignature = Data(capacity: 1 + signature.signature.count + self.key.count)
+    serializedSignature.append(SignatureSchemeFlags.SIGNATURE_SCHEME_TO_FLAG["ED25519"]!)
+    serializedSignature.append(signature.signature.data)
+    serializedSignature.append(self.key.data)
 
     return serializedSignature.base64EncodedString()
   }
 
-  public func verifyTransactionBlock(_ transactionBlock: [UInt8], _ signature: Signature) throws
+  public func verifyTransactionBlock(_ transactionBlock: SuiData, _ signature: Signature) throws
     -> Bool
   {
     return try self.verifyWithIntent(transactionBlock, signature, .TransactionData)
   }
 
-  public func verifyWithIntent(_ bytes: [UInt8], _ signature: Signature, _ intent: IntentScope)
+  public func verifyWithIntent(_ bytes: SuiData, _ signature: Signature, _ intent: IntentScope)
     throws -> Bool
   {
-    let intentMessage = IntentHelper.messageWithIntent(intent, Data(bytes))
+    let intentMessage = IntentHelper.messageWithIntent(intent, bytes.data)
     let digest = try BLAKE2b.hash(data: intentMessage, digestLength: 32)
 
-    return try self.verify(data: digest, signature: signature)
+    return try self.verify(data: digest.suiData, signature: signature)
   }
 
-  public func verifyPersonalMessage(_ message: [UInt8], _ signature: Signature) throws -> Bool {
+  public func verifyPersonalMessage(_ message: SuiData, _ signature: Signature) throws -> Bool {
     let ser = Serializer()
-    try ser.sequence(message, Serializer.u8)
-    return try self.verifyWithIntent([UInt8](ser.output()), signature, .PersonalMessage)
+    try ser.sequence(message.bytes, Serializer.u8)
+    return try self.verifyWithIntent(ser.output(), signature, .PersonalMessage)
   }
 
   public static func deserialize(from deserializer: Deserializer) throws -> ED25519PublicKey {

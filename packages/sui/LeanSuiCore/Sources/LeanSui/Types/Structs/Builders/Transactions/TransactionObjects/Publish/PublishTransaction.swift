@@ -57,7 +57,7 @@ public struct PublishTransaction: SuiBCSBridged, TransactionProtocol {
   }
 
   public func serialize(_ serializer: Serializer) throws {
-    try serializer.sequence(modules.map { Data($0) }, Serializer.toBytes)
+    try serializer.sequence(modules, Serializer.toBytes)
     try serializer.uleb128(UInt(self.dependencies.count))  // TODO: Check if we need it as this or if we can use it as a sequence.
     for dependency in dependencies {
       try Serializer._struct(serializer, value: dependency)
@@ -69,7 +69,7 @@ public struct PublishTransaction: SuiBCSBridged, TransactionProtocol {
   ) throws -> PublishTransaction {
     return try PublishTransaction(
       modules: (try deserializer.sequence(valueDecoder: Deserializer.toBytes)).map {
-        [UInt8]($0)
+        $0.bytes
       },
       dependencies: try deserializer.sequence(valueDecoder: Deserializer.string)
     )

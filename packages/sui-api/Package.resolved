@@ -1,15 +1,6 @@
 {
-  "originHash" : "6d8606d1d4b9dfbe08436637a5d6466cefc3c5c7cc6a95f2ce742503df2bf5a5",
+  "originHash" : "017c71e9af22977860f6c6a52bd0002410c3a2dda65595441b69c5993eb3267b",
   "pins" : [
-    {
-      "identity" : "apollo-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vaariance/apollo-ios.git",
-      "state" : {
-        "branch" : "jextract-portable",
-        "revision" : "abd0ff0537df1fb3f5305f927a219cc320924838"
-      }
-    },
     {
       "identity" : "bigint",
       "kind" : "remoteSourceControl",
@@ -24,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "ca37474853a4b5f59a22c74bfdd449b1f6bc4cc2",
-        "version" : "1.8.1"
+        "revision" : "6a52f3251125d74daf04fcbd5e6f08a75d074382",
+        "version" : "1.8.2"
       }
     },
     {
@@ -43,7 +34,7 @@
       "location" : "https://github.com/vaariance/swift-java.git",
       "state" : {
         "branch" : "peter/swift-java-callbackdeps",
-        "revision" : "9c6d7e9e76fbfcaff9c56665bd7d099e1bba73bc"
+        "revision" : "871dc0efa62730907d43ad9308a5dfb0c52de7b6"
       }
     },
     {
@@ -87,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-system",
       "state" : {
-        "revision" : "7c6ad0fc39d0763e0b699210e4124afd5041c5df",
-        "version" : "1.6.4"
+        "revision" : "669763cfd5806a67e21972d7e5e2d6b80b1ea985",
+        "version" : "1.6.5"
       }
     }
   ],

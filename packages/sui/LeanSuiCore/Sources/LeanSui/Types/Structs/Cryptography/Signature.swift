@@ -32,16 +32,16 @@ public struct Signature: Equatable, SuiBCSBridged {
   public let LENGTH: Int
 
   /// The actual cryptographic signature.
-  public var signature: Data
+  public var signature: SuiData
 
   /// The public key associated with the signature.
-  public var publicKey: Data
+  public var publicKey: SuiData
 
   /// The signature scheme used for creating the signature.
   public var signatureScheme: SignatureScheme
 
   /// Initializes a new `Signature`.
-  public init(signature: Data, publickey: Data, signatureScheme: SignatureScheme = .zkLogin) {
+  public init(signature: SuiData, publickey: SuiData, signatureScheme: SignatureScheme = .zkLogin) {
     self.signature = signature
     self.publicKey = publickey
     self.signatureScheme = signatureScheme
@@ -54,22 +54,22 @@ public struct Signature: Equatable, SuiBCSBridged {
 
   /// Converts the signature to a hexadecimal string.
   public func hex() throws -> String {
-    return try self.data().hexEncodedString()
+    return try self.data().data.hexEncodedString()
   }
 
   /// Converts the signature to `Data`.
-  public func data() throws -> Data {
+  public func data() throws -> SuiData {
     return self.signature
   }
 
   public static func deserialize(from deserializer: Deserializer) throws -> Signature {
-    let signatureBytes = try Deserializer.toBytes(deserializer)
+    let signatureBytes = try Deserializer.toBytes(deserializer).bytes
 
     if signatureBytes.count != 64 {
       throw AccountError.lengthMismatch
     }
 
-    guard let stringSignature = String(data: signatureBytes, encoding: .utf8) else {
+    guard let stringSignature = String(data: Data(signatureBytes), encoding: .utf8) else {
       throw AccountError.failedData
     }
 
@@ -81,8 +81,8 @@ public struct Signature: Equatable, SuiBCSBridged {
     }
 
     return Signature(
-      signature: bytes.subdata(in: 1..<bytes.count),
-      publickey: Data(),
+      signature: bytes.subdata(in: 1..<bytes.count).suiData,
+      publickey: SuiData([]),
       signatureScheme: .zkLogin
     )
   }
@@ -97,8 +97,8 @@ public struct Signature: Equatable, SuiBCSBridged {
     }
 
     serializedSignature.append(signatureFlag)
-    serializedSignature.append(contentsOf: self.signature)
-    serializedSignature.append(contentsOf: self.publicKey)
+    serializedSignature.append(contentsOf: self.signature.bytes)
+    serializedSignature.append(contentsOf: self.publicKey.bytes)
 
     try Serializer.str(serializer, serializedSignature.base64EncodedString())
   }

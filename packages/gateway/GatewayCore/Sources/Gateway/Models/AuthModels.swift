@@ -108,7 +108,7 @@ public struct DeviceIntegrity: Codable, Sendable, Equatable {
 /// Specifies the payload of the chosen OAuth authentication channel flow.
 public enum AuthFlowPayload: Sendable, Equatable {
   /// Web-redirect based flow carrying OAuth auth code and verifiers.
-  case web(code: String, state: String, codeVerifier: String)
+  case web(code: String, state: String, codeVerifier: String?)
   /// Native platform SDK sign-in carrying identity tokens.
   case native(idToken: String, state: String, authorizationCode: String?)
 }
@@ -161,7 +161,7 @@ public struct OAuthCompleteRequest: Encodable, Sendable, Equatable {
       try container.encode("web", forKey: .flowType)
       try container.encode(code, forKey: .code)
       try container.encode(state, forKey: .state)
-      try container.encode(codeVerifier, forKey: .codeVerifier)
+      try container.encodeIfPresent(codeVerifier, forKey: .codeVerifier)
     case .native(let idToken, let state, let authorizationCode):
       try container.encode("native", forKey: .flowType)
       try container.encode(idToken, forKey: .idToken)

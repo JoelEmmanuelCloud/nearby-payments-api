@@ -27,6 +27,12 @@ import Foundation
 
 /// `SignatureScheme` represents the cryptographic algorithm used for creating digital signatures.
 public enum SignatureScheme: String, Sendable {
+  /// Represents the ED25519 signature algorithm.
+  case ed25519 = "ED25519"
+
+  /// Represents the Secp256r1 / P-256 ECDSA signature algorithm.
+  case secp256r1 = "Secp256r1"
+
   /// Represents the zkLogin zero knowledge proof algorithm
   case zkLogin
 }

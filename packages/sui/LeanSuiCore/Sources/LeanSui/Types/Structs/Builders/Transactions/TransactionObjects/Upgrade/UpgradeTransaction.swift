@@ -70,7 +70,7 @@ public struct UpgradeTransaction: SuiBCSBridged, TransactionProtocol {
   }
 
   public func serialize(_ serializer: Serializer) throws {
-    try serializer.sequence(self.modules.map { Data($0) }, Serializer.toBytes)
+    try serializer.sequence(self.modules, Serializer.toBytes)
     try serializer.sequence(self.dependencies, Serializer.str)
     try Serializer.str(serializer, self.packageId)
     try Serializer._struct(serializer, value: self.ticket)
@@ -80,7 +80,7 @@ public struct UpgradeTransaction: SuiBCSBridged, TransactionProtocol {
     from deserializer: Deserializer
   ) throws -> UpgradeTransaction {
     return UpgradeTransaction(
-      modules: (try deserializer.sequence(valueDecoder: Deserializer.toBytes)).map { [UInt8]($0) },
+      modules: (try deserializer.sequence(valueDecoder: Deserializer.toBytes)).map { $0.bytes },
       dependencies: try deserializer.sequence(valueDecoder: Deserializer.string),
       packageId: try Deserializer.string(deserializer),
       ticket: try Deserializer._struct(deserializer)

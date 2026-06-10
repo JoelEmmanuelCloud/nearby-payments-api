@@ -2,160 +2,126 @@ import Auth
 import AuthenticationServices
 import Combine
 import Foundation
-import UIKit
+import Gateway
+import HSM
+import LeanSui
+import LeanSuiApi
+import LocalAuthentication
+import Storage
 
+/// Central coordinator for the iOS application state, routing, and user session lifecycles.
+///
+/// `AppViewModel` manages navigation routes, coordinates the initialization of core services
+/// (such as the API gateway, session manager, and hardware security module), and monitors
+/// user authentication status. It runs entirely on the main actor to guarantee UI thread safety.
 @MainActor
 final class AppViewModel: ObservableObject {
+  /// The active navigation route in the application UI.
   @Published private(set) var route: AppRoute
-  @Published private(set) var onboardingStep = 0
-  @Published private(set) var isSigningIn = false
-  @Published private(set) var statusMessage: String?
+
+  /// The display name of the currently authenticated user.
   @Published private(set) var userName: String
 
-  let onboardingPages: [OnboardingPage] = [
-    OnboardingPage(
-      title: "Keep nearby access simple",
-      message: "Use one account flow for wallets, device trust, and session recovery."
-    ),
-    OnboardingPage(
-      title: "Sign in with device protection",
-      message: "Nearby prepares secure storage and hardware-backed checks before sensitive actions."
-    ),
-    OnboardingPage(
-      title: "Continue across platforms",
-      message:
-        "The same account foundation will power iOS and Android without changing your workflow."
-    ),
-  ]
+  /// An optional status or error message shown at the root layout level.
+  @Published var statusMessage: String?
 
-  private let store: AppSessionStore
-  private let authManager: AppleAuthManager?
-  private let sessionManager: SessionManager?
-  private var appleSignInNonce: String?
+  /// Local storage provider managing app-level flags (e.g. onboarding completeness).
+  let store: AppSessionStore
 
+  /// The Secure Enclave Hardware Security Module used for device signing key generation.
+  let hsm: SecureEnclaveHSM
+
+  /// The network client gateway coordinating API requests.
+  let gateway: APIGateway
+
+  /// Core session manager coordinating token validation, storage, and persistence.
+  let sessionManager: SessionManager
+
+  /// Platform coordinator orchestrating native OAuth (Google and Apple) authentication.
+  let authManager: AppleAuthManager
+
+  /// Service managing temporary cryptographic state and nonce values for zkLogin.
+  let zkLoginService = ZkLoginService()
+
+  /// Notification token for observing external Apple ID credential revocation.
+  private var revocationObserver: NSObjectProtocol?
+
+  /// Convenience initializer configuring the model with a standard user defaults store.
   convenience init() {
     self.init(store: AppSessionStore(defaults: .standard))
   }
 
+  /// Designated initializer setting up key dependencies, restoring stored sessions,
+  /// and starting credential revocation observers.
+  ///
+  /// - Parameter store: Persistent store provider.
   init(store: AppSessionStore) {
+    let hsm = SecureEnclaveHSM()
+    self.hsm = hsm
     self.store = store
-    let authManager = Self.makeAuthManager()
+
+    let gateway = try! APIGateway(
+      baseURLString: AppConstants.baseURLString,
+      apiVersion: AppConstants.apiVersion
+    )
+    self.gateway = gateway
+
+    let sessionManager = SessionManager(
+      storage: KeychainProvider(),
+      hsm: hsm,
+      gateway: gateway
+    )
+    self.sessionManager = sessionManager
+
+    let bundleId = Bundle.main.bundleIdentifier ?? "com.variance.nearby"
+    let authManager = AppleAuthManager(
+      gateway: gateway,
+      sessionManager: sessionManager,
+      bundleId: bundleId
+    )
     self.authManager = authManager
-    self.sessionManager = authManager?.sessionManager
+
     self.userName = store.userName()
 
     if !store.didCompleteOnboarding() {
       route = .onboarding
     } else {
       route = .loading
-      checkStoredSession()
+      routeAfterDeviceSecurityCheck()
+    }
+
+    observeProviderRevocation()
+  }
+
+  deinit {
+    if let revocationObserver {
+      NotificationCenter.default.removeObserver(revocationObserver)
     }
   }
 
-  var canGoBackInOnboarding: Bool {
-    onboardingStep > 0
-  }
-
-  var isLastOnboardingStep: Bool {
-    onboardingStep == onboardingPages.count - 1
-  }
-
-  func previousOnboardingStep() {
-    guard onboardingStep > 0 else { return }
-    onboardingStep -= 1
-  }
-
-  func nextOnboardingStep() {
-    if isLastOnboardingStep {
-      finishOnboarding()
-    } else {
-      onboardingStep += 1
-    }
-  }
-
+  /// Concludes onboarding steps, persists the completion flag, and transitions the app route.
   func finishOnboarding() {
     store.completeOnboarding()
-    checkStoredSession()
+    routeAfterDeviceSecurityCheck()
   }
 
-  func prepareAppleSignInRequest(_ request: ASAuthorizationAppleIDRequest) {
-    let nonce = UUID().uuidString
-    appleSignInNonce = nonce
-    authManager?.prepareAppleRequest(request, nonce: nonce)
+  /// Re-evaluates biometric permissions when the app moves back to the foreground while on the device security screen.
+  func refreshDeviceSecurityGate() {
+    guard route == .deviceSecurity else { return }
+    routeAfterDeviceSecurityCheck()
   }
 
-  func completeAppleSignIn(_ result: Result<ASAuthorization, Error>) {
-    guard let authManager else {
-      statusMessage = "Apple sign in is not configured"
-      return
-    }
-
-    guard let nonce = appleSignInNonce else {
-      statusMessage = "Apple sign in could not start"
-      return
-    }
-
-    isSigningIn = true
-    statusMessage = "Completing Apple sign in"
-
-    Task {
-      do {
-        try await authManager.signInWithApple(result, nonce: nonce)
-        userName = "Apple account"
-        store.saveUserName(userName)
-        statusMessage = nil
-        route = .home
-      } catch {
-        statusMessage = error.localizedDescription
-      }
-
-      appleSignInNonce = nil
-      isSigningIn = false
-    }
+  /// Handles sign-in events by saving the username and navigating to the home route.
+  ///
+  /// - Parameter userName: The authenticated user's display name.
+  func handleSignInSuccess(userName: String) {
+    self.userName = userName
+    store.saveUserName(userName)
+    route = .home
   }
 
-  func signInWithGoogle() {
-    guard let authManager else {
-      statusMessage = "Google sign in is not configured"
-      return
-    }
-
-    guard let presentationAnchor = Self.presentationAnchor() else {
-      statusMessage = "Google sign in could not start"
-      return
-    }
-
-    isSigningIn = true
-    statusMessage = "Completing Google sign in"
-
-    Task {
-      do {
-        try await authManager.signInWithGoogle(
-          nonce: UUID().uuidString,
-          presentationAnchor: presentationAnchor
-        )
-        userName = "Google account"
-        store.saveUserName(userName)
-        statusMessage = nil
-        route = .home
-      } catch {
-        statusMessage = error.localizedDescription
-      }
-
-      isSigningIn = false
-    }
-  }
-
+  /// Performs a sign-out by revoking backend session tokens, clearing local data, and resetting navigation routes.
   func signOut() {
-    guard let authManager else {
-      store.clearUserName()
-      userName = store.userName()
-      statusMessage = nil
-      route = .login
-      return
-    }
-
-    isSigningIn = true
     statusMessage = "Signing out"
 
     Task {
@@ -167,43 +133,55 @@ final class AppViewModel: ObservableObject {
 
       store.clearUserName()
       userName = store.userName()
-      isSigningIn = false
-      route = .login
+      zkLoginService.clearPending()
+      statusMessage = nil
+      routeAfterDeviceSecurityCheck()
     }
   }
 
+  /// Validates the stored authentication state and routes the user to either Home or Login.
   private func checkStoredSession() {
-    guard let sessionManager else {
-      route = .login
-      return
-    }
-
-    route = .loading
-
-    Task {
-      do {
-        route = try sessionManager.isLoggedIn() ? .home : .login
-      } catch {
-        statusMessage = error.localizedDescription
+    do {
+      if try authManager.sessionManager.isLoggedIn() {
+        route = .home
+      } else {
+        store.clearUserName()
+        userName = store.userName()
         route = .login
       }
+    } catch {
+      store.clearUserName()
+      userName = store.userName()
+      route = .login
     }
   }
 
-  private static func makeAuthManager() -> AppleAuthManager? {
-    let bundleId = Bundle.main.bundleIdentifier ?? "com.variance.nearby"
-
-    return try? AppleAuthManager(
-      baseURLString: AppConstants.baseURLString,
-      apiVersion: AppConstants.apiVersion,
-      bundleId: bundleId
-    )
+  /// Verifies that system-level device protection is enabled before checking authentication state.
+  private func routeAfterDeviceSecurityCheck() {
+    if canUseDeviceOwnerAuthentication() {
+      route = .loading
+      checkStoredSession()
+    } else {
+      route = .deviceSecurity
+    }
   }
 
-  private static func presentationAnchor() -> UIWindow? {
-    UIApplication.shared.connectedScenes
-      .compactMap { $0 as? UIWindowScene }
-      .flatMap(\.windows)
-      .first { $0.isKeyWindow }
+  /// Evaluates local authentication policies to verify if a device passcode or biometrics are configured.
+  private func canUseDeviceOwnerAuthentication() -> Bool {
+    let context = LAContext()
+    var error: NSError?
+    return context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error)
+  }
+
+  /// Attaches notifications for when the user revokes Apple sign-in privileges from their device Settings.
+  private func observeProviderRevocation() {
+    revocationObserver = authManager.observeAppleCredentialRevocation { [weak self] in
+      Task { @MainActor in
+        guard let self else { return }
+        self.store.clearUserName()
+        self.userName = self.store.userName()
+        self.route = .login
+      }
+    }
   }
 }

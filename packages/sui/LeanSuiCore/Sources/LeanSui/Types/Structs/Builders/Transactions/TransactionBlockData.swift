@@ -44,10 +44,10 @@ public struct TransactionBlockDataBuilder: SuiBCSBridged {
 
   /// Initializes a new instance of `TransactionBlockDataBuilder` with raw bytes.
   ///
-  /// - Parameter bytes: A `Data` object containing the serialized transaction data.
+  /// - Parameter bytes: The serialized transaction data.
   /// - Returns: An optional instance of `TransactionBlockDataBuilder`.
-  public init?(bytes: Data) {
-    let der = Deserializer(data: bytes)
+  public init?(bytes: SuiData) {
+    let der = Deserializer(bytes: bytes.bytes)
     guard let transactionData: TransactionData = try? Deserializer._struct(der) else {
       return nil
     }
@@ -64,18 +64,17 @@ public struct TransactionBlockDataBuilder: SuiBCSBridged {
 
   /// Computes and returns the digest from the provided raw bytes.
   ///
-  /// - Parameter bytes: A `Data` object.
+  /// - Parameter bytes: Serialized transaction data.
   /// - Throws: If hashing fails.
   /// - Returns: A `String` representing the base58 encoded string of the hashed data.
-  public static func getDigestFromBytes(bytes: Data) throws -> String {
+  public static func getDigestFromBytes(bytes: SuiData) throws -> String {
     let typeTag = "TransactionData"
-    let data: Data = bytes
     let typeTagBytes = Array(typeTag.utf8) + Array("::".utf8)
 
     var dataWithTag = [UInt8]()
 
     dataWithTag.append(contentsOf: typeTagBytes)
-    dataWithTag.append(contentsOf: data)
+    dataWithTag.append(contentsOf: bytes.bytes)
 
     let hashedData = try BLAKE2b.hash(data: Data(dataWithTag), digestLength: 32)
     let hash = Array(hashedData)
@@ -99,11 +98,11 @@ public struct TransactionBlockDataBuilder: SuiBCSBridged {
   ///   - overrides: An optional instance of `TransactionBlockDataBuilder` containing the overrides.
   ///   - onlyTransactionKind: A `Bool` indicating whether to only use the transaction kind when building. Defaults to nil.
   /// - Throws: If missing required gas values or serialization fails.
-  /// - Returns: A `Data` object representing the serialized transaction data.
+  /// - Returns: Serialized transaction data.
   public func build(
     overrides: TransactionBlockDataBuilder? = nil,
     onlyTransactionKind: Bool? = nil
-  ) throws -> Data {
+  ) throws -> SuiData {
     let inputs = self.builder.inputs.compactMap { value in
       switch value.value {
       case .callArg(let callArg):

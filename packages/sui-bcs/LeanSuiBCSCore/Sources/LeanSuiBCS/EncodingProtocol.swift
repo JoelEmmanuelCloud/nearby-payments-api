@@ -23,7 +23,6 @@
 //  THE SOFTWARE.
 //
 
-import Foundation
 import UInt256
 
 public protocol EncodingProtocol: EncodingContainer, Sendable {}
@@ -39,7 +38,6 @@ extension UInt: EncodingProtocol {}
 
 extension Bool: EncodingProtocol {}
 extension String: EncodingProtocol {}
-extension Data: EncodingProtocol {}
 extension String.UTF8View: EncodingProtocol {}
 
 extension Array: EncodingContainer where Element: EncodingProtocol {}

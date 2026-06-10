@@ -16,6 +16,7 @@ swift_library(
         # The GraphQL Sui client (provider/client/DTOs) lives in sui-api;
         # Apollo is pulled in transitively from there.
         "//packages/sui-api:LeanSuiApi",
+        "//packages/hsm:HSM",
         # The cross-platform BCS serializer lives in sui-bcs.
         "//packages/sui-bcs:LeanSuiBCS",
         "@swiftpkg_bigint//:BigInt",
