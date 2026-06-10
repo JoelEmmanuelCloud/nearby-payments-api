@@ -25,6 +25,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GIDClientID</key>
 	<string>565533426961-6hon2pd64ebbuor9sm0lk60ree6kea7b.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>565533426961-glfffimsek0cni5pq7e7hfmi2umm0e5i.apps.googleusercontent.com</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Scan QR codes to capture wallet addresses for Send Money.</string>
 	<key>NSFaceIDUsageDescription</key>
