@@ -23,6 +23,7 @@
     { "key": "paymentId",    "value": "" },
     { "key": "sessionId",    "value": "" },
     { "key": "taskId",       "value": "" },
+    { "key": "sponsorAddress", "value": "" },
     { "key": "depositId",    "value": "" }
   ],
   "item": [
@@ -655,7 +656,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["v1", "names", "leaf", "alice", "available"]
             },
-            "description": "Check whether a leaf name is available under nearby. Returns { name: 'alice.nearby', available: true/false }. Low auth. Call before registering to avoid wasting a high-auth request on a taken name."
+            "description": "Check whether a leaf name is available under nearby. Returns { name: 'alice.nearby', available: true/false }. Low auth. Names are case-insensitive (Alice, ALICE and alice all resolve to alice.nearby). available is false if the name is registered on-chain OR has an active (non-expired) registration task reserving it. Returns 503 (suins_unavailable) if the Sui node is unreachable."
           }
         },
         {
@@ -677,9 +678,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 200) {",
+                  "if (pm.response.code === 202) {",
                   "  const d = pm.response.json();",
                   "  if (d.taskId) pm.collectionVariables.set('taskId', d.taskId);",
+                  "  if (d.sponsorAddress) pm.collectionVariables.set('sponsorAddress', d.sponsorAddress);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -698,7 +700,40 @@
               "mode": "raw",
               "options": { "raw": { "language": "json" } },
               "raw": "{\n  \"leafName\": \"alice\"\n}"
+            },
+            "description": "Phase 1 of registration. Obtains AVS quorum authorization and creates a task with status 'authorized'. Does NOT touch the chain yet. Returns 202 with taskId, nameHash, sponsorAddress (the gas sponsor for the submit tx) and expiresAt. The test script saves taskId and sponsorAddress. This reserves the name against other users for the authorization window (~5 min): until the task expires or is submitted, availability returns false for everyone. Re-calling as the same user returns the existing task (no duplicate). Calling for a name another user has actively reserved returns 409 (name_taken). Build a sponsored SuiNS register transaction using {{sponsorAddress}} as the gas owner, sign it, then call Submit Leaf Registration. High auth (headers auto-generated)."
+          }
+        },
+        {
+          "name": "Submit Leaf Registration",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const nonce = [...Array(32)].map(() => Math.floor(Math.random()*16).toString(16)).join('');",
+                  "pm.request.headers.upsert({key: 'X-Device-Provider', value: 'stub'});",
+                  "pm.request.headers.upsert({key: 'X-Request-Nonce', value: nonce});",
+                  "pm.request.headers.upsert({key: 'X-Request-Timestamp', value: Date.now().toString()});"
+                ],
+                "type": "text/javascript"
+              }
             }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/names/tasks/{{taskId}}/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "names", "tasks", "{{taskId}}", "submit"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"txBytes\": \"<base64-encoded SuiNS register transaction bytes>\",\n  \"userSignature\": \"<Sui signature>\"\n}"
+            },
+            "description": "Phase 2 of registration. Submits the client-built, signed SuiNS register transaction. The backend adds the AVS multisig sponsor signature and executes it on-chain, then moves the task to 'submitted'. Returns 200 with taskId, txDigest and status 'submitted'. After this, Check Name Availability returns available:false from on-chain resolution. The mobile app must build txBytes using {{sponsorAddress}} as the gas owner and sign it (the backend does not construct the transaction). Errors: 409 (task_not_submittable) if the task is not 'authorized', 410 (task_expired) if the authorization window lapsed, 502 (registration_failed) if on-chain execution fails. High auth (headers auto-generated)."
           }
         },
         {
@@ -723,7 +758,8 @@
               "raw": "{{baseUrl}}/v1/names/tasks/{{taskId}}",
               "host": ["{{baseUrl}}"],
               "path": ["v1", "names", "tasks", "{{taskId}}"]
-            }
+            },
+            "description": "Poll a registration task. Returns 200 with status: 'authorized' (reserved, awaiting on-chain submit), 'submitted' (executed on-chain) or 'failed' (on-chain execution failed). High auth (headers auto-generated)."
           }
         }
       ]

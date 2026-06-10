@@ -515,10 +515,15 @@ Expected: `200` with full payment details including `txDigest` and `confirmedAt`
 
 ## Step 7 — Names Endpoints
 
+Leaf-name registration is a **two-phase flow**, mirroring payments:
+
+1. **Register** (`POST /v1/names/leaf`) — obtains AVS quorum authorization, creates a task with status `authorized`, and **reserves the name**. Does not touch the chain.
+2. **Submit** (`POST /v1/names/tasks/{id}/submit`) — the client submits a signed SuiNS register transaction; the backend sponsors and executes it on-chain, moving the task to `submitted`.
+
+Names are **case-insensitive**: `Alice`, `ALICE`, and `alice` all normalise to the lowercase canonical `alice.nearby`. Allowed characters are `a-z`, `0-9`, and hyphens (not leading/trailing).
+
 ### Check Name Availability
 Auth level: **low**
-
-Check whether a leaf name is already registered under `nearby` before attempting registration.
 
 ```
 GET /v1/names/leaf/{leafName}/available
@@ -528,20 +533,54 @@ Expected: `200`
 { "name": "alice.nearby", "available": true }
 ```
 
-Returns `400` for an invalid name format, `503` if the Sui node is unreachable.
+`available` is `false` when the name is either registered on-chain **or** has an active (non-expired) registration task reserving it. Returns `400` for an invalid name format, `503` (`suins_unavailable`) if the Sui node is unreachable.
 
 ### Register Leaf Name
 Auth level: **high** (headers auto-generated)
 
-Registers an on-chain SuiNS name (e.g. `alice.nearby`). Registration is async — returns a task ID.
+Phase 1 — authorise and reserve the name.
 
 ```
 POST /v1/names/leaf
 Body: { "leafName": "alice" }
 ```
-Expected: `202 Accepted` with `taskId` — test script saves it to `{{taskId}}`
+Expected: `202 Accepted` — test script saves `taskId` to `{{taskId}}` and `sponsorAddress` to `{{sponsorAddress}}`
+```json
+{
+  "taskId": "...",
+  "nameHash": "0x...",
+  "action": "leaf_name.register_initial",
+  "status": "authorized",
+  "sponsorAddress": "0x...",
+  "expiresAt": 1234567890
+}
+```
 
-> Triggers a real on-chain transaction. Requires SuiNS configuration in `.env`.
+- **Reservation:** the name is held against other users for the authorization window (~5 min). Until the task is submitted or expires, `available` returns `false` for everyone.
+- **Dedup:** re-calling as the **same user** returns the existing task (no duplicate authorization). Registering a name another user has actively reserved returns `409` (`name_taken`).
+- `sponsorAddress` is the gas sponsor for the on-chain submit transaction — the client builds the SuiNS register tx using it as the gas owner.
+
+### Submit Leaf Registration
+Auth level: **high** (headers auto-generated) — requires a real SuiNS transaction built and signed by the mobile app
+
+Phase 2 — execute the registration on-chain.
+
+```
+POST /v1/names/tasks/{{taskId}}/submit
+Body:
+{
+  "txBytes": "<base64-encoded SuiNS register transaction bytes>",
+  "userSignature": "<Sui signature>"
+}
+```
+Expected: `200` with `taskId`, `txDigest`, `status: "submitted"`
+
+The backend adds the AVS multisig sponsor signature and executes the transaction; it does **not** construct the transaction. After a successful submit, `Check Name Availability` returns `available: false` from on-chain resolution.
+
+**Errors:**
+- `409` (`task_not_submittable`) — the task is not in `authorized` status
+- `410` (`task_expired`) — the authorization window lapsed; register again
+- `502` (`registration_failed`) — on-chain execution failed
 
 ### Get Name Task
 Auth level: **high** (headers auto-generated)
@@ -551,7 +590,7 @@ Poll to check registration status.
 ```
 GET /v1/names/tasks/{{taskId}}
 ```
-Expected: `200` with `status` (`pending`, `confirmed`, `failed`)
+Expected: `200` with `status` — one of `authorized` (reserved, awaiting submit), `submitted` (executed on-chain), or `failed`
 
 ---
 
@@ -634,10 +673,15 @@ go test ./internal/domain/deposit/... -run TestHandleBridgeWebhook -v
 | 401 | `replay_detected` | Nonce already used |
 | 404 | `not_found` | Resource doesn't exist or belongs to another user |
 | 409 | `idempotent_replay` | `Idempotency-Key` already used within 24 hours |
+| 409 | `name_taken` | Leaf name is already reserved or registered by another user |
+| 409 | `task_not_submittable` | Name task is not in `authorized` status |
+| 410 | `task_expired` | Name task's authorization window lapsed — register again |
 | 413 | `payload_too_large` | Avatar image exceeds 5 MB |
 | 415 | `unsupported_media_type` | Avatar content type not jpeg/png/webp/gif |
 | 422 | `unprocessable` | Wallet binding missing — sign in again |
+| 502 | `registration_failed` | On-chain SuiNS registration transaction failed |
 | 503 | `bridge_unavailable` | Bridge API returned an error |
+| 503 | `suins_unavailable` | Sui node unreachable for name resolution |
 | 500 | `internal_error` | Database or external service error |
 
 ---
@@ -669,8 +713,10 @@ go test ./internal/domain/deposit/... -run TestHandleBridgeWebhook -v
 19. Initiate Nearby Session
 20. Get Nearby Session
 21. Acknowledge Nearby Session
-22. Check Name Availability         (GET /v1/names/leaf/alice/available)
-23. Register Leaf Name              (requires SuiNS config; check available first)
-24. Get Name Task                   (poll until confirmed)
-25. Revoke Session
+22. Check Name Availability         (GET /v1/names/leaf/alice/available — expect available:true)
+23. Register Leaf Name              (phase 1: authorize + reserve; saves taskId + sponsorAddress)
+24. Check Name Availability         (now available:false — name is reserved for ~5 min)
+25. Submit Leaf Registration        (phase 2: client-built/signed SuiNS tx → executed on-chain)
+26. Get Name Task                   (poll: authorized → submitted)
+27. Revoke Session
 ```
