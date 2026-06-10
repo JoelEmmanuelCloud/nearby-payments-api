@@ -35,7 +35,6 @@ fun LoginScreen(
 
     LoginContent(
         isSigningIn = viewModel.isSigningIn,
-        statusMessage = viewModel.statusMessage,
         isReadyToSignIn = viewModel.isReadyToSignIn,
         onSignInWithGoogle = { viewModel.signInWithGoogle(onSignInSuccess) },
         onSignInWithApple = {
@@ -56,7 +55,6 @@ fun LoginScreen(
 @Composable
 fun LoginContent(
     isSigningIn: Boolean,
-    statusMessage: String?,
     isReadyToSignIn: Boolean,
     onSignInWithGoogle: () -> Unit,
     onSignInWithApple: () -> Unit,
@@ -84,12 +82,13 @@ fun LoginContent(
         Card {
             MutedText(value = "Account")
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // TODO: backend not configured
+            // Spacer(modifier = Modifier.height(8.dp))
 
-            AppleSignInButton(
-                isDisabled = isSigningIn || !isReadyToSignIn,
-                onClick = onSignInWithApple,
-            )
+            // AppleSignInButton(
+            //     isDisabled = isSigningIn || !isReadyToSignIn,
+            //     onClick = onSignInWithApple,
+            // )
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -97,11 +96,6 @@ fun LoginContent(
                 isDisabled = isSigningIn || !isReadyToSignIn,
                 onClick = onSignInWithGoogle,
             )
-
-            statusMessage?.let { message ->
-                Spacer(modifier = Modifier.height(8.dp))
-                MutedText(value = message)
-            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -113,7 +107,6 @@ fun LoginContent(
 private fun LoginScreenPreview() {
     LoginContent(
         isSigningIn = false,
-        statusMessage = null,
         isReadyToSignIn = true,
         onSignInWithGoogle = {},
         onSignInWithApple = {},
@@ -125,7 +118,6 @@ private fun LoginScreenPreview() {
 private fun LoginScreenSigningInPreview() {
     LoginContent(
         isSigningIn = true,
-        statusMessage = "Starting Google Sign-In...",
         isReadyToSignIn = false,
         onSignInWithGoogle = {},
         onSignInWithApple = {},

@@ -1,10 +1,10 @@
-import Auth
 import Combine
 import DeviceIntegrity
 import Foundation
 import Gateway
 import Identity
 import LeanSuiApi
+import UI
 
 @MainActor
 final class ProfileViewModel: ObservableObject {
@@ -48,23 +48,30 @@ final class ProfileViewModel: ObservableObject {
   let onFinish: () -> Void
 
   private let identityManager: IdentityManager
-  private let sessionManager: SessionManager
   private let store: AppSessionStore
+  private let toastController: ToastController
+  private let userId: String
 
   private var nameCheckTask: Task<Void, Never>?
 
   init(
     identityManager: IdentityManager,
-    sessionManager: SessionManager,
     store: AppSessionStore,
+    toastController: ToastController,
+    suiAddress: String?,
+    userId: String,
     isSetupMode: Bool,
     onFinish: @escaping () -> Void
   ) {
     self.identityManager = identityManager
-    self.sessionManager = sessionManager
     self.store = store
+    self.toastController = toastController
+    self.userId = userId
     self.isSetupMode = isSetupMode
     self.onFinish = onFinish
+    // The stable zkLogin address is resolved by the app coordinator (`currentSuiAddress`) and passed
+    // in — the profile layer only consumes it, never reads the session itself.
+    self.suiAddress = suiAddress
   }
 
   /// Whether the user has a registered name (drives the badge: registered vs. set-up).
@@ -75,22 +82,17 @@ final class ProfileViewModel: ObservableObject {
   /// The display string for the main page, e.g. "alice.nearby.sui" or the dummy placeholder.
   var displayName: String {
     if let suinsName { return "\(suinsName).nearby.sui" }
-    return "yourname.nearby.sui"
+    return "myname.nearby.sui"
   }
 
   func loadProfile() {
-    // 1. Read the stable address the zkLogin layer persisted at login (fast keychain read).
-    loadAddress()
-
-    // 2. Prefill from the app-side cache for an instant badge resolution on re-entry.
-    if let userId = try? sessionManager.getCurrentSession()?.userId,
-      let cached = store.cachedProfile(userId: userId)
-    {
+    // 1. Prefill from the app-side cache for an instant badge resolution on re-entry.
+    if let cached = store.cachedProfile(userId: userId) {
       applyProfile(cached)
       isLoading = false
     }
 
-    // 3. Fetch fresh in the background.
+    // 2. Fetch fresh in the background.
     Task {
       defer { isLoading = false }
       guard let addr = suiAddress else { return }
@@ -112,17 +114,6 @@ final class ProfileViewModel: ObservableObject {
   private func applyProfile(_ profile: IdentityProfile) {
     suinsName = (profile.suinsName?.isEmpty == false) ? profile.suinsName : nil
     avatarUrl = profile.avatarUrl
-  }
-
-  /// Reads the stable Sui address persisted by `ZkLoginService.commitSessionIdentity` at login. The
-  /// profile layer only consumes the address — it never derives it. If absent (a pre-commit/stale
-  /// session) it stays nil and the UI degrades gracefully; a re-login repopulates it.
-  private func loadAddress() {
-    guard
-      let session = try? sessionManager.getCurrentSession(),
-      let addr = session.suiAddress, !addr.isEmpty
-    else { return }
-    suiAddress = addr
   }
 
   // MARK: - Name editing
@@ -154,7 +145,8 @@ final class ProfileViewModel: ObservableObject {
     guard !clean.isEmpty, suinsName == nil else { return }
 
     nameCheckTask = Task {
-      try? await Task.sleep(nanoseconds: 500_000_000)  // Debounce 500ms
+      try? await Task.sleep(
+        nanoseconds: UInt64(AppConstants.nameCheckDebounce * 1_000_000_000))
       guard !Task.isCancelled else { return }
       await checkName(clean)
     }
@@ -167,7 +159,8 @@ final class ProfileViewModel: ObservableObject {
       isAvailable = res.available
       statusMessage = res.available ? "Name is available!" : "Name is already taken."
     } catch {
-      statusMessage = "Could not verify name: \(error.localizedDescription)"
+      statusMessage = nil
+      toastController.show("Couldn't check name availability")
     }
   }
 
@@ -191,7 +184,7 @@ final class ProfileViewModel: ObservableObject {
 
       isSaving = false
       suinsName = nameInput
-      statusMessage = "Name registered successfully!"
+      statusMessage = nil
 
       if let suiAddress,
         let refreshed = try? await identityManager.fetchProfile(suiAddress: suiAddress)
@@ -205,7 +198,8 @@ final class ProfileViewModel: ObservableObject {
       }
     } catch {
       isSaving = false
-      statusMessage = "Registration failed: \(error.localizedDescription)"
+      statusMessage = nil
+      toastController.show("Registration failed")
     }
   }
 
@@ -219,9 +213,7 @@ final class ProfileViewModel: ObservableObject {
       avatarUrl = newUrl
 
       // Refresh the app-side cached profile with the new avatar URL, if we have one cached.
-      if let userId = try? sessionManager.getCurrentSession()?.userId,
-        let cached = store.cachedProfile(userId: userId)
-      {
+      if let cached = store.cachedProfile(userId: userId) {
         store.cacheProfile(
           IdentityProfile(
             userId: cached.userId,
@@ -233,10 +225,11 @@ final class ProfileViewModel: ObservableObject {
       }
 
       isSaving = false
-      statusMessage = "Avatar updated!"
+      statusMessage = nil
     } catch {
       isSaving = false
-      statusMessage = "Avatar upload failed: \(error.localizedDescription)"
+      statusMessage = nil
+      toastController.show("Avatar upload failed")
     }
   }
 }

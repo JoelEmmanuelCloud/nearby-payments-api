@@ -5,11 +5,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.variance.nearby.auth.SessionManager
+import com.variance.nearby.core.AppConstants
 import com.variance.nearby.core.AppSessionStore
 import com.variance.nearby.deviceintegrity.PlayIntegrityProvider
 import com.variance.nearby.identity.IdentityManager
 import com.variance.nearby.identity.IdentityProfile
+import com.variance.nearby.ui.ToastController
+import com.variance.nearby.ui.ToastTone
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -20,8 +22,9 @@ import org.swift.swiftkit.core.SwiftArena
 
 class ProfileViewModel(
     private val identityManager: IdentityManager,
-    private val sessionManager: SessionManager,
     private val store: AppSessionStore,
+    private val toastController: ToastController,
+    currentSuiAddress: String?,
     private val userId: String,
     val isSetupMode: Boolean,
     private val swiftArena: SwiftArena,
@@ -36,7 +39,9 @@ class ProfileViewModel(
     var suinsName by mutableStateOf<String?>(null)
         private set
 
-    var suiAddress by mutableStateOf<String?>(null)
+    // The stable zkLogin address is resolved by the app coordinator (`currentSuiAddress`) and passed
+    // in — the profile layer only consumes it, never reads the session itself.
+    var suiAddress by mutableStateOf(currentSuiAddress)
         private set
 
     /** Remote avatar URL — loaded and memory+disk-cached by Coil. No image blobs are stored. */
@@ -61,7 +66,7 @@ class ProfileViewModel(
 
     val isRegistered: Boolean get() = suinsName != null
 
-    val displayName: String get() = suinsName?.let { "$it.nearby.sui" } ?: "yourname.nearby.sui"
+    val displayName: String get() = suinsName?.let { "$it.nearby.sui" } ?: "myname.nearby.sui"
 
     companion object {
         /** SuiNS labels are lowercase [a-z0-9-]; strip everything else so the gateway never errors. */
@@ -69,16 +74,13 @@ class ProfileViewModel(
     }
 
     fun loadProfile() {
-        // 1. Read the stable address that the zkLogin layer persisted at login.
-        loadAddress()
-
-        // 2. Prefill from the app-side cache for an instant badge resolution on re-entry.
+        // 1. Prefill from the app-side cache for an instant badge resolution on re-entry.
         store.cachedProfile(userId)?.let {
             applyValues(it.suinsName, it.avatarUrl)
             isLoading = false
         }
 
-        // 3. Fetch fresh in the background.
+        // 2. Fetch fresh in the background.
         val addr = suiAddress
         viewModelScope.launch(Dispatchers.IO) {
             if (addr == null) {
@@ -111,20 +113,6 @@ class ProfileViewModel(
         avatarUrl = avatar
     }
 
-    private fun loadAddress() {
-        try {
-            val sessionOpt = sessionManager.getCurrentSession(swiftArena)
-            if (sessionOpt.isPresent) {
-                val suiAddressOpt = sessionOpt.get().suiAddress
-                if (suiAddressOpt.isPresent && suiAddressOpt.get().isNotEmpty()) {
-                    suiAddress = suiAddressOpt.get()
-                }
-            }
-        } catch (e: Exception) {
-            println("Android ProfileViewModel failed to read address: ${e.localizedMessage}")
-        }
-    }
-
     /** Clears transient name-entry state so the edit screen always starts fresh. */
     fun resetNameEntry() {
         nameCheckJob?.cancel()
@@ -143,7 +131,7 @@ class ProfileViewModel(
         if (clean.isEmpty() || suinsName != null) return
 
         nameCheckJob = viewModelScope.launch {
-            delay(500) // Debounce 500ms
+            delay(AppConstants.NAME_CHECK_DEBOUNCE_MS)
             checkNameAvailability(clean)
         }
     }
@@ -158,10 +146,9 @@ class ProfileViewModel(
                 isAvailable = res.isAvailable
                 statusMessage = if (res.isAvailable) "Name is available!" else "Name is already taken."
             }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                statusMessage = "Could not verify name: ${e.localizedMessage}"
-            }
+        } catch (_: Exception) {
+            withContext(Dispatchers.Main) { statusMessage = null }
+            toastController.show("Couldn't check name availability", ToastTone.DANGER)
         }
     }
 
@@ -195,7 +182,7 @@ class ProfileViewModel(
                 withContext(Dispatchers.Main) {
                     isSaving = false
                     suinsName = nameInput
-                    statusMessage = "Name registered successfully!"
+                    statusMessage = null
                     store.cacheProfile(userId, suinsName, avatarUrl)
                     if (isSetupMode) {
                         onFinish()
@@ -207,11 +194,12 @@ class ProfileViewModel(
                     val refreshed = identityManager.fetchProfile(addr, swiftArena).await()
                     withContext(Dispatchers.Main) { applyProfile(refreshed) }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 withContext(Dispatchers.Main) {
                     isSaving = false
-                    statusMessage = "Registration failed: ${e.localizedMessage}"
+                    statusMessage = null
                 }
+                toastController.show("Registration failed", ToastTone.DANGER)
             }
         }
     }
@@ -229,13 +217,14 @@ class ProfileViewModel(
                     avatarUrl = newUrl
                     store.cacheProfile(userId, suinsName, newUrl)
                     isSaving = false
-                    statusMessage = "Avatar updated!"
+                    statusMessage = null
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 withContext(Dispatchers.Main) {
                     isSaving = false
-                    statusMessage = "Avatar upload failed: ${e.localizedMessage}"
+                    statusMessage = null
                 }
+                toastController.show("Avatar upload failed", ToastTone.DANGER)
             }
         }
     }

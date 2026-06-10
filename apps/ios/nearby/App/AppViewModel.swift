@@ -9,6 +9,7 @@ import LeanSui
 import LeanSuiApi
 import LocalAuthentication
 import Storage
+import UI
 
 /// Central coordinator for the iOS application state, routing, and user session lifecycles.
 ///
@@ -28,11 +29,19 @@ final class AppViewModel: ObservableObject {
     (try? sessionManager.getCurrentSession()?.userId) ?? ""
   }
 
+  /// The current zkLogin Sui address (for the on-chain balance query), or nil if no session.
+  var currentSuiAddress: String? {
+    (try? sessionManager.getCurrentSession())??.suiAddress
+  }
+
   /// An optional status or error message shown at the root layout level.
   @Published var statusMessage: String?
 
   /// Local storage provider managing app-level flags (e.g. onboarding completeness).
   let store: AppSessionStore
+
+  /// App-wide transient-message bus, rendered by `ToastHost` at the root.
+  let toastController = ToastController()
 
   /// The Secure Enclave Hardware Security Module used for device signing key generation.
   let hsm: SecureEnclaveHSM

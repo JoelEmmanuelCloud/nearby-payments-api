@@ -9,7 +9,6 @@ struct AvatarPickerView: View {
 
   let pickedAvatarData: Data?
   let avatarUrl: String?
-  let monogramInitial: Character
   let isSaving: Bool
 
   var body: some View {
@@ -17,8 +16,7 @@ struct AvatarPickerView: View {
       PhotosPicker(selection: $selection, matching: .images, photoLibrary: .shared()) {
         AvatarThumbnailView(
           pickedAvatarData: pickedAvatarData,
-          avatarUrl: avatarUrl,
-          monogramInitial: monogramInitial
+          avatarUrl: avatarUrl
         )
       }
       .disabled(isSaving)

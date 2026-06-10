@@ -6,6 +6,8 @@ struct AppSessionStore {
     static let didCompleteOnboarding = "nearby.didCompleteOnboarding"
     static let didCompleteProfileSetup = "nearby.didCompleteProfileSetup"
     static let userName = "nearby.userName"
+    static let balanceHidden = "nearby.balanceHidden"
+    static let lastBalance = "nearby.lastUsdSuiBalance"
     static func profile(_ userId: String) -> String { "nearby.profile.\(userId)" }
   }
 
@@ -43,6 +45,26 @@ struct AppSessionStore {
 
   func clearUserName() {
     defaults.removeObject(forKey: Key.userName)
+  }
+
+  /// Whether the account balance is hidden on Home (global, persisted across launches).
+  func balanceHidden() -> Bool {
+    defaults.bool(forKey: Key.balanceHidden)
+  }
+
+  func setBalanceHidden(_ hidden: Bool) {
+    defaults.set(hidden, forKey: Key.balanceHidden)
+  }
+
+  /// The last fetched USDsui balance, so Home shows it immediately on re-entry (silent refetch, no
+  /// skeleton flip). Stored as a string to preserve `Decimal` precision.
+  func lastUsdSuiBalance() -> Decimal? {
+    guard let string = defaults.string(forKey: Key.lastBalance) else { return nil }
+    return Decimal(string: string)
+  }
+
+  func setLastUsdSuiBalance(_ value: Decimal) {
+    defaults.set("\(value)", forKey: Key.lastBalance)
   }
 
   // MARK: - Identity profile cache

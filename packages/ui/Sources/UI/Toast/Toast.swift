@@ -49,3 +49,10 @@ public struct Toast: View {
     .clipShape(RoundedRectangle(cornerRadius: 8))
   }
 }
+
+#Preview {
+  VStack(spacing: 12) {
+    Toast(title: "i am a toast")
+  }
+  .padding()
+}

@@ -4,6 +4,7 @@ import com.variance.nearby.storage.SecureStorage
 import com.variance.nearby.storage.StorageItem
 import org.json.JSONObject
 import org.swift.swiftkit.core.SwiftArena
+import java.math.BigDecimal
 
 /** Non-secret profile fields cached for instant display + offline fallback (mirrors iOS UserDefaults). */
 data class CachedProfile(
@@ -19,7 +20,40 @@ class AppSessionStore(
         private const val KEY_DID_COMPLETE_ONBOARDING = "nearby.didCompleteOnboarding"
         private const val KEY_DID_COMPLETE_PROFILE_SETUP = "nearby.didCompleteProfileSetup"
         private const val KEY_USER_NAME = "nearby.userName"
+        private const val KEY_BALANCE_HIDDEN = "nearby.balanceHidden"
+        private const val KEY_LAST_BALANCE = "nearby.lastUsdSuiBalance"
         private fun profileKey(userId: String) = "nearby.profile.$userId"
+    }
+
+    /**
+     * The last fetched USDsui balance, so Home shows it immediately on re-entry (silent refetch, no
+     * skeleton flip). Stored as a plain string to preserve precision.
+     */
+    fun lastBalance(): BigDecimal? {
+        val itemOpt = storage.get(KEY_LAST_BALANCE, swiftArena)
+        if (!itemOpt.isPresent) return null
+        return try {
+            BigDecimal(String(itemOpt.get().value, Charsets.UTF_8))
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun setLastBalance(value: BigDecimal) {
+        val item = StorageItem.init(value.toPlainString().toByteArray(Charsets.UTF_8), swiftArena)
+        storage.set(item, KEY_LAST_BALANCE)
+    }
+
+    /** Whether the account balance is hidden on Home (global, persisted across launches). */
+    fun balanceHidden(): Boolean {
+        val itemOpt = storage.get(KEY_BALANCE_HIDDEN, swiftArena)
+        if (!itemOpt.isPresent) return false
+        return itemOpt.get().value.firstOrNull() == 1.toByte()
+    }
+
+    fun setBalanceHidden(hidden: Boolean) {
+        val item = StorageItem.init(byteArrayOf(if (hidden) 1 else 0), swiftArena)
+        storage.set(item, KEY_BALANCE_HIDDEN)
     }
 
     fun didCompleteOnboarding(): Boolean {

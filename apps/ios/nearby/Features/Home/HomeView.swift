@@ -10,8 +10,28 @@ struct HomeView: View {
   let onNavigateToProfile: () -> Void
   let onSignOut: () -> Void
 
+  @StateObject private var balanceModel: HomeViewModel
+
   @State private var avatarUrl: String?
+
   @State private var suinsName: String?
+
+  init(
+    userName: String,
+    store: AppSessionStore,
+    userId: String,
+    suiAddress: String?,
+    onNavigateToProfile: @escaping () -> Void,
+    onSignOut: @escaping () -> Void
+  ) {
+    self.userName = userName
+    self.store = store
+    self.userId = userId
+    self.onNavigateToProfile = onNavigateToProfile
+    self.onSignOut = onSignOut
+    _balanceModel = StateObject(
+      wrappedValue: HomeViewModel(suiAddress: suiAddress, store: store))
+  }
 
   var body: some View {
     NavigationStack {
@@ -24,25 +44,48 @@ struct HomeView: View {
             MutedText("Signed in as \(suinsName ?? userName).")
           }
 
+          // Account balance
           Card {
-            VStack(alignment: .leading, spacing: 10) {
-              Text("Account status")
-                .font(.headline)
+            VStack(alignment: .leading, spacing: 12) {
+              HStack {
+                Text("Account balance")
+                  .font(.headline)
 
-              MutedText(
-                "Your session is ready. Wallet and zkLogin actions will appear here as the Sui package is wired in."
-              )
-            }
-          }
+                Spacer()
 
-          Card {
-            VStack(alignment: .leading, spacing: 10) {
-              Text("Next action")
-                .font(.headline)
+                Button {
+                  balanceModel.toggleVisibility()
+                } label: {
+                  Image(systemName: balanceModel.isHidden ? "eye.slash" : "eye")
+                    .foregroundColor(.secondary)
+                }
+              }
 
-              MutedText(
-                "Connect the lean Sui signer and transaction flow after authentication is stable on both platforms."
-              )
+              HStack(spacing: 10) {
+                Image("SuiDropletBlue")
+                  .resizable()
+                  .scaledToFit()
+                  .frame(width: 28, height: 28)
+
+                if balanceModel.isHidden {
+                  Text("••••")
+                    .font(.title2.weight(.semibold))
+                } else {
+                  switch balanceModel.balance {
+                  case .loading:
+                    Skeleton()
+                      .frame(width: 120, height: 26)
+                  case .amount:
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                      Text(balanceModel.formattedBalance)
+                        .font(.title2.weight(.semibold))
+                      Text("USDsui")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -52,9 +95,14 @@ struct HomeView: View {
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           Button(action: onNavigateToProfile) {
-            avatarButton
-              .frame(width: 32, height: 32)
-              .clipShape(Circle())
+            Avatar(size: 32) {
+              if let urlString = avatarUrl, let url = URL(string: urlString) {
+                CachedImage(url: url) {
+                  EmptyView()
+                }
+                .scaledToFill()
+              }
+            }
           }
         }
         ToolbarItem(placement: .topBarTrailing) {
@@ -65,19 +113,11 @@ struct HomeView: View {
       }
       .onAppear {
         loadCachedIdentity()
+        balanceModel.start()
       }
-    }
-  }
-
-  @ViewBuilder private var avatarButton: some View {
-    if let urlString = avatarUrl, let url = URL(string: urlString) {
-      // Loaded and memory+disk-cached by SwiftCache, keyed by URL.
-      CachedImage(url: url) {
-        Image(systemName: "person.crop.circle").resizable()
+      .onDisappear {
+        balanceModel.stop()
       }
-      .scaledToFill()
-    } else {
-      Image(systemName: "person.crop.circle").resizable()
     }
   }
 
@@ -93,6 +133,7 @@ struct HomeView: View {
     userName: "Preview User",
     store: AppSessionStore(),
     userId: "preview",
+    suiAddress: nil,
     onNavigateToProfile: {},
     onSignOut: {}
   )

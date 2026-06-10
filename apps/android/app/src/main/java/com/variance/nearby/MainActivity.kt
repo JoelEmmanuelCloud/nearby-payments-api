@@ -19,11 +19,14 @@ import com.variance.nearby.core.AppRoute
 import com.variance.nearby.core.AppViewModel
 import com.variance.nearby.screens.auth.LoginScreen
 import com.variance.nearby.screens.auth.LoginViewModel
+import com.variance.nearby.screens.home.BalanceService
 import com.variance.nearby.screens.home.HomeScreen
+import com.variance.nearby.screens.home.HomeViewModel
 import com.variance.nearby.screens.onboarding.OnboardingScreen
 import com.variance.nearby.screens.profile.ProfileScreen
 import com.variance.nearby.screens.profile.ProfileViewModel
 import com.variance.nearby.screens.security.DeviceSecurityScreen
+import com.variance.nearby.ui.ToastHost
 import com.variance.nearby.ui.theme.NearbyTheme
 
 class MainActivity : ComponentActivity() {
@@ -75,6 +78,13 @@ class MainActivity : ComponentActivity() {
 private fun Nearby(viewModel: AppViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
+    ToastHost(controller = viewModel.toastController) {
+        Routes(viewModel, context)
+    }
+}
+
+@Composable
+private fun Routes(viewModel: AppViewModel, context: android.content.Context) {
     when (viewModel.route) {
         AppRoute.LOADING -> {
             Box(
@@ -95,6 +105,7 @@ private fun Nearby(viewModel: AppViewModel) {
                     gateway = viewModel.gateway,
                     sessionManager = viewModel.sessionManager,
                     zkLoginService = viewModel.zkLoginService,
+                    toastController = viewModel.toastController,
                     swiftArena = viewModel.swiftArena,
                 )
             }
@@ -103,13 +114,23 @@ private fun Nearby(viewModel: AppViewModel) {
                 onSignInSuccess = { name -> viewModel.handleSignInSuccess(name) },
             )
         }
-        AppRoute.HOME -> HomeScreen(viewModel)
+        AppRoute.HOME -> {
+            val homeViewModel = remember(viewModel) {
+                HomeViewModel(
+                    balanceService = BalanceService(viewModel.suiNetwork, viewModel.swiftArena),
+                    suiAddress = viewModel.currentSuiAddress,
+                    store = viewModel.sessionStore,
+                )
+            }
+            HomeScreen(viewModel = viewModel, homeViewModel = homeViewModel)
+        }
         AppRoute.PROFILE_SETUP -> {
             val profileViewModel = remember(viewModel) {
                 ProfileViewModel(
                     identityManager = viewModel.identityManager,
-                    sessionManager = viewModel.sessionManager,
                     store = viewModel.sessionStore,
+                    toastController = viewModel.toastController,
+                    currentSuiAddress = viewModel.currentSuiAddress,
                     userId = viewModel.currentUserId,
                     isSetupMode = true,
                     swiftArena = viewModel.swiftArena,
@@ -122,8 +143,9 @@ private fun Nearby(viewModel: AppViewModel) {
             val profileViewModel = remember(viewModel) {
                 ProfileViewModel(
                     identityManager = viewModel.identityManager,
-                    sessionManager = viewModel.sessionManager,
                     store = viewModel.sessionStore,
+                    toastController = viewModel.toastController,
+                    currentSuiAddress = viewModel.currentSuiAddress,
                     userId = viewModel.currentUserId,
                     isSetupMode = false,
                     swiftArena = viewModel.swiftArena,

@@ -14,9 +14,15 @@ let package = Package(
       targets: ["UI"]
     )
   ],
+  dependencies: [
+    .package(url: "https://github.com/elai950/AlertToast", from: "1.3.9")
+  ],
   targets: [
     .target(
-      name: "UI"
+      name: "UI",
+      dependencies: [
+        .product(name: "AlertToast", package: "AlertToast")
+      ]
     ),
     .testTarget(
       name: "UITests",

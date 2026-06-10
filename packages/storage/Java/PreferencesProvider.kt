@@ -27,7 +27,11 @@ class PreferencesProvider(
         item: StorageItem,
         key: String,
     ) {
-        sharedPreferences.edit().putString(key, item.value.toStoredString()).apply()
+        // commit() (synchronous) — not apply() — so rotated refresh tokens are flushed to disk before
+        // returning. With apply(), an OS process-kill before the async flush loses the new one-time
+        // token, and the next launch's refresh fails terminally → spurious sign-out. iOS Keychain
+        // writes are synchronous, which is why this only bites Android.
+        sharedPreferences.edit().putString(key, item.value.toStoredString()).commit()
     }
 
     /**
@@ -53,14 +57,14 @@ class PreferencesProvider(
      * Removes the stored entry associated with the given key from shared preferences.
      */
     override fun delete(key: String) {
-        sharedPreferences.edit().remove(key).apply()
+        sharedPreferences.edit().remove(key).commit()
     }
 
     /**
      * Clears all entries from this preferences provider.
      */
     override fun clearAll() {
-        sharedPreferences.edit().clear().apply()
+        sharedPreferences.edit().clear().commit()
     }
 
     private fun ByteArray.toStoredString(): String = Base64.encodeToString(this, Base64.NO_WRAP)

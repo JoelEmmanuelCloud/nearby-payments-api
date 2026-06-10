@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.sonner)
     implementation(libs.swiftkit.core)
     implementation(libs.play.integrity)
     implementation(libs.play.services.tasks)

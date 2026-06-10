@@ -12,6 +12,8 @@ import com.variance.nearby.auth.SessionManager
 import com.variance.nearby.core.AppConstants
 import com.variance.nearby.gateway.APIGateway
 import com.variance.nearby.services.zk.ZkLoginService
+import com.variance.nearby.ui.ToastController
+import com.variance.nearby.ui.ToastTone
 import kotlinx.coroutines.launch
 import org.swift.swiftkit.core.SwiftArena
 
@@ -32,6 +34,7 @@ class LoginViewModel(
     private val gateway: APIGateway,
     private val sessionManager: SessionManager,
     private val zkLoginService: ZkLoginService,
+    private val toastController: ToastController,
     private val swiftArena: SwiftArena,
 ) : ViewModel() {
     private val appContext = context.applicationContext
@@ -49,10 +52,6 @@ class LoginViewModel(
     var isSigningIn by mutableStateOf(false)
         private set
 
-    /** An optional status, progress, or validation error message displayed in the UI. */
-    var statusMessage by mutableStateOf<String?>(null)
-        private set
-
     /** Indicates if the cryptography layer has prepared a nonce and is ready for sign-in. */
     val isReadyToSignIn by derivedStateOf {
         zkLoginService.pendingZKEphemeral != null
@@ -61,13 +60,11 @@ class LoginViewModel(
     /** Triggers the generation of an ephemeral key and nonce asynchronously. */
     fun prepareZkNonce() {
         isSigningIn = true
-        statusMessage = "Preparing secure credentials..."
         viewModelScope.launch {
             try {
                 zkLoginService.prepareNonce()
-                statusMessage = null
-            } catch (e: Exception) {
-                statusMessage = "Could not prepare sign-in: ${e.localizedMessage}"
+            } catch (_: Exception) {
+                toastController.show("Could not prepare sign-in", ToastTone.WARNING)
             } finally {
                 isSigningIn = false
             }
@@ -81,13 +78,12 @@ class LoginViewModel(
      */
     fun signInWithGoogle(onSuccess: (String) -> Unit) {
         isSigningIn = true
-        statusMessage = "Starting Google Sign-In..."
         viewModelScope.launch {
             val nonce = try {
                 zkLoginService.pendingZKEphemeral?.nonce ?: zkLoginService.prepareNonce()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 isSigningIn = false
-                statusMessage = "Could not start sign-in: ${e.localizedMessage}"
+                toastController.show("Could not start sign-in", ToastTone.WARNING)
                 return@launch
             }
 
@@ -95,12 +91,11 @@ class LoginViewModel(
                 nonce = nonce,
                 onSuccess = { name ->
                     isSigningIn = false
-                    statusMessage = null
                     onSuccess(name)
                 },
-                onError = { error ->
+                onError = { _ ->
                     isSigningIn = false
-                    statusMessage = "Google Sign-In failed: ${error.localizedMessage}"
+                    toastController.show("Google Sign-In failed", ToastTone.DANGER)
                 },
             )
         }
@@ -114,13 +109,12 @@ class LoginViewModel(
      */
     fun signInWithApple(launchCustomTabs: (String) -> Unit, onSuccess: (String) -> Unit) {
         isSigningIn = true
-        statusMessage = "Starting Apple Sign-In..."
         viewModelScope.launch {
             val nonce = try {
                 zkLoginService.pendingZKEphemeral?.nonce ?: zkLoginService.prepareNonce()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 isSigningIn = false
-                statusMessage = "Could not start sign-in: ${e.localizedMessage}"
+                toastController.show("Could not start sign-in", ToastTone.WARNING)
                 return@launch
             }
 
@@ -128,12 +122,12 @@ class LoginViewModel(
                 nonce = nonce,
                 launchCustomTabs = { url ->
                     isSigningIn = false
-                    statusMessage = "Please log in in the browser..."
+                    toastController.show("Please log in in the browser...", ToastTone.NEUTRAL)
                     launchCustomTabs(url)
                 },
-                onError = { error ->
+                onError = { _ ->
                     isSigningIn = false
-                    statusMessage = "Apple Sign-In failed: ${error.localizedMessage}"
+                    toastController.show("Apple Sign-In failed", ToastTone.DANGER)
                 },
             )
         }
@@ -148,19 +142,17 @@ class LoginViewModel(
      */
     fun handleAppleRedirect(code: String, state: String, onSuccess: (String) -> Unit) {
         isSigningIn = true
-        statusMessage = "Completing Apple Sign-In..."
 
         googleAuthManager.handleWebRedirect(
             code = code,
             state = state,
             onSuccess = { name ->
                 isSigningIn = false
-                statusMessage = null
                 onSuccess(name)
             },
-            onError = { error ->
+            onError = { _ ->
                 isSigningIn = false
-                statusMessage = "Apple Sign-In failed: ${error.localizedMessage}"
+                toastController.show("Apple Sign-In failed", ToastTone.DANGER)
             },
         )
     }

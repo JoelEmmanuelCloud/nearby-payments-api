@@ -20,6 +20,7 @@ import com.variance.nearby.leansui.api.SuiNetwork
 import com.variance.nearby.leansui.api.SuiNetworkKind
 import com.variance.nearby.services.zk.ZkLoginService
 import com.variance.nearby.storage.PreferencesProvider
+import com.variance.nearby.ui.ToastController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
@@ -71,17 +72,29 @@ class AppViewModel(
         StrongBoxHSM(appContext, biometricGate)
     val sessionStore = AppSessionStore(preferencesProvider, swiftArena)
 
+    /** App-wide transient-message bus, rendered by the root composable. */
+    val toastController = ToastController()
+
     /** The current user's id (for keying the app-side profile cache), or "" if no session. */
     val currentUserId: String
         get() = try {
             val opt = sessionManager.getCurrentSession(swiftArena)
             if (opt.isPresent) opt.get().userId else ""
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
 
-    /** The Sui network this app targets (epoch lookups, proofs, transactions). */
-    private val suiNetwork: SuiNetwork = when (AppConstants.SUI_NETWORK) {
+    /** The current zkLogin Sui address (for the on-chain balance query), or null if no session. */
+    val currentSuiAddress: String?
+        get() = try {
+            val opt = sessionManager.getCurrentSession(swiftArena)
+            if (opt.isPresent) opt.get().suiAddress.orElse(null) else null
+        } catch (_: Exception) {
+            null
+        }
+
+    /** The Sui network this app targets (epoch lookups, proofs, transactions, balance). */
+    val suiNetwork: SuiNetwork = when (AppConstants.SUI_NETWORK) {
         SuiNetworkKind.Discriminator.MAINNET -> SuiNetwork.getMainnet(swiftArena)
         SuiNetworkKind.Discriminator.DEVNET -> SuiNetwork.getDevnet(swiftArena)
         SuiNetworkKind.Discriminator.TESTNET -> SuiNetwork.getTestnet(swiftArena)

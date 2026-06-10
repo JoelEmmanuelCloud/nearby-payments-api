@@ -12,6 +12,8 @@ struct ProfileView: View {
 
   @State private var showEdit = false
 
+  @State private var addressCopied = false
+
   var body: some View {
     NavigationStack {
       ScrollView {
@@ -20,7 +22,6 @@ struct ProfileView: View {
             selection: $selectedItem,
             pickedAvatarData: viewModel.pickedAvatarData,
             avatarUrl: viewModel.avatarUrl,
-            monogramInitial: viewModel.suinsName?.first ?? "U",
             isSaving: viewModel.isSaving
           )
 
@@ -52,27 +53,40 @@ struct ProfileView: View {
             }
           }
 
-          // Wallet address
+          // Wallet address — tap the card to copy
           Card {
             VStack(alignment: .leading, spacing: 10) {
-              Text("Sui Wallet Address")
-                .font(.headline)
+              HStack {
+                Text("Sui Wallet Address")
+                  .font(.headline)
+
+                Spacer()
+
+                if viewModel.suiAddress != nil {
+                  Text(addressCopied ? "copied" : "tap to copy")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
+              }
 
               if let addr = viewModel.suiAddress {
                 Text(addr)
                   .font(.system(.footnote, design: .monospaced))
                   .foregroundColor(.secondary)
                   .multilineTextAlignment(.leading)
-                  .contextMenu {
-                    Button {
-                      UIPasteboard.general.string = addr
-                    } label: {
-                      Label("Copy Address", systemImage: "doc.on.doc")
-                    }
-                  }
               } else {
                 MutedText("Deriving Sui zkLogin address...")
               }
+            }
+          }
+          .contentShape(Rectangle())
+          .onTapGesture {
+            guard let addr = viewModel.suiAddress else { return }
+            UIPasteboard.general.string = addr
+            addressCopied = true
+            Task {
+              try? await Task.sleep(nanoseconds: 2_000_000_000)
+              addressCopied = false
             }
           }
 

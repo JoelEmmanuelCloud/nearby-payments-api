@@ -19,10 +19,7 @@ struct ProfileEditView: View {
         )
 
         HStack {
-          TextField("username", text: $name)
-            .textFieldStyle(.roundedBorder)
-            .autocorrectionDisabled()
-            .textInputAutocapitalization(.never)
+          Input("username", text: $name)
             .disabled(viewModel.isSaving)
             .onChange(of: name) { _, newValue in
               let clean = ProfileViewModel.sanitize(newValue)

@@ -1,4 +1,5 @@
 import SwiftUI
+import UI
 
 /// The resolving element on the profile page: a spinner while loading, a "Registered" pill once a
 /// name exists, or a "Set up name" button that routes to the edit screen. Because this is the only
@@ -12,13 +13,7 @@ struct ProfileStatusBadge: View {
     if isLoading {
       ProgressView()
     } else if isRegistered {
-      Text("Registered")
-        .font(.caption.weight(.semibold))
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(Color.green.opacity(0.15))
-        .foregroundColor(.green)
-        .clipShape(Capsule())
+      Badge("Registered", tone: .success)
     } else {
       Button("Set up name", action: onSetUp)
         .buttonStyle(.borderedProminent)
