@@ -162,26 +162,28 @@ class AppViewModel(
         userName = name
         sessionStore.saveUserName(name)
 
-        // `suiAddress` is now derived synchronously by the zkLogin layer, so route on completed-setup.
-        route = if (sessionStore.didCompleteProfileSetup()) AppRoute.HOME else AppRoute.PROFILE_SETUP
-
-        // Single writer of Sui properties (derive + persist the stable address), then record it with
-        // the backend (idempotent) and warm up the signer. A forced session wipe routes to login.
         viewModelScope.launch {
+            // Derive + persist the stable Sui address BEFORE routing, so Home has it on entry (the
+            // balance query needs it). commitSessionIdentity is async on Android, so we await it here
+            // rather than racing the route (iOS derives synchronously pre-route).
             try {
                 zkLoginService.commitSessionIdentity()
+            } catch (_: Exception) {
+                // best-effort
+            }
+
+            // Everyone lands on Home after sign-in; claiming a SuiNS name is an optional visit to the
+            // profile page from there (no first-run setup ceremony).
+            route = AppRoute.HOME
+
+            // Record the address with the backend (idempotent) + warm up the signer.
+            try {
                 identityManager.rebind().await()
                 zkLoginService.warmUpSigner()
             } catch (_: Exception) {
-                // Transient / non-session failure → best-effort, no-op (signer simply not cached yet).
+                // Transient / non-session failure → best-effort, no-op.
             }
         }
-    }
-
-    /** Marks first-run profile setup complete and returns to Home. Called when the setup flow finishes. */
-    fun finishProfileSetup() {
-        sessionStore.completeProfileSetup()
-        route = AppRoute.HOME
     }
 
     /** Performs a sign-out by revoking backend session tokens, clearing local data, and resetting navigation routes. */
@@ -242,7 +244,7 @@ class AppViewModel(
                 return@launch
             }
 
-            route = if (sessionStore.didCompleteProfileSetup()) AppRoute.HOME else AppRoute.PROFILE_SETUP
+            route = AppRoute.HOME
 
             // Best-effort idempotent rebind + warm-up.
             try {

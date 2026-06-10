@@ -34,13 +34,13 @@ struct ContentView: View {
             userId: viewModel.currentUserId,
             suiAddress: viewModel.currentSuiAddress,
             onNavigateToProfile: {
-              viewModel.route = .profile(isSetupMode: false)
+              viewModel.route = .profile
             },
             onSignOut: {
               viewModel.signOut()
             }
           )
-        case .profile(let isSetupMode):
+        case .profile:
           ProfileView(
             viewModel: ProfileViewModel(
               identityManager: viewModel.identityManager,
@@ -48,14 +48,7 @@ struct ContentView: View {
               toastController: viewModel.toastController,
               suiAddress: viewModel.currentSuiAddress,
               userId: viewModel.currentUserId,
-              isSetupMode: isSetupMode,
-              onFinish: {
-                if isSetupMode {
-                  viewModel.finishProfileSetup()
-                } else {
-                  viewModel.route = .home
-                }
-              }
+              onFinish: { viewModel.route = .home }
             )
           )
         }

@@ -4,7 +4,6 @@ import Identity
 struct AppSessionStore {
   private enum Key {
     static let didCompleteOnboarding = "nearby.didCompleteOnboarding"
-    static let didCompleteProfileSetup = "nearby.didCompleteProfileSetup"
     static let userName = "nearby.userName"
     static let balanceHidden = "nearby.balanceHidden"
     static let lastBalance = "nearby.lastUsdSuiBalance"
@@ -27,16 +26,6 @@ struct AppSessionStore {
 
   func completeOnboarding() {
     defaults.set(true, forKey: Key.didCompleteOnboarding)
-  }
-
-  /// Whether the user has finished first-run profile setup (e.g. registered a SuiNS name).
-  /// Used to route post-login to Home vs the setup flow, since `suiAddress` is now always present.
-  func didCompleteProfileSetup() -> Bool {
-    defaults.bool(forKey: Key.didCompleteProfileSetup)
-  }
-
-  func completeProfileSetup() {
-    defaults.set(true, forKey: Key.didCompleteProfileSetup)
   }
 
   func saveUserName(_ userName: String) {

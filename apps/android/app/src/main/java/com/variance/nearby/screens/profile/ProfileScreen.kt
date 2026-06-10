@@ -58,8 +58,8 @@ import com.variance.nearby.ui.BadgeTone
 import com.variance.nearby.ui.Card
 import com.variance.nearby.ui.Input
 import com.variance.nearby.ui.MutedText
-import com.variance.nearby.ui.SecondaryButton
 import com.variance.nearby.ui.UIButton
+import com.variance.nearby.ui.theme.Green40
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -110,7 +110,6 @@ fun ProfileScreen(
         )
     } else {
         ProfileMainContent(
-            isSetupMode = viewModel.isSetupMode,
             isLoading = viewModel.isLoading,
             isRegistered = viewModel.isRegistered,
             displayName = viewModel.displayName,
@@ -139,7 +138,6 @@ fun ProfileScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileMainContent(
-    isSetupMode: Boolean,
     isLoading: Boolean,
     isRegistered: Boolean,
     displayName: String,
@@ -157,18 +155,16 @@ fun ProfileMainContent(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (isSetupMode) "Set up profile" else "Profile",
+                        text = "Profile",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     )
                 },
                 navigationIcon = {
-                    if (!isSetupMode) {
-                        IconButton(onClick = onFinish) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.arrow_back),
-                                contentDescription = "Back",
-                            )
-                        }
+                    IconButton(onClick = onFinish) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.arrow_back),
+                            contentDescription = "Back",
+                        )
                     }
                 },
             )
@@ -261,7 +257,7 @@ fun ProfileMainContent(
                         Text(
                             text = if (copied) "copied" else "tap to copy",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (copied) Green40 else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -269,15 +265,6 @@ fun ProfileMainContent(
                     text = suiAddress ?: "Deriving Sui zkLogin address...",
                     style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            if (isSetupMode) {
-                Spacer(modifier = Modifier.weight(1f))
-                SecondaryButton(
-                    title = "Skip for Now",
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = onFinish,
                 )
             }
         }
@@ -422,7 +409,6 @@ fun ProfileEditContent(
 @Composable
 private fun ProfileMainRegisteredPreview() {
     ProfileMainContent(
-        isSetupMode = false,
         isLoading = false,
         isRegistered = true,
         displayName = "alice.nearby.sui",

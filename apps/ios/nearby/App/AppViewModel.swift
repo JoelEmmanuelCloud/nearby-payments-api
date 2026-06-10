@@ -145,11 +145,12 @@ final class AppViewModel: ObservableObject {
     store.saveUserName(userName)
 
     // Single writer of Sui properties: derive + persist the (stable) address synchronously now,
-    // so `suiAddress` is available for routing, binding, and the signer.
+    // so it's available to Home (balance) and the signer before we route.
     try? zkLoginService.commitSessionIdentity()
 
-    // `suiAddress` is now always present post-login, so route on completed-setup instead.
-    route = store.didCompleteProfileSetup() ? .home : .profile(isSetupMode: true)
+    // Everyone lands on Home after sign-in; claiming a SuiNS name is an optional visit to the
+    // profile page from there (no first-run setup ceremony).
+    route = .home
 
     // Background: record the address with the backend (idempotent) then warm up the signer.
     // A forced logout from token refresh routes to login instead of being swallowed.
@@ -161,12 +162,6 @@ final class AppViewModel: ObservableObject {
         // Transient / non-session failure → best-effort, no-op (signer simply not cached yet).
       }
     }
-  }
-
-  /// Marks first-run profile setup complete and returns to Home. Called when the setup flow finishes.
-  func finishProfileSetup() {
-    store.completeProfileSetup()
-    route = .home
   }
 
   /// Performs a sign-out by revoking backend session tokens, clearing local data, and resetting navigation routes.
@@ -194,7 +189,7 @@ final class AppViewModel: ObservableObject {
       return
     }
 
-    route = store.didCompleteProfileSetup() ? .home : .profile(isSetupMode: true)
+    route = .home
 
     // Best-effort idempotent rebind + warm-up.
     Task {

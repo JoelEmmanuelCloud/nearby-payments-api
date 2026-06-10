@@ -18,7 +18,6 @@ class AppSessionStore(
 ) {
     companion object {
         private const val KEY_DID_COMPLETE_ONBOARDING = "nearby.didCompleteOnboarding"
-        private const val KEY_DID_COMPLETE_PROFILE_SETUP = "nearby.didCompleteProfileSetup"
         private const val KEY_USER_NAME = "nearby.userName"
         private const val KEY_BALANCE_HIDDEN = "nearby.balanceHidden"
         private const val KEY_LAST_BALANCE = "nearby.lastUsdSuiBalance"
@@ -61,22 +60,6 @@ class AppSessionStore(
         if (!itemOpt.isPresent) return false
         val bytes = itemOpt.get().value
         return bytes.firstOrNull() == 1.toByte()
-    }
-
-    /**
-     * Whether the user has finished first-run profile setup (e.g. registered a SuiNS name). Used to
-     * route post-login to Home vs the setup flow, since `suiAddress` is now always present.
-     */
-    fun didCompleteProfileSetup(): Boolean {
-        val itemOpt = storage.get(KEY_DID_COMPLETE_PROFILE_SETUP, swiftArena)
-        if (!itemOpt.isPresent) return false
-        val bytes = itemOpt.get().value
-        return bytes.firstOrNull() == 1.toByte()
-    }
-
-    fun completeProfileSetup() {
-        val item = StorageItem.init(byteArrayOf(1), swiftArena)
-        storage.set(item, KEY_DID_COMPLETE_PROFILE_SETUP)
     }
 
     fun userName(): String {

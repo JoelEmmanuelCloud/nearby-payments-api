@@ -6,6 +6,5 @@ enum class AppRoute {
     DEVICE_SECURITY,
     LOGIN,
     HOME,
-    PROFILE_SETUP,
     PROFILE,
 }

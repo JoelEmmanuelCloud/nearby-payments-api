@@ -9,7 +9,7 @@ object AppConstants {
 
     // / The Sui network used for zkLogin and the on-chain balance: "mainnet", "testnet", or "devnet".
     // / (A bridged `SuiNetworkKind` needs a SwiftArena, so it can't be a compile-time const.)
-    val SUI_NETWORK = SuiNetworkKind.Discriminator.MAINNET
+    val SUI_NETWORK = SuiNetworkKind.Discriminator.TESTNET
 
     // / Number of epochs ahead of the current epoch that a zkLogin ephemeral key stays valid.
     const val SUI_MAX_EPOCH_BUFFER = 2L

@@ -124,21 +124,6 @@ private fun Routes(viewModel: AppViewModel, context: android.content.Context) {
             }
             HomeScreen(viewModel = viewModel, homeViewModel = homeViewModel)
         }
-        AppRoute.PROFILE_SETUP -> {
-            val profileViewModel = remember(viewModel) {
-                ProfileViewModel(
-                    identityManager = viewModel.identityManager,
-                    store = viewModel.sessionStore,
-                    toastController = viewModel.toastController,
-                    currentSuiAddress = viewModel.currentSuiAddress,
-                    userId = viewModel.currentUserId,
-                    isSetupMode = true,
-                    swiftArena = viewModel.swiftArena,
-                    onFinish = { viewModel.finishProfileSetup() },
-                )
-            }
-            ProfileScreen(viewModel = profileViewModel)
-        }
         AppRoute.PROFILE -> {
             val profileViewModel = remember(viewModel) {
                 ProfileViewModel(
@@ -147,7 +132,6 @@ private fun Routes(viewModel: AppViewModel, context: android.content.Context) {
                     toastController = viewModel.toastController,
                     currentSuiAddress = viewModel.currentSuiAddress,
                     userId = viewModel.currentUserId,
-                    isSetupMode = false,
                     swiftArena = viewModel.swiftArena,
                     onFinish = { viewModel.route = AppRoute.HOME },
                 )

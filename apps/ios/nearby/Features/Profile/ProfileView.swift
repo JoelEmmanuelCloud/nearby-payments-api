@@ -65,7 +65,7 @@ struct ProfileView: View {
                 if viewModel.suiAddress != nil {
                   Text(addressCopied ? "copied" : "tap to copy")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(addressCopied ? .green : .secondary)
                 }
               }
 
@@ -90,25 +90,17 @@ struct ProfileView: View {
             }
           }
 
-          if viewModel.isSetupMode {
-            SecondaryButton("Skip for Now") {
-              viewModel.onFinish()
-            }
-            .disabled(viewModel.isSaving)
-          }
         }
         .padding(24)
       }
-      .navigationTitle(viewModel.isSetupMode ? "Set up profile" : "Profile")
+      .navigationTitle("Profile")
       .navigationBarTitleDisplayMode(.inline)
       .navigationDestination(isPresented: $showEdit) {
         ProfileEditView(viewModel: viewModel)
       }
       .toolbar {
-        if !viewModel.isSetupMode {
-          ToolbarItem(placement: .navigationBarLeading) {
-            Button("Back") { viewModel.onFinish() }
-          }
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button("Back") { viewModel.onFinish() }
         }
       }
       .onChange(of: selectedItem) { _, newItem in

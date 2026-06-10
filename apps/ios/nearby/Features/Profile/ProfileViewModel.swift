@@ -44,7 +44,6 @@ final class ProfileViewModel: ObservableObject {
   @Published
   private(set) var isSaving = false
 
-  let isSetupMode: Bool
   let onFinish: () -> Void
 
   private let identityManager: IdentityManager
@@ -60,14 +59,12 @@ final class ProfileViewModel: ObservableObject {
     toastController: ToastController,
     suiAddress: String?,
     userId: String,
-    isSetupMode: Bool,
     onFinish: @escaping () -> Void
   ) {
     self.identityManager = identityManager
     self.store = store
     self.toastController = toastController
     self.userId = userId
-    self.isSetupMode = isSetupMode
     self.onFinish = onFinish
     // The stable zkLogin address is resolved by the app coordinator (`currentSuiAddress`) and passed
     // in — the profile layer only consumes it, never reads the session itself.
@@ -100,11 +97,6 @@ final class ProfileViewModel: ObservableObject {
         let remoteProfile = try await identityManager.fetchProfile(suiAddress: addr)
         applyProfile(remoteProfile)
         store.cacheProfile(remoteProfile)
-
-        // Setup mode + already-registered → skip straight to home.
-        if isSetupMode, suinsName != nil {
-          onFinish()
-        }
       } catch {
         // Offline / backend down → keep whatever the cache prefilled.
       }
@@ -191,10 +183,6 @@ final class ProfileViewModel: ObservableObject {
       {
         applyProfile(refreshed)
         store.cacheProfile(refreshed)
-      }
-
-      if isSetupMode {
-        onFinish()
       }
     } catch {
       isSaving = false

@@ -16,7 +16,7 @@ nonisolated enum AppConstants {
     "565533426961-glfffimsek0cni5pq7e7hfmi2umm0e5i.apps.googleusercontent.com"
 
   /// The Sui network used for zkLogin (epoch lookups, proofs, transactions) and the on-chain balance.
-  static let suiNetwork: SuiNetworkKind = .mainnet
+  static let suiNetwork: SuiNetworkKind = .testnet
 
   /// Number of epochs ahead of the current epoch that a zkLogin ephemeral key stays valid.
   static let suiMaxEpochBuffer: UInt64 = 2

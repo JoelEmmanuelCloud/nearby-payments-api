@@ -26,7 +26,6 @@ class ProfileViewModel(
     private val toastController: ToastController,
     currentSuiAddress: String?,
     private val userId: String,
-    val isSetupMode: Boolean,
     private val swiftArena: SwiftArena,
     val onFinish: () -> Unit,
 ) : ViewModel() {
@@ -91,9 +90,6 @@ class ProfileViewModel(
                 val remoteProfile = identityManager.fetchProfile(addr, swiftArena).await()
                 withContext(Dispatchers.Main) {
                     applyProfile(remoteProfile)
-                    if (isSetupMode && suinsName != null) {
-                        onFinish()
-                    }
                 }
             } catch (e: Exception) {
                 println("Android ProfileViewModel remote fetch failed: ${e.localizedMessage}")
@@ -184,9 +180,6 @@ class ProfileViewModel(
                     suinsName = nameInput
                     statusMessage = null
                     store.cacheProfile(userId, suinsName, avatarUrl)
-                    if (isSetupMode) {
-                        onFinish()
-                    }
                 }
 
                 // Refresh profile (name + avatar) from on-chain truth after registration.
