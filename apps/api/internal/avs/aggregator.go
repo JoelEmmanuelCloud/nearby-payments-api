@@ -67,6 +67,29 @@ func (a *Aggregator) Authorize(action, payloadHash, nonce string, expiresAtMs in
 	return collected[:a.threshold], nil
 }
 
+func (a *Aggregator) SignDigest(digest []byte) ([]OperatorSignature, uint16, error) {
+	var collected []OperatorSignature
+	var bitmap uint16
+
+	for i, op := range a.operators {
+		if len(collected) >= a.threshold {
+			break
+		}
+		sig, err := op.Sign(digest)
+		if err != nil {
+			continue
+		}
+		collected = append(collected, sig)
+		bitmap |= 1 << uint(i)
+	}
+
+	if len(collected) < a.threshold {
+		return nil, 0, ErrQuorumNotMet
+	}
+
+	return collected, bitmap, nil
+}
+
 func (a *Aggregator) SignerSetID() string {
 	return a.signerSetID
 }
