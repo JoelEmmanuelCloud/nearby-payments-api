@@ -23,6 +23,7 @@ var (
 	ErrBadRequest     = New("bad_request", "Bad request", http.StatusBadRequest)
 	ErrConflict       = New("conflict", "Conflict", http.StatusConflict)
 	ErrUnprocessable  = New("unprocessable", "Unprocessable entity", http.StatusUnprocessableEntity)
+	ErrRateLimited    = New("rate_limited", "Too many requests", http.StatusTooManyRequests)
 	ErrInternal       = New("internal_error", "Internal server error", http.StatusInternalServerError)
 	ErrServiceUnavail = New("service_unavailable", "Service temporarily unavailable", http.StatusServiceUnavailable)
 )
