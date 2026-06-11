@@ -75,7 +75,7 @@ fun MainTabScreen(
                 NavigationBarItem(
                     selected = selectedTab == Tab.ACTIVITY,
                     onClick = { selectedTab = Tab.ACTIVITY },
-                    icon = { Icon(painterResource(id = R.drawable.receipt_long), contentDescription = "Activity") },
+                    icon = { Icon(painterResource(id = R.drawable.receipt), contentDescription = "Activity") },
                     label = { Text("Activity") },
                 )
                 NavigationBarItem(

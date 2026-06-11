@@ -16,6 +16,13 @@ struct HomeView: View {
 
   @State private var suinsName: String?
 
+  @State private var destination: HomeDestination?
+
+  /// Pushed sub-routes reachable from the Home actions. `send` is a stub until roadmap #6.
+  private enum HomeDestination: Hashable {
+    case deposit, send
+  }
+
   init(
     userName: String,
     store: AppSessionStore,
@@ -83,10 +90,22 @@ struct HomeView: View {
               }
             }
           }
+
+          // Primary actions
+          HStack(spacing: 12) {
+            UIButton("Deposit") { destination = .deposit }
+            SecondaryButton("Send") { destination = .send }
+          }
         }
         .padding(24)
       }
       .navigationTitle("Home")
+      .navigationDestination(item: $destination) { dest in
+        switch dest {
+        case .deposit: DepositView()
+        case .send: SendView()
+        }
+      }
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           HomeProviderIconView(currentProvider: currentProvider)

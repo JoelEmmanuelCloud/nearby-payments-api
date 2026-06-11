@@ -1,5 +1,6 @@
 package com.variance.nearby.screens.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,9 +44,13 @@ import com.variance.nearby.R
 import com.variance.nearby.core.AppViewModel
 import com.variance.nearby.screens.auth.AppleLogo
 import com.variance.nearby.screens.auth.GoogleLogo
+import com.variance.nearby.screens.deposit.DepositScreen
+import com.variance.nearby.screens.send.SendScreen
 import com.variance.nearby.ui.Card
 import com.variance.nearby.ui.MutedText
+import com.variance.nearby.ui.SecondaryButton
 import com.variance.nearby.ui.Skeleton
+import com.variance.nearby.ui.UIButton
 import kotlinx.coroutines.future.await
 
 @Composable
@@ -76,16 +82,37 @@ fun HomeScreen(
         onDispose { homeViewModel.stop() }
     }
 
-    HomeContent(
-        userName = displayName,
-        currentProvider = viewModel.currentProvider,
-        isBalanceLoading = homeViewModel.balance is HomeViewModel.BalanceState.Loading,
-        isBalanceHidden = homeViewModel.isHidden,
-        balanceText = homeViewModel.formattedBalance,
-        onToggleBalance = { homeViewModel.toggleVisibility() },
-        onSignOut = { viewModel.signOut() },
-        modifier = modifier,
-    )
+    // Local sub-route off Home (mirrors ProfileScreen's edit-screen pattern). `send` is a stub until
+    // roadmap #6.
+    var route by rememberSaveable { mutableStateOf<HomeRoute?>(null) }
+
+    when (route) {
+        HomeRoute.DEPOSIT -> {
+            BackHandler { route = null }
+            DepositScreen(onBack = { route = null }, modifier = modifier)
+        }
+        HomeRoute.SEND -> {
+            BackHandler { route = null }
+            SendScreen(onBack = { route = null }, modifier = modifier)
+        }
+        null -> HomeContent(
+            userName = displayName,
+            currentProvider = viewModel.currentProvider,
+            isBalanceLoading = homeViewModel.balance is HomeViewModel.BalanceState.Loading,
+            isBalanceHidden = homeViewModel.isHidden,
+            balanceText = homeViewModel.formattedBalance,
+            onToggleBalance = { homeViewModel.toggleVisibility() },
+            onSignOut = { viewModel.signOut() },
+            onDeposit = { route = HomeRoute.DEPOSIT },
+            onSend = { route = HomeRoute.SEND },
+            modifier = modifier,
+        )
+    }
+}
+
+private enum class HomeRoute {
+    DEPOSIT,
+    SEND,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,6 +125,8 @@ fun HomeContent(
     balanceText: String,
     onToggleBalance: () -> Unit,
     onSignOut: () -> Unit,
+    onDeposit: () -> Unit,
+    onSend: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -200,16 +229,17 @@ fun HomeContent(
                 }
             }
 
-            // Next Action Card
-            Card {
-                Text(
-                    text = "Next action",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+            // Primary actions
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                UIButton(
+                    title = "Deposit",
+                    modifier = Modifier.weight(1f),
+                    onClick = onDeposit,
                 )
-                MutedText(
-                    value = "Connect the lean Sui signer and transaction flow after authentication is stable on both platforms.",
+                SecondaryButton(
+                    title = "Send",
+                    modifier = Modifier.weight(1f),
+                    onClick = onSend,
                 )
             }
         }
@@ -264,6 +294,8 @@ private fun HomeLoadingPreview() {
         balanceText = "",
         onToggleBalance = {},
         onSignOut = {},
+        onDeposit = {},
+        onSend = {},
     )
 }
 
@@ -278,5 +310,7 @@ private fun HomeBalancePreview() {
         balanceText = "42.50",
         onToggleBalance = {},
         onSignOut = {},
+        onDeposit = {},
+        onSend = {},
     )
 }
