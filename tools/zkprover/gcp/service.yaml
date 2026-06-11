@@ -1,0 +1,69 @@
+# Cloud Run multi-container service mirroring tools/zkprover/docker-compose.yml:
+#   - prover-fe (ingress)  : HTTP front, exposes /ping and /v1, proxies to the sidecar
+#   - prover    (sidecar)  : heavy proving backend with the baked zkey
+#
+# Sidecars share the localhost network namespace, so the two processes must use DIFFERENT ports
+# (in compose they were separate containers, both on 8080). Here: prover-fe = 8082 (ingress),
+# prover = 8080 (internal).
+#
+# Scale-to-zero (minScale 0) = $0 when idle; the first proof after idle pays a cold start (pull
+# image + load the 1GB zkey). Mitigate with the app's existing post-login proof warm-up.
+#
+# Deploy: gcloud run services replace service.yaml  (after substituting __IMAGE__ / __REGION__).
+# Resource note: each container's CPU must be one of {<1 fractional, 1, 2, 4, 6, 8} (no 3/5/7), and
+# the SUM (the instance size) must be one of {1, 2, 4, 6, 8} too. fe=2 + prover=6 = 8 maximizes the
+# prover. Memory total <= 32Gi. Cheaper option: fe=2 + prover=4 = 6.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: zklogin-prover
+  labels:
+    cloud.googleapis.com/location: __REGION__
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/startup-cpu-boost: "true"
+        autoscaling.knative.dev/minScale: "0" # scale to zero -> $0 idle
+        autoscaling.knative.dev/maxScale: "5"
+    spec:
+      containerConcurrency: 1 # proving saturates CPU; one proof per instance
+      timeoutSeconds: 300 # room for cold start + proof
+      containers:
+        # --- ingress: prover-fe ---
+        - name: prover-fe
+          image: mysten/zklogin:prover-fe-stable
+          args: ["8082"]
+          ports:
+            - containerPort: 8082
+          env:
+            - name: PROVER_URI
+              value: http://localhost:8080/input
+            - name: NODE_ENV
+              value: production
+            - name: DEBUG
+              value: zkLogin:info,jwks
+          resources:
+            limits:
+              cpu: "2"
+              memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /ping
+              port: 8082
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 30 # allow up to ~5min for zkey load on cold start
+        # --- sidecar: heavy prover backend (baked zkey) ---
+        - name: prover
+          image: __IMAGE__ # REGION-docker.pkg.dev/PROJECT/zklogin/prover-zkey:latest
+          env:
+            - name: ZKEY
+              value: /app/binaries/zkLogin.zkey
+            - name: WITNESS_BINARIES
+              value: /app/binaries
+          resources:
+            limits:
+              cpu: "6"
+              memory: 23Gi

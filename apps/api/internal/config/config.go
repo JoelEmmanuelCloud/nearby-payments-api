@@ -35,6 +35,7 @@ type Config struct {
 	WalrusPublisherURL     string
 	WalrusAggregatorURL    string
 	ZkLoginProverURL       string
+	ZkLoginProverAudience  string
 }
 
 func Load() (*Config, error) {
@@ -82,7 +83,8 @@ func Load() (*Config, error) {
 		AppleTeamID:            optional("APPLE_TEAM_ID", ""),
 		WalrusPublisherURL:     optional("WALRUS_PUBLISHER_URL", ""),
 		WalrusAggregatorURL:    optional("WALRUS_AGGREGATOR_URL", ""),
-		ZkLoginProverURL:       optional("ZKLOGIN_PROVER_URL", "https://prover.mystenlabs.com/v1"),
+		ZkLoginProverURL:       optional("ZKLOGIN_PROVER_URL", "https://prover.variance.space/v1"),
+		ZkLoginProverAudience:  optional("ZKLOGIN_PROVER_AUDIENCE", "https://prover.variance.space"),
 	}
 
 	if len(missing) > 0 {

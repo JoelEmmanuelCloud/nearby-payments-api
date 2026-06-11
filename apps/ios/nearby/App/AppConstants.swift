@@ -21,7 +21,7 @@ nonisolated enum AppConstants {
   /// Number of epochs ahead of the current epoch that a zkLogin ephemeral key stays valid.
   static let suiMaxEpochBuffer: UInt64 = 2
 
-  static let remoteZkProverURL = "https://variance.outray.app/v1"
+  static let remoteZkProverURL = "https://prover.variance.space/v1"
 
   /// USDsui — Sui's native USD stablecoin (mainnet). Used for the Home account balance.
   static let usdSuiCoinType =
