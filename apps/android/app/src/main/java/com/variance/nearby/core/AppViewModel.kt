@@ -93,6 +93,15 @@ class AppViewModel(
             null
         }
 
+    /** The current session's OAuth provider raw value ("google" or "apple"), or null if no session. */
+    val currentProvider: String?
+        get() = try {
+            val opt = sessionManager.getCurrentSession(swiftArena)
+            if (opt.isPresent) opt.get().getProvider(swiftArena).rawValue else null
+        } catch (_: Exception) {
+            null
+        }
+
     /** The Sui network this app targets (epoch lookups, proofs, transactions, balance). */
     val suiNetwork: SuiNetwork = when (AppConstants.SUI_NETWORK) {
         SuiNetworkKind.Discriminator.MAINNET -> SuiNetwork.getMainnet(swiftArena)
@@ -172,9 +181,9 @@ class AppViewModel(
                 // best-effort
             }
 
-            // Everyone lands on Home after sign-in; claiming a SuiNS name is an optional visit to the
+            // Everyone lands on Main after sign-in; claiming a SuiNS name is an optional visit to the
             // profile page from there (no first-run setup ceremony).
-            route = AppRoute.HOME
+            route = AppRoute.MAIN
 
             // Record the address with the backend (idempotent) + warm up the signer.
             try {
@@ -244,7 +253,7 @@ class AppViewModel(
                 return@launch
             }
 
-            route = AppRoute.HOME
+            route = AppRoute.MAIN
 
             // Best-effort idempotent rebind + warm-up.
             try {

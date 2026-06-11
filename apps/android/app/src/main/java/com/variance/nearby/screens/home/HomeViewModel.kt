@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.math.BigDecimal
 import java.math.RoundingMode
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Owns the Home account-balance state and its 30s polling. Network IO lives in [BalanceService]; this
@@ -53,7 +54,7 @@ class HomeViewModel(
         pollJob = viewModelScope.launch {
             while (isActive) {
                 refresh()
-                delay(AppConstants.BALANCE_REFRESH_MS)
+                delay(AppConstants.BALANCE_REFRESH_MS.milliseconds)
             }
         }
     }

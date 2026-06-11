@@ -27,29 +27,18 @@ struct ContentView: View {
               viewModel.handleSignInSuccess(userName: userName)
             }
           )
-        case .home:
-          HomeView(
+        case .main:
+          MainTabView(
             userName: viewModel.userName,
             store: viewModel.store,
             userId: viewModel.currentUserId,
             suiAddress: viewModel.currentSuiAddress,
-            onNavigateToProfile: {
-              viewModel.route = .profile
-            },
+            currentProvider: viewModel.currentProvider,
+            identityManager: viewModel.identityManager,
+            toastController: viewModel.toastController,
             onSignOut: {
               viewModel.signOut()
             }
-          )
-        case .profile:
-          ProfileView(
-            viewModel: ProfileViewModel(
-              identityManager: viewModel.identityManager,
-              store: viewModel.store,
-              toastController: viewModel.toastController,
-              suiAddress: viewModel.currentSuiAddress,
-              userId: viewModel.currentUserId,
-              onFinish: { viewModel.route = .home }
-            )
           )
         }
       }

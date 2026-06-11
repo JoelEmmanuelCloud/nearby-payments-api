@@ -34,6 +34,11 @@ final class AppViewModel: ObservableObject {
     (try? sessionManager.getCurrentSession())??.suiAddress
   }
 
+  /// The current session's OAuth provider, or nil if no session.
+  var currentProvider: OAuthProvider? {
+    (try? sessionManager.getCurrentSession())??.provider
+  }
+
   /// An optional status or error message shown at the root layout level.
   @Published var statusMessage: String?
 
@@ -148,9 +153,9 @@ final class AppViewModel: ObservableObject {
     // so it's available to Home (balance) and the signer before we route.
     try? zkLoginService.commitSessionIdentity()
 
-    // Everyone lands on Home after sign-in; claiming a SuiNS name is an optional visit to the
+    // Everyone lands on Main after sign-in; claiming a SuiNS name is an optional visit to the
     // profile page from there (no first-run setup ceremony).
-    route = .home
+    route = .main
 
     // Background: record the address with the backend (idempotent) then warm up the signer.
     // A forced logout from token refresh routes to login instead of being swallowed.
@@ -189,7 +194,7 @@ final class AppViewModel: ObservableObject {
       return
     }
 
-    route = .home
+    route = .main
 
     // Best-effort idempotent rebind + warm-up.
     Task {

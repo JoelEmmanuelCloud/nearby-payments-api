@@ -60,7 +60,7 @@ fun AppleSignInButton(
     }
 }
 
-private val AppleLogo: ImageVector
+internal val AppleLogo: ImageVector
     get() = ImageVector.Builder(
         name = "AppleLogo",
         defaultWidth = 24.dp,
@@ -134,7 +134,7 @@ fun GoogleSignInButton(
     }
 }
 
-private val GoogleLogo: ImageVector
+internal val GoogleLogo: ImageVector
     get() = ImageVector.Builder(
         name = "GoogleLogo",
         defaultWidth = 24.dp,

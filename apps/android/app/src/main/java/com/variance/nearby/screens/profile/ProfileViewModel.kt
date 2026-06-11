@@ -19,6 +19,7 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.swift.swiftkit.core.SwiftArena
+import kotlin.time.Duration.Companion.milliseconds
 
 class ProfileViewModel(
     private val identityManager: IdentityManager,
@@ -27,7 +28,6 @@ class ProfileViewModel(
     currentSuiAddress: String?,
     private val userId: String,
     private val swiftArena: SwiftArena,
-    val onFinish: () -> Unit,
 ) : ViewModel() {
 
     /** True until the first resolution (cache prefill or fetch) completes; drives the badge spinner. */
@@ -62,6 +62,12 @@ class ProfileViewModel(
         private set
 
     private var nameCheckJob: Job? = null
+
+    init {
+        // Prefill the avatar from the cache so the "You" tab icon (which observes this model) shows
+        // immediately on launch, before the Profile screen is ever opened. `loadProfile` refreshes it.
+        avatarUrl = store.cachedProfile(userId)?.avatarUrl
+    }
 
     val isRegistered: Boolean get() = suinsName != null
 
@@ -127,7 +133,7 @@ class ProfileViewModel(
         if (clean.isEmpty() || suinsName != null) return
 
         nameCheckJob = viewModelScope.launch {
-            delay(AppConstants.NAME_CHECK_DEBOUNCE_MS)
+            delay(AppConstants.NAME_CHECK_DEBOUNCE_MS.milliseconds)
             checkNameAvailability(clean)
         }
     }

@@ -102,6 +102,34 @@ maven.artifact(
     group = "androidx.lifecycle",
     version = "2.10.0",
 )
+maven.artifact(
+    artifact = "sonner",
+    exclusions = [
+        "org.jetbrains.compose.ui:ui",
+        "org.jetbrains.compose.ui:ui-backhandler",
+        "org.jetbrains.compose.foundation:foundation",
+        "org.jetbrains.compose.foundation:foundation-layout",
+        "org.jetbrains.compose.animation:animation",
+        "org.jetbrains.compose.animation:animation-core",
+        "org.jetbrains.compose.runtime:runtime",
+    ],
+    group = "io.github.dokar3",
+    version = "0.3.9",
+)
+maven.artifact(
+    artifact = "sonner-android",
+    exclusions = [
+        "org.jetbrains.compose.ui:ui",
+        "org.jetbrains.compose.ui:ui-backhandler",
+        "org.jetbrains.compose.foundation:foundation",
+        "org.jetbrains.compose.foundation:foundation-layout",
+        "org.jetbrains.compose.animation:animation",
+        "org.jetbrains.compose.animation:animation-core",
+        "org.jetbrains.compose.runtime:runtime",
+    ],
+    group = "io.github.dokar3",
+    version = "0.3.9",
+)
 maven.install(
     artifacts = [
         # AndroidX Core & Lifecycle
@@ -134,7 +162,6 @@ maven.install(
         "androidx.compose.animation:animation-core",
         "androidx.compose.foundation:foundation",
         "androidx.compose.foundation:foundation-layout",
-        "androidx.compose.material:material-icons-core",
         "androidx.compose.material3:material3",
         "androidx.compose.runtime:runtime",
         "androidx.compose.ui:ui",
@@ -142,6 +169,12 @@ maven.install(
         "androidx.compose.ui:ui-tooling-preview",
 
         # Third-party / Other
+        "io.github.dokar3:sonner:0.3.9",
+        "io.github.dokar3:sonner-android:0.3.9",
+        "io.coil-kt.coil3:coil-compose-android:3.1.0",
+        "io.coil-kt.coil3:coil-network-okhttp-jvm:3.1.0",
+        "io.coil-kt.coil3:coil-android:3.1.0",
+        "com.squareup.okhttp3:okhttp:4.12.0",
         "org.swift.swiftkit:swiftkit-core:1.0-SNAPSHOT",
         "com.google.android.play:integrity:1.6.0",
         "com.google.android.gms:play-services-tasks:18.4.1",
@@ -163,6 +196,10 @@ maven.install(
         "https://repo1.maven.org/maven2",
     ],
     version_conflict_policy = "default",
+)
+maven.override(
+    coordinates = "io.github.dokar3:sonner-android",
+    target = "//packages/ui:sonner_android_override",
 )
 use_repo(maven, "maven")
 

@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.variance.nearby.R
 import com.variance.nearby.ui.Avatar
@@ -62,6 +63,7 @@ import com.variance.nearby.ui.UIButton
 import com.variance.nearby.ui.theme.Green40
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun ProfileScreen(
@@ -130,7 +132,6 @@ fun ProfileScreen(
                     }
                 }
             },
-            onFinish = viewModel.onFinish,
         )
     }
 }
@@ -148,7 +149,6 @@ fun ProfileMainContent(
     onAvatarClick: () -> Unit,
     onSetUp: () -> Unit,
     onCopyAddress: () -> Unit,
-    onFinish: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -156,16 +156,9 @@ fun ProfileMainContent(
                 title = {
                     Text(
                         text = "Profile",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onFinish) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.arrow_back),
-                            contentDescription = "Back",
-                        )
-                    }
                 },
             )
         },
@@ -232,7 +225,7 @@ fun ProfileMainContent(
             var copied by remember { mutableStateOf(false) }
             LaunchedEffect(copied) {
                 if (copied) {
-                    delay(2000)
+                    delay(2000.milliseconds)
                     copied = false
                 }
             }
@@ -299,6 +292,7 @@ private fun ProfileAvatar(
     Avatar(
         size = 100.dp,
         modifier = Modifier.clickable(enabled = enabled, onClick = onClick),
+        painterResource(id = R.drawable.account_circle),
     ) {
         when {
             pickedAvatarData != null -> {
@@ -419,7 +413,6 @@ private fun ProfileMainRegisteredPreview() {
         onAvatarClick = {},
         onSetUp = {},
         onCopyAddress = {},
-        onFinish = {},
     )
 }
 

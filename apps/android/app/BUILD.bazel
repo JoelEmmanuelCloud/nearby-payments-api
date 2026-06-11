@@ -29,6 +29,8 @@ kt_android_library(
         artifact("androidx.activity:activity-compose"),
         artifact("androidx.biometric:biometric-compose"),
         artifact("androidx.concurrent:concurrent-futures"),
+        artifact("androidx.compose.foundation:foundation"),
+        artifact("androidx.compose.foundation:foundation-layout"),
         artifact("androidx.compose.material3:material3"),
         artifact("androidx.compose.ui:ui"),
         artifact("androidx.compose.ui:ui-graphics"),
@@ -39,6 +41,10 @@ kt_android_library(
         artifact("androidx.security:security-crypto"),
         artifact("com.google.guava:guava"),
         artifact("org.swift.swiftkit:swiftkit-core"),
+        artifact("io.coil-kt.coil3:coil-compose-android"),
+        artifact("io.coil-kt.coil3:coil-network-okhttp-jvm"),
+        artifact("io.coil-kt.coil3:coil-android"),
+        artifact("com.squareup.okhttp3:okhttp"),
     ],
 )
 

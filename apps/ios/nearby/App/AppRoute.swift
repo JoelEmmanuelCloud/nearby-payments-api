@@ -3,6 +3,5 @@ enum AppRoute: Equatable {
   case onboarding
   case deviceSecurity
   case login
-  case home
-  case profile
+  case main
 }

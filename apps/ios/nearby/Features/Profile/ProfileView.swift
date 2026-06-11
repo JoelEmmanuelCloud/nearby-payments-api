@@ -94,14 +94,8 @@ struct ProfileView: View {
         .padding(24)
       }
       .navigationTitle("Profile")
-      .navigationBarTitleDisplayMode(.inline)
       .navigationDestination(isPresented: $showEdit) {
         ProfileEditView(viewModel: viewModel)
-      }
-      .toolbar {
-        ToolbarItem(placement: .navigationBarLeading) {
-          Button("Back") { viewModel.onFinish() }
-        }
       }
       .onChange(of: selectedItem) { _, newItem in
         if let newItem {

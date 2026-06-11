@@ -1,3 +1,4 @@
+import Gateway
 import Identity
 import SwiftUI
 import UI
@@ -6,10 +7,10 @@ struct HomeView: View {
   let userName: String
   let store: AppSessionStore
   let userId: String
-  let onNavigateToProfile: () -> Void
+  let currentProvider: OAuthProvider?
   let onSignOut: () -> Void
 
-  @StateObject private var balanceModel: HomeViewModel
+  @MainActor @StateObject private var balanceModel: HomeViewModel
 
   @State private var avatarUrl: String?
 
@@ -20,13 +21,13 @@ struct HomeView: View {
     store: AppSessionStore,
     userId: String,
     suiAddress: String?,
-    onNavigateToProfile: @escaping () -> Void,
+    currentProvider: OAuthProvider?,
     onSignOut: @escaping () -> Void
   ) {
     self.userName = userName
     self.store = store
     self.userId = userId
-    self.onNavigateToProfile = onNavigateToProfile
+    self.currentProvider = currentProvider
     self.onSignOut = onSignOut
     _balanceModel = StateObject(
       wrappedValue: HomeViewModel(suiAddress: suiAddress, store: store))
@@ -36,12 +37,7 @@ struct HomeView: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 20) {
-          VStack(alignment: .leading, spacing: 8) {
-            Title("Home")
-              .font(.title.weight(.semibold))
-
-            MutedText("Signed in as \(suinsName ?? userName).")
-          }
+          MutedText("Signed in as \(suinsName ?? userName).")
 
           // Account balance
           Card {
@@ -90,16 +86,10 @@ struct HomeView: View {
         }
         .padding(24)
       }
-      .navigationTitle("Nearby")
+      .navigationTitle("Home")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
-          Button(action: onNavigateToProfile) {
-            Avatar(size: 32) {
-              if let urlString = avatarUrl, let url = URL(string: urlString) {
-                RemoteImage(url: url)
-              }
-            }
-          }
+          HomeProviderIconView(currentProvider: currentProvider)
         }
         ToolbarItem(placement: .topBarTrailing) {
           Button("Sign out") {
@@ -130,7 +120,7 @@ struct HomeView: View {
     store: AppSessionStore(),
     userId: "preview",
     suiAddress: nil,
-    onNavigateToProfile: {},
+    currentProvider: .google,
     onSignOut: {}
   )
 }

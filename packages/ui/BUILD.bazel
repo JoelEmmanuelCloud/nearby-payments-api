@@ -1,3 +1,4 @@
+load("@rules_android//rules:rules.bzl", "aar_import")
 load("@rules_jvm_external//:defs.bzl", "artifact")
 load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
 load("@rules_kotlin//kotlin:core.bzl", "kt_compiler_plugin")
@@ -32,10 +33,26 @@ kt_android_library(
     plugins = [":compose_compiler_plugin"],
     visibility = ["//visibility:public"],
     deps = [
+        artifact("androidx.compose.foundation:foundation"),
+        artifact("androidx.compose.foundation:foundation-layout"),
         artifact("androidx.compose.material3:material3"),
         artifact("androidx.compose.ui:ui"),
         artifact("androidx.compose.ui:ui-graphics"),
         artifact("androidx.compose.ui:ui-tooling-preview"),
         artifact("androidx.core:core-ktx"),
+        artifact("io.github.dokar3:sonner-android"),
+    ],
+)
+
+aar_import(
+    name = "sonner_android_override",
+    aar = "@maven//:io/github/dokar3/sonner-android/0.3.9/sonner-android-0.3.9.aar",
+    visibility = ["//visibility:public"],
+    deps = [
+        artifact("androidx.compose.foundation:foundation"),
+        "@maven//:org_jetbrains_annotations",
+        "@maven//:org_jetbrains_compose_ui_ui_tooling_preview",
+        "@maven//:org_jetbrains_kotlin_kotlin_stdlib",
+        "@maven//:org_jetbrains_kotlinx_kotlinx_coroutines_core_jvm",
     ],
 )

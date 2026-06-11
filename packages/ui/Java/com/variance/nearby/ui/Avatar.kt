@@ -13,10 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.variance.nearby.R
 
 /**
  * A circular avatar. Loader-agnostic: pass the resolved image (e.g. Coil `AsyncImage`) as [content];
@@ -26,6 +25,7 @@ import com.variance.nearby.R
 fun Avatar(
     size: Dp,
     modifier: Modifier = Modifier,
+    painter: Painter,
     content: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     Box(
@@ -38,7 +38,7 @@ fun Avatar(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            painter = painterResource(id = R.drawable.account_circle),
+            painter = painter,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxSize(),

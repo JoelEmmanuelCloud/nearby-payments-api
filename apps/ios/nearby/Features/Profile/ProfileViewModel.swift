@@ -44,8 +44,6 @@ final class ProfileViewModel: ObservableObject {
   @Published
   private(set) var isSaving = false
 
-  let onFinish: () -> Void
-
   private let identityManager: IdentityManager
   private let store: AppSessionStore
   private let toastController: ToastController
@@ -58,17 +56,18 @@ final class ProfileViewModel: ObservableObject {
     store: AppSessionStore,
     toastController: ToastController,
     suiAddress: String?,
-    userId: String,
-    onFinish: @escaping () -> Void
+    userId: String
   ) {
     self.identityManager = identityManager
     self.store = store
     self.toastController = toastController
     self.userId = userId
-    self.onFinish = onFinish
     // The stable zkLogin address is resolved by the app coordinator (`currentSuiAddress`) and passed
     // in — the profile layer only consumes it, never reads the session itself.
     self.suiAddress = suiAddress
+    // Prefill the avatar from the cache so the tab icon (which observes this model) shows immediately
+    // on launch, before the Profile screen is ever opened. `loadProfile` refreshes it from remote.
+    self.avatarUrl = store.cachedProfile(userId: userId)?.avatarUrl
   }
 
   /// Whether the user has a registered name (drives the badge: registered vs. set-up).

@@ -2,7 +2,6 @@ package com.variance.nearby.screens.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,21 +32,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.variance.nearby.R
-import com.variance.nearby.core.AppRoute
 import com.variance.nearby.core.AppViewModel
-import com.variance.nearby.ui.Avatar
+import com.variance.nearby.screens.auth.AppleLogo
+import com.variance.nearby.screens.auth.GoogleLogo
 import com.variance.nearby.ui.Card
 import com.variance.nearby.ui.MutedText
 import com.variance.nearby.ui.Skeleton
-import com.variance.nearby.ui.Title
 import kotlinx.coroutines.future.await
 
 @Composable
@@ -57,10 +54,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
 ) {
     var displayName by remember { mutableStateOf(viewModel.userName) }
-    var avatarUrl by remember { mutableStateOf<String?>(null) }
 
-    // Fetch the profile on appear for the name + avatar URL. The avatar image itself is loaded and
-    // disk-cached by Coil from `avatarUrl`; no image blobs are stored locally.
+    // Fetch the profile on appear for the name.
     LaunchedEffect(Unit) {
         try {
             val sessionOpt = viewModel.sessionManager.getCurrentSession(viewModel.swiftArena)
@@ -69,7 +64,6 @@ fun HomeScreen(
                 val profile = viewModel.identityManager.fetchProfile(addr, viewModel.swiftArena).await()
                 val name = profile.suinsName.orElse("")
                 if (name.isNotEmpty()) displayName = name
-                avatarUrl = profile.avatarUrl.orElse(null)
             }
         } catch (e: Exception) {
             println("Android HomeScreen failed to load profile: ${e.localizedMessage}")
@@ -84,12 +78,11 @@ fun HomeScreen(
 
     HomeContent(
         userName = displayName,
-        avatarUrl = avatarUrl,
+        currentProvider = viewModel.currentProvider,
         isBalanceLoading = homeViewModel.balance is HomeViewModel.BalanceState.Loading,
         isBalanceHidden = homeViewModel.isHidden,
         balanceText = homeViewModel.formattedBalance,
         onToggleBalance = { homeViewModel.toggleVisibility() },
-        onNavigateToProfile = { viewModel.route = AppRoute.PROFILE },
         onSignOut = { viewModel.signOut() },
         modifier = modifier,
     )
@@ -99,12 +92,11 @@ fun HomeScreen(
 @Composable
 fun HomeContent(
     userName: String,
-    avatarUrl: String?,
+    currentProvider: String?,
     isBalanceLoading: Boolean,
     isBalanceHidden: Boolean,
     balanceText: String,
     onToggleBalance: () -> Unit,
-    onNavigateToProfile: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -114,27 +106,13 @@ fun HomeContent(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Nearby",
-                        fontWeight = FontWeight.SemiBold,
+                        text = "Home",
+                        fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
                     )
                 },
                 navigationIcon = {
-                    Avatar(
-                        size = 32.dp,
-                        modifier = Modifier
-                            .padding(start = 16.dp, end = 8.dp)
-                            .clickable { onNavigateToProfile() },
-                    ) {
-                        if (!avatarUrl.isNullOrEmpty()) {
-                            AsyncImage(
-                                model = avatarUrl,
-                                contentDescription = "Profile Photo",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop,
-                            )
-                        }
-                    }
+                    ProviderIcon(currentProvider = currentProvider)
                 },
                 actions = {
                     TextButton(onClick = onSignOut) {
@@ -160,13 +138,8 @@ fun HomeContent(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            // Title & User Info
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Title(value = "Home")
-                MutedText(value = "Signed in as $userName.")
-            }
+            // User Info
+            MutedText(value = "Signed in as $userName.")
 
             // Account balance card
             Card {
@@ -243,17 +216,53 @@ fun HomeContent(
     }
 }
 
+@Composable
+fun ProviderIcon(
+    currentProvider: String?,
+    modifier: Modifier = Modifier,
+) {
+    val iconModifier = modifier
+        .padding(start = 16.dp, end = 8.dp)
+        .size(20.dp)
+
+    when (currentProvider) {
+        "google" -> {
+            Icon(
+                imageVector = GoogleLogo,
+                contentDescription = "Google Logo",
+                tint = Color.Unspecified,
+                modifier = iconModifier,
+            )
+        }
+        "apple" -> {
+            Icon(
+                imageVector = AppleLogo,
+                contentDescription = "Apple Logo",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = iconModifier,
+            )
+        }
+        else -> {
+            Icon(
+                painter = painterResource(id = R.drawable.checkmark_seal),
+                contentDescription = "Verified Seal",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = iconModifier,
+            )
+        }
+    }
+}
+
 @Preview(showBackground = true, name = "Home · loading")
 @Composable
 private fun HomeLoadingPreview() {
     HomeContent(
         userName = "Alice",
-        avatarUrl = null,
+        currentProvider = "google",
         isBalanceLoading = true,
         isBalanceHidden = false,
         balanceText = "",
         onToggleBalance = {},
-        onNavigateToProfile = {},
         onSignOut = {},
     )
 }
@@ -263,12 +272,11 @@ private fun HomeLoadingPreview() {
 private fun HomeBalancePreview() {
     HomeContent(
         userName = "Alice",
-        avatarUrl = null,
+        currentProvider = "apple",
         isBalanceLoading = false,
         isBalanceHidden = false,
         balanceText = "42.50",
         onToggleBalance = {},
-        onNavigateToProfile = {},
         onSignOut = {},
     )
 }

@@ -20,14 +20,10 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import com.variance.nearby.biometrics.BiometricGateHost
 import com.variance.nearby.core.AppRoute
 import com.variance.nearby.core.AppViewModel
+import com.variance.nearby.screens.MainTabScreen
 import com.variance.nearby.screens.auth.LoginScreen
 import com.variance.nearby.screens.auth.LoginViewModel
-import com.variance.nearby.screens.home.BalanceService
-import com.variance.nearby.screens.home.HomeScreen
-import com.variance.nearby.screens.home.HomeViewModel
 import com.variance.nearby.screens.onboarding.OnboardingScreen
-import com.variance.nearby.screens.profile.ProfileScreen
-import com.variance.nearby.screens.profile.ProfileViewModel
 import com.variance.nearby.screens.profile.WalrusInterceptor
 import com.variance.nearby.screens.security.DeviceSecurityScreen
 import com.variance.nearby.ui.ToastHost
@@ -139,29 +135,8 @@ private fun Routes(viewModel: AppViewModel, context: android.content.Context) {
                 onSignInSuccess = { name -> viewModel.handleSignInSuccess(name) },
             )
         }
-        AppRoute.HOME -> {
-            val homeViewModel = remember(viewModel) {
-                HomeViewModel(
-                    balanceService = BalanceService(viewModel.suiNetwork, viewModel.swiftArena),
-                    suiAddress = viewModel.currentSuiAddress,
-                    store = viewModel.sessionStore,
-                )
-            }
-            HomeScreen(viewModel = viewModel, homeViewModel = homeViewModel)
-        }
-        AppRoute.PROFILE -> {
-            val profileViewModel = remember(viewModel) {
-                ProfileViewModel(
-                    identityManager = viewModel.identityManager,
-                    store = viewModel.sessionStore,
-                    toastController = viewModel.toastController,
-                    currentSuiAddress = viewModel.currentSuiAddress,
-                    userId = viewModel.currentUserId,
-                    swiftArena = viewModel.swiftArena,
-                    onFinish = { viewModel.route = AppRoute.HOME },
-                )
-            }
-            ProfileScreen(viewModel = profileViewModel)
+        AppRoute.MAIN -> {
+            MainTabScreen(viewModel = viewModel)
         }
     }
 }
