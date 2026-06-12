@@ -1,0 +1,51 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+# Lean account-activity list query. Deliberately omits `events`/`objectChanges` (and their deep
+# `asMovePackage { modules }` selections): the Sui GraphQL cost estimator counts those fields even
+# when `@skip`-ped, so the rich RPC_TRANSACTION_FIELDS fragment trips the 1M-output-node ceiling at
+# normal page sizes. The full detail is fetched on demand per-digest via `getTransactionBlock`.
+query queryAccountActivity(
+    $first: Int
+    $last: Int
+    $before: String
+    $after: String
+    $filter: TransactionFilter
+) {
+    transactions(first: $first, after: $after, last: $last, before: $before, filter: $filter) {
+        pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+        }
+        nodes {
+            ...ACCOUNT_ACTIVITY_FIELDS
+        }
+    }
+}
+
+fragment ACCOUNT_ACTIVITY_FIELDS on Transaction {
+    digest
+    sender {
+        address
+    }
+    effects {
+        status
+        executionError {
+            message
+        }
+        timestamp
+        balanceChanges {
+            nodes {
+                coinType {
+                    repr
+                }
+                owner {
+                    address
+                }
+                amount
+            }
+        }
+    }
+}

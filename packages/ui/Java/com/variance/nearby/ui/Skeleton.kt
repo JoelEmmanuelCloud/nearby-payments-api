@@ -13,11 +13,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
-/** A shimmering placeholder shown while content loads. Size it via the [modifier]. */
+/** A shimmering placeholder shown while content loads. Size it via the [modifier]; pass [shape] to
+ *  match the content it stands in for (e.g. `CircleShape` for an avatar). */
 @Composable
-fun Skeleton(modifier: Modifier = Modifier) {
+fun Skeleton(
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(6.dp),
+) {
     val transition = rememberInfiniteTransition(label = "skeleton")
     val alpha by transition.animateFloat(
         initialValue = 0.1f,
@@ -28,7 +33,7 @@ fun Skeleton(modifier: Modifier = Modifier) {
     Box(
         modifier =
             modifier
-                .clip(RoundedCornerShape(6.dp))
+                .clip(shape)
                 .background(Color.Gray.copy(alpha = alpha)),
     )
 }

@@ -24,6 +24,8 @@ import coil3.compose.AsyncImage
 import com.variance.nearby.R
 import com.variance.nearby.core.AppViewModel
 import com.variance.nearby.screens.activity.ActivityScreen
+import com.variance.nearby.screens.activity.ActivityService
+import com.variance.nearby.screens.activity.ActivityViewModel
 import com.variance.nearby.screens.home.BalanceService
 import com.variance.nearby.screens.home.HomeScreen
 import com.variance.nearby.screens.home.HomeViewModel
@@ -59,6 +61,13 @@ fun MainTabScreen(
             currentSuiAddress = viewModel.currentSuiAddress,
             userId = viewModel.currentUserId,
             swiftArena = viewModel.swiftArena,
+        )
+    }
+
+    val activityViewModel = remember(viewModel) {
+        ActivityViewModel(
+            service = ActivityService(viewModel.suiNetwork, viewModel.swiftArena),
+            address = viewModel.currentSuiAddress,
         )
     }
 
@@ -107,7 +116,10 @@ fun MainTabScreen(
         Box(modifier = Modifier.padding(innerPadding)) {
             when (selectedTab) {
                 Tab.HOME -> HomeScreen(viewModel = viewModel, homeViewModel = homeViewModel)
-                Tab.ACTIVITY -> ActivityScreen()
+                Tab.ACTIVITY -> ActivityScreen(
+                    viewModel = activityViewModel,
+                    currentAddress = viewModel.currentSuiAddress,
+                )
                 Tab.PROFILE -> ProfileScreen(viewModel = profileViewModel)
             }
         }

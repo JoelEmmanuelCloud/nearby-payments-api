@@ -18,10 +18,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +59,7 @@ import com.variance.nearby.ui.BadgeTone
 import com.variance.nearby.ui.Card
 import com.variance.nearby.ui.Input
 import com.variance.nearby.ui.MutedText
+import com.variance.nearby.ui.Skeleton
 import com.variance.nearby.ui.UIButton
 import com.variance.nearby.ui.theme.Green40
 import kotlinx.coroutines.delay
@@ -188,36 +189,49 @@ fun ProfileMainContent(
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        painter = painterResource(
-                            id = if (isRegistered) R.drawable.checkmark_seal else R.drawable.at,
-                        ),
-                        contentDescription = null,
-                        tint = if (isRegistered) {
-                            Color(0xFF1B873F)
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = displayName,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isRegistered) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        modifier = Modifier.weight(5f, fill = false),
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    ProfileBadge(isLoading = isLoading, isRegistered = isRegistered, onSetUp = onSetUp)
+                if (isLoading) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Skeleton(modifier = Modifier.size(20.dp), shape = CircleShape)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Skeleton(modifier = Modifier.width(150.dp).height(22.dp))
+                        Spacer(modifier = Modifier.weight(1f))
+                        Skeleton(modifier = Modifier.width(96.dp).height(28.dp))
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(
+                                id = if (isRegistered) R.drawable.checkmark_seal else R.drawable.at,
+                            ),
+                            contentDescription = null,
+                            tint = if (isRegistered) {
+                                Color(0xFF1B873F)
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = displayName,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = if (isRegistered) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.weight(5f, fill = false),
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        ProfileBadge(isRegistered = isRegistered, onSetUp = onSetUp)
+                    }
                 }
             }
 
@@ -266,17 +280,13 @@ fun ProfileMainContent(
 
 @Composable
 private fun ProfileBadge(
-    isLoading: Boolean,
     isRegistered: Boolean,
     onSetUp: () -> Unit,
 ) {
-    when {
-        isLoading -> CircularProgressIndicator(
-            modifier = Modifier.size(20.dp),
-            strokeWidth = 2.dp,
-        )
-        isRegistered -> Badge(text = "Registered", tone = BadgeTone.SUCCESS)
-        else -> Button(onClick = onSetUp, shape = RoundedCornerShape(8.dp)) {
+    if (isRegistered) {
+        Badge(text = "Registered", tone = BadgeTone.SUCCESS)
+    } else {
+        Button(onClick = onSetUp, shape = RoundedCornerShape(8.dp)) {
             Text(text = "Set up name")
         }
     }

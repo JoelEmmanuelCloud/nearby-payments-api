@@ -31,24 +31,35 @@ struct ProfileView: View {
               Text("Sui Identity")
                 .font(.headline)
 
-              HStack(spacing: 8) {
-                Image(systemName: viewModel.isRegistered ? "checkmark.seal.fill" : "at")
-                  .foregroundColor(viewModel.isRegistered ? .green : .secondary)
+              if viewModel.isLoading {
+                HStack(spacing: 8) {
+                  Skeleton(cornerRadius: 11)
+                    .frame(width: 22, height: 22)
+                  Skeleton()
+                    .frame(width: 150, height: 22)
+                  Spacer()
+                  Skeleton(cornerRadius: 8)
+                    .frame(width: 96, height: 28)
+                }
+              } else {
+                HStack(spacing: 8) {
+                  Image(systemName: viewModel.isRegistered ? "checkmark.seal.fill" : "at")
+                    .foregroundColor(viewModel.isRegistered ? .green : .secondary)
 
-                Text(viewModel.displayName)
-                  .font(.title3.weight(.medium))
-                  .foregroundColor(viewModel.isRegistered ? .primary : .secondary)
+                  Text(viewModel.displayName)
+                    .font(.title3.weight(.medium))
+                    .foregroundColor(viewModel.isRegistered ? .primary : .secondary)
 
-                Spacer()
+                  Spacer()
 
-                ProfileStatusBadge(
-                  isLoading: viewModel.isLoading,
-                  isRegistered: viewModel.isRegistered,
-                  onSetUp: {
-                    viewModel.resetNameEntry()
-                    showEdit = true
-                  }
-                )
+                  ProfileStatusBadge(
+                    isRegistered: viewModel.isRegistered,
+                    onSetUp: {
+                      viewModel.resetNameEntry()
+                      showEdit = true
+                    }
+                  )
+                }
               }
             }
           }

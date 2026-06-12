@@ -11,6 +11,7 @@
 //
 
 // Operations + Fragments
+typealias ACCOUNT_ACTIVITY_FIELDS = SuiGraphQL.ACCOUNT_ACTIVITY_FIELDS
 typealias DevInspectTransactionBlockQuery = SuiGraphQL.DevInspectTransactionBlockQuery
 typealias DryRunTransactionBlockQuery = SuiGraphQL.DryRunTransactionBlockQuery
 typealias ExecuteTransactionBlockMutation = SuiGraphQL.ExecuteTransactionBlockMutation
@@ -48,6 +49,7 @@ typealias PaginateCheckpointTransactionBlocksQuery = SuiGraphQL
   .PaginateCheckpointTransactionBlocksQuery
 typealias PaginateMoveModuleListsQuery = SuiGraphQL.PaginateMoveModuleListsQuery
 typealias PaginateTransactionBlockListsQuery = SuiGraphQL.PaginateTransactionBlockListsQuery
+typealias QueryAccountActivityQuery = SuiGraphQL.QueryAccountActivityQuery
 typealias QueryEventsQuery = SuiGraphQL.QueryEventsQuery
 typealias QueryTransactionBlocksQuery = SuiGraphQL.QueryTransactionBlocksQuery
 typealias RPC_Checkpoint_Fields = SuiGraphQL.RPC_Checkpoint_Fields

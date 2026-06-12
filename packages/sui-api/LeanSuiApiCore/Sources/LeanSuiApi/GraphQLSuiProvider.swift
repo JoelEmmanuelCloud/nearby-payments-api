@@ -645,10 +645,14 @@ public struct GraphQLSuiProvider: Sendable, SuiNSResolverProtocol {
   }
 
   /// Query transaction blocks with pagination.
+  /// Query transaction blocks, newest-first by default.
+  /// - Parameter affectedAddress: when set, restrict to transactions that touched this address
+  ///   (sender, recipient, or otherwise affected) — the basis for a per-account activity feed.
   public func queryTransactionBlocks(
     limit: Int? = nil,
     cursor: String? = nil,
     order: SortOrder = .descending,
+    affectedAddress: String? = nil,
     options: TransactionResponseOptions = TransactionResponseOptions()
   ) async throws -> SuiTransactionBlockResponsePage {
     let limit32 = limit.map { Int32($0) }
@@ -682,7 +686,8 @@ public struct GraphQLSuiProvider: Sendable, SuiNSResolverProtocol {
         showInput: .some(options.showInput),
         showObjectChanges: .some(options.showObjectChanges),
         showRawInput: false,
-        filter: .null
+        filter: affectedAddress.map { .some(TransactionFilter(affectedAddress: .some($0))) }
+          ?? .null
       )
     )
     let txs = try require(result.data?.transactions, "transactions")

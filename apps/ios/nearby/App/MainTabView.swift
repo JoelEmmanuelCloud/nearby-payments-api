@@ -74,7 +74,7 @@ struct MainTabView: View {
       }
       .tag(Tab.home)
 
-      ActivityView()
+      ActivityView(suiAddress: suiAddress)
         .tabItem {
           Label {
             Text("Activity")
