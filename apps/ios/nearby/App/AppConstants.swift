@@ -27,6 +27,10 @@ nonisolated enum AppConstants {
   static let usdSuiCoinType =
     "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC"  // "0x44f838219cf67b058f3b37907b655f226153c18e33dfcd0da559a844fea9b1c1::usdsui::USDSUI" temp switch
 
+  /// Display symbol + entry precision for the balance coin, shared by the Home balance and send amount.
+  static let balanceCoinSymbol = "USDsui"
+  static let balanceCoinDecimals = 6
+
   /// How often the Home account balance silently refreshes.
   static let balanceRefreshInterval: TimeInterval = 30
 

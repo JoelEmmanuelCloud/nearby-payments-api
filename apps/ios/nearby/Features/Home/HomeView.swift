@@ -7,6 +7,7 @@ struct HomeView: View {
   let userName: String
   let store: AppSessionStore
   let userId: String
+  let suiAddress: String?
   let currentProvider: OAuthProvider?
   let onSignOut: () -> Void
 
@@ -34,6 +35,7 @@ struct HomeView: View {
     self.userName = userName
     self.store = store
     self.userId = userId
+    self.suiAddress = suiAddress
     self.currentProvider = currentProvider
     self.onSignOut = onSignOut
     _balanceModel = StateObject(
@@ -103,7 +105,14 @@ struct HomeView: View {
       .navigationDestination(item: $destination) { dest in
         switch dest {
         case .deposit: DepositView()
-        case .send: SendView()
+        case .send:
+          SendAmountView(
+            coinSymbol: AppConstants.balanceCoinSymbol,
+            maxFractionDigits: AppConstants.balanceCoinDecimals,
+            suiAddress: suiAddress,
+            store: store,
+            onNext: { _ in }  // 6c: navigate to the recipient step.
+          )
         }
       }
       .toolbar {

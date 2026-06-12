@@ -41,10 +41,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.variance.nearby.R
+import com.variance.nearby.core.AppConstants
 import com.variance.nearby.core.AppViewModel
 import com.variance.nearby.screens.auth.AppleLogo
 import com.variance.nearby.screens.auth.GoogleLogo
 import com.variance.nearby.screens.deposit.DepositScreen
+import com.variance.nearby.screens.send.SendAmountViewModel
 import com.variance.nearby.screens.send.SendScreen
 import com.variance.nearby.ui.Card
 import com.variance.nearby.ui.MutedText
@@ -93,7 +95,20 @@ fun HomeScreen(
         }
         HomeRoute.SEND -> {
             BackHandler { route = null }
-            SendScreen(onBack = { route = null }, modifier = modifier)
+            val sendViewModel = remember(viewModel) {
+                SendAmountViewModel(
+                    balanceService = BalanceService(viewModel.suiNetwork, viewModel.swiftArena),
+                    store = viewModel.sessionStore,
+                    address = viewModel.currentSuiAddress,
+                    maxFractionDigits = AppConstants.BALANCE_COIN_DECIMALS,
+                )
+            }
+            SendScreen(
+                viewModel = sendViewModel,
+                onBack = { route = null },
+                onNext = { /* 6c: navigate to the recipient step. */ },
+                modifier = modifier,
+            )
         }
         null -> HomeContent(
             userName = displayName,
