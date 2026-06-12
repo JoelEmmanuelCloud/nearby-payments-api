@@ -20,7 +20,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import com.variance.nearby.biometrics.BiometricGateHost
 import com.variance.nearby.core.AppRoute
 import com.variance.nearby.core.AppViewModel
-import com.variance.nearby.screens.MainTabScreen
+import com.variance.nearby.core.MainTabScreen
 import com.variance.nearby.screens.auth.LoginScreen
 import com.variance.nearby.screens.auth.LoginViewModel
 import com.variance.nearby.screens.onboarding.OnboardingScreen
@@ -38,22 +38,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         handleIntent(intent)
 
-        // Coil's singleton ImageLoader, with an OkHttp client carrying WalrusInterceptor — it rewrites
-        // the Walrus aggregator's missing/octet-stream Content-Type to image/jpeg so the avatar blob
-        // decodes. setSafe is a no-op if the loader was already created, so it must run before any
-        // AsyncImage; onCreate (pre-setContent) is the first entry point.
+        // Coil's singleton ImageLoader, fronted by one shared OkHttp client carrying WalrusInterceptor
+        // (which makes the Walrus aggregator's UA-gated, content-type-less, race-404'd blobs load).
+        // setSafe is a no-op once the loader exists, so it must run before any AsyncImage; onCreate
+        // (pre-setContent) is the first entry point.
         SingletonImageLoader.setSafe { context ->
+            val okHttpClient = OkHttpClient.Builder()
+                .addInterceptor(WalrusInterceptor())
+                .build()
             ImageLoader.Builder(context)
                 .components {
-                    add(
-                        OkHttpNetworkFetcherFactory(
-                            callFactory = {
-                                OkHttpClient.Builder()
-                                    .addInterceptor(WalrusInterceptor())
-                                    .build()
-                            },
-                        ),
-                    )
+                    add(OkHttpNetworkFetcherFactory(callFactory = { okHttpClient }))
                 }
                 .build()
         }

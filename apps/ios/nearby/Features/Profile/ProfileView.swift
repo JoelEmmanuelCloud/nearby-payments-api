@@ -28,7 +28,7 @@ struct ProfileView: View {
           // Identity: name + resolving badge
           Card {
             VStack(alignment: .leading, spacing: 16) {
-              Text("Nearby Identity")
+              Text("Sui Identity")
                 .font(.headline)
 
               HStack(spacing: 8) {

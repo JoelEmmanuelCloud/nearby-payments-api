@@ -118,7 +118,9 @@ struct MainTabView: View {
     }
     Task {
       if let img = await ImageLoader.shared.image(for: url) {
-        self.avatarImage = img.circularImage(size: 26)
+        // .alwaysOriginal on the UIImage itself — the tab bar template-renders its icons otherwise,
+        // and SwiftUI's .renderingMode(.original) doesn't survive the Label → UITabBarItem bridge.
+        self.avatarImage = img.circularImage(size: 26)?.withRenderingMode(.alwaysOriginal)
       }
     }
   }

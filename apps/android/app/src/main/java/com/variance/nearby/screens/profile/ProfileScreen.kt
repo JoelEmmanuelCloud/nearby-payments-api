@@ -180,10 +180,10 @@ fun ProfileMainContent(
             )
             MutedText(value = if (isRegistered) "Tap photo to update" else "Choose a profile photo")
 
-            // Nearby Identity: headline + name + resolving badge (mirrors iOS)
+            // Sui Identity: headline + name + resolving badge (mirrors iOS)
             Card(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Nearby Identity",
+                    text = "Sui Identity",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,

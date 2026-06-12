@@ -1,4 +1,4 @@
-package com.variance.nearby.screens
+package com.variance.nearby.core
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize

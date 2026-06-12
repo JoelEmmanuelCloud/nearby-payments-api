@@ -9,6 +9,12 @@ swift_library(
     srcs = glob(["Sources/UI/**/*.swift"]),
     module_name = "UI",
     visibility = ["//visibility:public"],
+    deps = select({
+        # iOS-only, mirroring the SPM `.when(platforms: [.iOS])` condition; macOS `ToastHost` is a
+        # passthrough that doesn't import Toasts.
+        "@platforms//os:ios": ["@swiftpkg_swiftui_toasts//:Toasts"],
+        "//conditions:default": [],
+    }),
 )
 
 swift_test(

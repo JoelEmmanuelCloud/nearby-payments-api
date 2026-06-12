@@ -11,5 +11,7 @@ go_library(
     ],
     importpath = "github.com/vaariance/nearby/internal/sui",
     visibility = ["//apps/api:__subpackages__"],
-    deps = ["//apps/api/internal/avs"],
+    deps = [
+        "//apps/api/internal/avs",
+    ],
 )

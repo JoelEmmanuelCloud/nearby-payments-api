@@ -25,6 +25,9 @@ let package = Package(
     // --- Auth Dependencies ---
     .package(url: "https://github.com/google/GoogleSignIn-iOS.git", from: "9.0.0"),
     .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0"..<"4.0.0"),
+
+    // --- UI Dependencies ---
+    .package(url: "https://github.com/sunghyun-k/swiftui-toasts", from: "1.1.2"),
   ],
   targets: [
     .target(

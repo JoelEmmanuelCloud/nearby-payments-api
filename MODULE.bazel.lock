@@ -552,7 +552,7 @@
           "REPO_MAPPING:rules_swift_package_manager+,bazel_skylib bazel_skylib+",
           "REPO_MAPPING:rules_swift_package_manager+,bazel_tools bazel_tools",
           "REPO_MAPPING:rules_swift_package_manager+,cgrindel_bazel_starlib cgrindel_bazel_starlib+",
-          "FILE:@@//packages/workspace/Package.resolved 0c290c2da94b475c54325605b6c89225f8150fc6673f33ebc95bdb9967cdbf34"
+          "FILE:@@//packages/workspace/Package.resolved f800c24079c73ef77c0751fe8e4e6cef2fe762a909f8665ee2a07e57b487c9df"
         ],
         "generatedRepoSpecs": {
           "swift_package": {
@@ -622,6 +622,20 @@
               "commit": "95ba0316a9b733e92bb6b071255ff46263bbe7dc",
               "remote": "https://github.com/apple/swift-crypto.git",
               "version": "3.15.1",
+              "env": {},
+              "env_inherit": [],
+              "cached_json_directory": "",
+              "replace_scm_with_registry": false,
+              "target_deps": {}
+            }
+          },
+          "swiftpkg_swiftui_toasts": {
+            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_swiftui_toasts",
+              "commit": "2b3b062f4d485de6ddc03797e5dbb81c261bf78b",
+              "remote": "https://github.com/sunghyun-k/swiftui-toasts",
+              "version": "1.1.2",
               "env": {},
               "env_inherit": [],
               "cached_json_directory": "",
@@ -726,6 +740,20 @@
               "replace_scm_with_registry": false,
               "target_deps": {}
             }
+          },
+          "swiftpkg_swiftui_window_overlay": {
+            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_swiftui_window_overlay",
+              "commit": "46739300713772a62a3bf31d77f8f23ba9cf61f7",
+              "remote": "https://github.com/sunghyun-k/swiftui-window-overlay.git",
+              "version": "1.0.2",
+              "env": {},
+              "env_inherit": [],
+              "cached_json_directory": "",
+              "replace_scm_with_registry": false,
+              "target_deps": {}
+            }
           }
         },
         "moduleExtensionMetadata": {
@@ -735,6 +763,7 @@
             "swiftpkg_apollo_ios",
             "swiftpkg_googlesignin_ios",
             "swiftpkg_swift_crypto",
+            "swiftpkg_swiftui_toasts",
             "swift_package"
           ],
           "explicitRootModuleDirectDevDeps": [],

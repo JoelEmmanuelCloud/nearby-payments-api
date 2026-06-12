@@ -35,7 +35,7 @@ go_sdk.download(version = "1.25.3")
 
 go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
 go_deps.from_file(go_mod = "//apps/api:go.mod")
-use_repo(go_deps, "com_github_go_chi_chi_v5", "com_github_jackc_pgx_v5", "com_github_joho_godotenv", "com_github_oklog_ulid_v2", "com_github_redis_go_redis_v9")
+use_repo(go_deps, "com_github_go_chi_chi_v5", "com_github_jackc_pgx_v5", "com_github_joho_godotenv", "com_github_oklog_ulid_v2", "com_github_redis_go_redis_v9", "org_golang_google_api", "org_golang_x_crypto")
 
 java_toolchains = use_extension("@rules_java//java:extensions.bzl", "toolchains")
 use_repo(java_toolchains, "local_jdk")
@@ -218,5 +218,6 @@ use_repo(
     "swiftpkg_bigint",
     "swiftpkg_googlesignin_ios",
     "swiftpkg_swift_crypto",
+    "swiftpkg_swiftui_toasts",
     "swiftpkg_uint256",
 )
