@@ -208,3 +208,7 @@ xcuserdata/
 DerivedData/
 
 tasks/
+
+
+## git lfs scope
+tools/zkprover/zkeys/
