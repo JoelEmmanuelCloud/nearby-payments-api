@@ -635,6 +635,10 @@ func (s *Service) ProveZkLogin(ctx context.Context, req ZkLoginProveRequest) ([]
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
+	if token, tokenErr := s.fetchGCPIdentityToken(ctx); tokenErr == nil && token != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+token)
+	}
+
 	resp, err := s.proverClient.Do(httpReq)
 	if err != nil {
 		return nil, ErrProverUnavailable
@@ -651,6 +655,43 @@ func (s *Service) ProveZkLogin(ctx context.Context, req ZkLoginProveRequest) ([]
 	}
 
 	return respBody, nil
+}
+
+func (s *Service) fetchGCPIdentityToken(ctx context.Context) (string, error) {
+	u, err := url.Parse(s.proverURL)
+	if err != nil || u.Host == "" {
+		return "", fmt.Errorf("invalid prover URL")
+	}
+	audience := u.Scheme + "://" + u.Host
+
+	params := url.Values{}
+	params.Set("audience", audience)
+	params.Set("format", "full")
+
+	metaURL := "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?" + params.Encode()
+	metaReq, err := http.NewRequestWithContext(ctx, http.MethodGet, metaURL, nil)
+	if err != nil {
+		return "", err
+	}
+	metaReq.Header.Set("Metadata-Flavor", "Google")
+
+	client := &http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Do(metaReq)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("metadata server returned %d", resp.StatusCode)
+	}
+
+	token, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(token)), nil
 }
 
 func (s *Service) verifyGoogleIDToken(ctx context.Context, idToken string) (map[string]interface{}, error) {
