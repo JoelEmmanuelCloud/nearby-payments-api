@@ -120,6 +120,8 @@
     }
     .ttl-badge.warn { border-color: #78350f; color: #fbbf24; background: #1c1003; }
     #countdown { font-size: 0.75rem; color: #6b7280; margin-top: 6px; }
+    .prove-status-ok { font-size: 0.825rem; color: #4ade80; margin-top: 12px; display: none; }
+    .prove-status-err { font-size: 0.825rem; color: #f87171; margin-top: 12px; display: none; }
   </style>
 </head>
 <body>
@@ -140,7 +142,7 @@
         <label for="os-version">OS Version</label>
         <input type="text" id="os-version" value="18.0" style="width:120px" />
       </div>
-      <button class="btn" id="sign-in-btn" onclick="beginAuth()">Sign in with Google</button>
+      <button class="btn" id="sign-in-btn" onclick="window._beginAuth()">Sign in with Google</button>
     </div>
 
     <div class="card hidden" id="token-card">
@@ -165,12 +167,12 @@
       <div id="countdown"></div>
 
       <div class="row">
-        <button class="btn btn-secondary" onclick="copyValue('accessToken', 'Access token')">Copy Access Token</button>
-        <button class="btn btn-secondary" onclick="copyValue('refreshToken', 'Refresh token')">Copy Refresh Token</button>
-        <button class="btn btn-secondary" onclick="copyValue('jwt', 'JWT')">Copy JWT</button>
-        <button class="btn btn-secondary" onclick="copyValue('salt', 'Salt')">Copy Salt</button>
-        <button class="btn btn-secondary" onclick="doRefresh()">Refresh Session</button>
-        <button class="btn btn-secondary" style="color:#f87171;border-color:#7f1d1d" onclick="signOut()">Sign Out</button>
+        <button class="btn btn-secondary" onclick="window._copyValue('accessToken', 'Access token')">Copy Access Token</button>
+        <button class="btn btn-secondary" onclick="window._copyValue('refreshToken', 'Refresh token')">Copy Refresh Token</button>
+        <button class="btn btn-secondary" onclick="window._copyValue('jwt', 'JWT')">Copy JWT</button>
+        <button class="btn btn-secondary" onclick="window._copyValue('salt', 'Salt')">Copy Salt</button>
+        <button class="btn btn-secondary" onclick="window._doRefresh()">Refresh Session</button>
+        <button class="btn btn-secondary" style="color:#f87171;border-color:#7f1d1d" onclick="window._signOut()">Sign Out</button>
       </div>
     </div>
 
@@ -183,9 +185,31 @@
       <label for="sui-address-input">Sui Address</label>
       <input type="text" id="sui-address-input" placeholder="0x..." style="width:100%;max-width:560px;font-family:monospace;font-size:0.8rem" />
       <div class="row">
-        <button class="btn" onclick="bindWallet()">Bind Wallet</button>
+        <button class="btn" onclick="window._bindWallet()">Bind Wallet</button>
       </div>
       <div id="wallet-status" style="margin-top:12px;font-size:0.825rem;color:#4ade80;display:none"></div>
+    </div>
+
+    <div class="card hidden" id="prover-card">
+      <div class="card-title">Step 4 — Test zkLogin Prover (POST /v1/auth/zklogin/prove)</div>
+      <p style="font-size:0.825rem;color:#9ca3af;margin-bottom:14px;">
+        Uses the ephemeral keypair and randomness generated at sign-in. The nonce in the JWT was derived from these values.
+      </p>
+
+      <div class="token-label">Extended Ephemeral Public Key</div>
+      <div class="token-box dim" id="epk-box">—</div>
+
+      <div class="token-label">JWT Randomness</div>
+      <div class="token-box dim" id="randomness-box">—</div>
+
+      <div class="token-label">Max Epoch</div>
+      <div class="token-box dim" id="max-epoch-box">—</div>
+
+      <div class="row">
+        <button class="btn" id="prove-btn" onclick="window._getProof()">Get Proof</button>
+      </div>
+      <div class="prove-status-ok" id="prove-ok">Proof generated successfully.</div>
+      <div class="prove-status-err" id="prove-err"></div>
     </div>
 
     <div class="card hidden" id="response-card">
@@ -199,8 +223,13 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import { Ed25519Keypair } from 'https://esm.sh/@mysten/sui/keypairs/ed25519';
+    import { generateNonce, generateRandomness, getExtendedEphemeralPublicKey } from 'https://esm.sh/@mysten/sui/zklogin';
+    import { SuiClient } from 'https://esm.sh/@mysten/sui/client';
+
     const API = window.location.origin;
+    const SUI_RPC = 'https://fullnode.testnet.sui.io:443';
     let countdownInterval = null;
 
     function generateVerifier() {
@@ -220,19 +249,35 @@
     async function beginAuth() {
       const btn = document.getElementById('sign-in-btn');
       btn.disabled = true;
-      btn.textContent = 'Redirecting to Google...';
-
-      const verifier = generateVerifier();
-      const challenge = await generateChallenge(verifier);
-      const nonce = 'test-' + Date.now();
-      const platform = document.getElementById('platform').value;
-      const osVersion = document.getElementById('os-version').value || '18.0';
-
-      sessionStorage.setItem('codeVerifier', verifier);
-      sessionStorage.setItem('platform', platform);
-      sessionStorage.setItem('osVersion', osVersion);
 
       try {
+        btn.textContent = 'Generating keypair…';
+        const keypair = new Ed25519Keypair();
+        const randomness = generateRandomness();
+
+        btn.textContent = 'Fetching epoch…';
+        const client = new SuiClient({ url: SUI_RPC });
+        const state = await client.getLatestSuiSystemState();
+        const maxEpoch = Number(state.epoch) + 10;
+
+        const nonce = generateNonce(keypair.getPublicKey(), maxEpoch, randomness);
+        const extendedEphemeralPublicKey = getExtendedEphemeralPublicKey(keypair.getPublicKey());
+
+        sessionStorage.setItem('extendedEphemeralPublicKey', extendedEphemeralPublicKey);
+        sessionStorage.setItem('jwtRandomness', randomness.toString());
+        sessionStorage.setItem('maxEpoch', maxEpoch.toString());
+
+        const verifier = generateVerifier();
+        const challenge = await generateChallenge(verifier);
+        const platform = document.getElementById('platform').value;
+        const osVersion = document.getElementById('os-version').value || '18.0';
+
+        sessionStorage.setItem('codeVerifier', verifier);
+        sessionStorage.setItem('platform', platform);
+        sessionStorage.setItem('osVersion', osVersion);
+
+        btn.textContent = 'Redirecting to Google…';
+
         const res = await fetch(API + '/v1/auth/oauth/begin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -375,10 +420,66 @@
       }
     }
 
+    async function getProof() {
+      const jwt = sessionStorage.getItem('jwt');
+      const salt = sessionStorage.getItem('salt');
+      const extendedEphemeralPublicKey = sessionStorage.getItem('extendedEphemeralPublicKey');
+      const jwtRandomness = sessionStorage.getItem('jwtRandomness');
+      const maxEpoch = sessionStorage.getItem('maxEpoch');
+
+      if (!jwt || !extendedEphemeralPublicKey || !jwtRandomness || !maxEpoch || !salt) {
+        showError({ error: 'Missing zkLogin parameters. Sign out and sign in again from Step 1 to generate a valid nonce.' });
+        return;
+      }
+
+      const btn = document.getElementById('prove-btn');
+      btn.disabled = true;
+      btn.textContent = 'Proving…';
+      document.getElementById('prove-ok').style.display = 'none';
+      document.getElementById('prove-err').style.display = 'none';
+
+      try {
+        const res = await fetch(API + '/v1/auth/zklogin/prove', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jwt,
+            extendedEphemeralPublicKey,
+            maxEpoch: parseInt(maxEpoch),
+            jwtRandomness,
+            salt,
+            keyClaimName: 'sub'
+          })
+        });
+
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { data = text; }
+
+        document.getElementById('response-card').classList.remove('hidden');
+        document.getElementById('output').textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+
+        if (res.ok) {
+          document.getElementById('prove-ok').style.display = 'block';
+        } else {
+          const errEl = document.getElementById('prove-err');
+          errEl.style.display = 'block';
+          errEl.textContent = data?.message || data?.code || 'Prover returned ' + res.status;
+        }
+      } catch (e) {
+        showError({ error: e.message });
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Get Proof';
+      }
+    }
+
     function showTokens(data) {
       document.getElementById('sign-in-card').classList.add('hidden');
       document.getElementById('token-card').classList.remove('hidden');
       document.getElementById('wallet-card').classList.remove('hidden');
+      document.getElementById('prover-card').classList.remove('hidden');
+
       const stored = sessionStorage.getItem('suiAddress');
       if (stored) {
         document.getElementById('sui-address-input').value = stored;
@@ -386,10 +487,16 @@
         el.style.display = 'block';
         el.textContent = 'Wallet bound: ' + stored;
       }
+
       document.getElementById('access-token-box').textContent = data.accessToken || sessionStorage.getItem('accessToken') || '—';
       document.getElementById('user-id-box').textContent = data.userId || sessionStorage.getItem('userId') || '—';
       document.getElementById('jwt-box').textContent = data.jwt || sessionStorage.getItem('jwt') || '—';
       document.getElementById('salt-box').textContent = data.salt || sessionStorage.getItem('salt') || '—';
+
+      document.getElementById('epk-box').textContent = sessionStorage.getItem('extendedEphemeralPublicKey') || '— (sign in again from Step 1 to generate)';
+      document.getElementById('randomness-box').textContent = sessionStorage.getItem('jwtRandomness') || '—';
+      document.getElementById('max-epoch-box').textContent = sessionStorage.getItem('maxEpoch') || '—';
+
       const expiresAt = data.expiresAt || parseInt(sessionStorage.getItem('expiresAt'));
       if (expiresAt) startCountdown(expiresAt);
     }
@@ -430,9 +537,11 @@
 
     function signOut() {
       if (countdownInterval) clearInterval(countdownInterval);
-      ['accessToken','refreshToken','userId','jwt','salt','expiresAt','suiAddress'].forEach(k => sessionStorage.removeItem(k));
+      ['accessToken','refreshToken','userId','jwt','salt','expiresAt','suiAddress',
+       'extendedEphemeralPublicKey','jwtRandomness','maxEpoch'].forEach(k => sessionStorage.removeItem(k));
       document.getElementById('token-card').classList.add('hidden');
       document.getElementById('wallet-card').classList.add('hidden');
+      document.getElementById('prover-card').classList.add('hidden');
       document.getElementById('sign-in-card').classList.remove('hidden');
       document.getElementById('response-card').classList.add('hidden');
       document.getElementById('error-card').classList.add('hidden');
@@ -442,6 +551,13 @@
       document.getElementById('sign-in-btn').textContent = 'Sign in with Google';
       document.getElementById('countdown').textContent = '';
     }
+
+    window._beginAuth = beginAuth;
+    window._doRefresh = doRefresh;
+    window._bindWallet = bindWallet;
+    window._copyValue = copyValue;
+    window._signOut = signOut;
+    window._getProof = getProof;
 
     window.addEventListener('load', () => {
       const stored = sessionStorage.getItem('accessToken');
