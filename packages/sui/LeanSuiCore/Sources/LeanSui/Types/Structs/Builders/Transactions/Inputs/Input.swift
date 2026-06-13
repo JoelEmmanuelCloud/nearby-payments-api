@@ -62,6 +62,8 @@ public struct Input: SuiBCSBridged {
       return "pure"
     case .object:
       return "object"
+    case .fundsWithdrawal:
+      return "fundsWithdrawal"
     }
   }
 

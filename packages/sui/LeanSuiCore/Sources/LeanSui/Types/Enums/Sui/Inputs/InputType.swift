@@ -35,6 +35,11 @@ public indirect enum InputType: SuiBCSBridged {
   /// Represents an object argument, meaning the argument includes an object reference.
   case object(ObjectArg)
 
+  /// Represents an Address Balances funds-withdrawal reservation. At execution the validator
+  /// converts it into a `sui::funds_accumulator::Withdrawal<T>` Move value. Enables gasless
+  /// stablecoin transfers (`0x2::balance::send_funds`).
+  case fundsWithdrawal(FundsWithdrawalArg)
+
   // TODO: Implement Object Vector type
 
   /// A static function to create an `InputType` instance from a JSON object.
@@ -66,6 +71,9 @@ public indirect enum InputType: SuiBCSBridged {
     case .object(let object):
       try serializer.uleb128(UInt(1))
       try Serializer._struct(serializer, value: object)
+    case .fundsWithdrawal(let withdrawal):
+      try serializer.uleb128(UInt(2))
+      try Serializer._struct(serializer, value: withdrawal)
     }
   }
 
@@ -81,6 +89,8 @@ public indirect enum InputType: SuiBCSBridged {
       return .pure(try Deserializer._struct(deserializer))
     case 1:
       return .object(try Deserializer._struct(deserializer))
+    case 2:
+      return .fundsWithdrawal(try Deserializer._struct(deserializer))
     default:
       throw SuiError.customError(message: "Unable to Deserialize")
     }

@@ -39,6 +39,11 @@ public class TransactionBlock {
   /// A boolean value indicating whether the block is prepared or not.
   private var isPreparred: Bool = false
 
+  /// When set, the transaction pays gas from an address balance instead of a SUI gas coin
+  /// (gasless). This fixes gas price/budget at 0 and an empty gas payment, skips gas
+  /// estimation in `prepare`, and emits a `ValidDuring` expiration for replay protection.
+  private var gaslessConfig: GaslessTransactionConfig?
+
   /// A dictionary containing default offline limits with string keys and integer values.
   public static let defaultOfflineLimits: [String: UInt64] = [
     "maxPureArgumentSize": 16 * 1024,
@@ -55,6 +60,12 @@ public class TransactionBlock {
       ?? TransactionBlockDataBuilder(
         builder: SerializedTransactionDataBuilder()
       )
+  }
+
+  /// Public factory for an empty transaction block. The designated initializer is `internal`
+  /// (`TransactionBlockDataBuilder` is not bridged), so callers outside the module start here.
+  public static func create() throws -> TransactionBlock {
+    try TransactionBlock()
   }
 
   /// Sets the sender of the transaction.
@@ -629,6 +640,103 @@ public class TransactionBlock {
   // NOTE: provider.getReferenceGasPrice() now returns a typed `UInt64`
   // (LeanSuiApi), which BigInt accepts directly.
 
+  // MARK: - Gasless (Address Balances)
+
+  /// Pay this transaction's gas from an address balance instead of a SUI gas coin (gasless
+  /// stablecoin transfers). Fixes gas price and budget to 0 with an empty gas payment; `prepare`
+  /// then skips gas estimation and stamps a `ValidDuring` expiration.
+  ///
+  /// - Parameters:
+  ///   - chainIdentifier: the 32-byte genesis checkpoint digest (full chain identifier), used in
+  ///     the expiration for cross-chain replay protection.
+  ///   - nonce: a per-transaction uniqueness value (no gas-coin mutation means the nonce is what
+  ///     differentiates otherwise-identical retries).
+  public func enableGasless(chainIdentifier: [UInt8], nonce: UInt32) throws {
+    self.gaslessConfig = GaslessTransactionConfig(chainIdentifier: chainIdentifier, nonce: nonce)
+    self.setGasPrice(price: 0)
+    self.setGasBudget(price: 0)
+    try self.setGasPayment(payments: [])
+  }
+
+  /// Adds an Address Balances funds-withdrawal reservation as a transaction input and returns it
+  /// as an argument. At execution the validator converts it into a
+  /// `sui::funds_accumulator::Withdrawal<T>`; pass it to `0x2::balance::redeem_funds<T>` to get a
+  /// `Balance<T>`.
+  public func fundsWithdrawal(_ arg: FundsWithdrawalArg) throws -> TransactionArgument {
+    .input(
+      try self.input(type: .pure, value: .callArg(Input(type: .fundsWithdrawal(arg))))
+    )
+  }
+
+  /// Assembles a complete gasless stablecoin transfer of `amount` (in the coin's base units) of
+  /// `coinType` to `recipient`, paid from the sender's address balance:
+  ///
+  ///   reserve `amount` (FundsWithdrawal) → `0x2::balance::redeem_funds<T>` → `Balance<T>`
+  ///     → `0x2::balance::send_funds<T>(balance, recipient)`
+  ///
+  /// Call `enableGasless` (and `setSender`) beforehand. `coinType` is the stablecoin type, e.g.
+  /// `0x…::usdc::USDC`.
+  public func gaslessSendFunds(coinType: String, amount: UInt64, recipient: String) throws {
+    let withdrawal = try self.fundsWithdrawal(
+      try FundsWithdrawalArg.balanceFromSender(amount: amount, balanceType: coinType)
+    )
+    let balance = try self.moveCall(
+      target: "0x2::balance::redeem_funds",
+      arguments: [withdrawal],
+      typeArguments: [coinType]
+    )[0]
+    let recipientArg = TransactionArgument.input(
+      try self.pure(value: .address(try AccountAddress.fromHex(recipient)))
+    )
+    _ = try self.moveCall(
+      target: "0x2::balance::send_funds",
+      arguments: [balance, recipientArg],
+      typeArguments: [coinType]
+    )
+  }
+
+  /// Consolidates `Coin<coinType>` objects into `owner`'s **address balance** by calling
+  /// `0x2::coin::send_funds<T>(coin, owner)` for each. This is gasless-eligible (the coins are fully
+  /// consumed/converted to an address balance and no object is written), so pair it with
+  /// `enableGasless`. Used to bridge externally-funded coin objects into the address-balance pool
+  /// that `gaslessSendFunds` draws from.
+  public func gaslessDepositCoins(coinType: String, coinObjectIds: [String], owner: String) throws {
+    let ownerArg = TransactionArgument.input(
+      try self.pure(value: .address(try AccountAddress.fromHex(owner)))
+    )
+    for coinObjectId in coinObjectIds {
+      let coin = try self.object(id: coinObjectId).toTransactionArgument()
+      _ = try self.moveCall(
+        target: "0x2::coin::send_funds",
+        arguments: [coin, ownerArg],
+        typeArguments: [coinType]
+      )
+    }
+  }
+
+  /// Gasless counterpart to the gas-coin `prepare` path: resolve move calls, then stamp the
+  /// `ValidDuring` expiration. Gas price/budget/payment are already pinned by `enableGasless`.
+  private func prepareGaslessTransaction(
+    provider: GraphQLSuiProvider,
+    config: GaslessTransactionConfig,
+    options: BuildOptions
+  ) async throws {
+    try await self.prepareTransactions(provider: provider)
+
+    // Only a full `TransactionData` (not a bare transaction kind) carries an expiration.
+    if options.onlyTransactionKind == true { return }
+
+    let epoch = try await provider.getCurrentEpoch().epoch
+    self.blockData.builder.expiration = .validDuring(
+      minEpoch: epoch,
+      maxEpoch: epoch,
+      minTimestamp: nil,
+      maxTimestamp: nil,
+      chain: config.chainIdentifier,
+      nonce: config.nonce
+    )
+  }
+
   /// Prepares transactions by resolving move modules and objects, and updating the block data builder with the resolved information.
   /// - Parameter provider: A `SuiProvider` instance used to obtain necessary information to prepare transactions.
   /// - Throws: Various `SuiError` errors can be thrown based on different failure scenarios, such as `SuiError.moveCallSizeDoesNotMatch`
@@ -918,6 +1026,13 @@ public class TransactionBlock {
 
     guard let provider = options.provider else {
       throw SuiError.customError(message: "Provider not found")
+    }
+
+    if let gasless = self.gaslessConfig {
+      try await self.prepareGaslessTransaction(
+        provider: provider, config: gasless, options: options)
+      self.isPreparred = true
+      return
     }
 
     try await self.prepareGasPrice(

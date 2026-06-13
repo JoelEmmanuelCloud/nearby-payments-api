@@ -263,6 +263,11 @@ public struct GraphQLSuiProvider: Sendable, SuiNSResolverProtocol {
         showRawInput: false
       )
     )
+    if result.data?.executeTransaction == nil, let errors = result.errors, !errors.isEmpty {
+      // Surface the endpoint's real reason (e.g. an invalid signature or a BCS error) rather than a
+      // generic "missing field" — `executeTransaction` is null precisely because the call errored.
+      throw SuiAPIError.graphQL(messages: errors.map { $0.message ?? "\($0)" })
+    }
     let exec = try require(result.data?.executeTransaction, "executeTransaction")
     return try SuiTransactionBlockResponse(execute: exec)
   }

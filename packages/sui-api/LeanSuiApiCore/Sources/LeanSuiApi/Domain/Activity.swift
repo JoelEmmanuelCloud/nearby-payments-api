@@ -10,13 +10,13 @@
 import Foundation
 
 /// Which way value moved, from the queried address's perspective.
-public enum SuiActivityDirection: String, Sendable, Equatable {
+public enum SuiActivityDirection: String, Codable, Sendable, Equatable {
   case sent
   case received
 }
 
 /// One party's net delta of a single coin in a transaction, scaled to human units and pre-formatted.
-public struct SuiActivityCoinChange: Sendable, Equatable {
+public struct SuiActivityCoinChange: Codable, Sendable, Equatable {
   public let owner: String?
   public let coinType: String
   public let coinSymbol: String
@@ -32,7 +32,7 @@ public struct SuiActivityCoinChange: Sendable, Equatable {
 }
 
 /// The expanded detail behind a `SuiActivity` row (for a tap-through detail screen).
-public struct SuiActivityDetail: Sendable, Equatable {
+public struct SuiActivityDetail: Codable, Sendable, Equatable {
   public let digest: String
   public let sender: String?
   public let succeeded: Bool
@@ -59,7 +59,7 @@ public struct SuiActivityDetail: Sendable, Equatable {
 }
 
 /// A single account-activity row for one coin, ready to render.
-public struct SuiActivity: Sendable, Equatable {
+public struct SuiActivity: Codable, Sendable, Equatable {
   public let digest: String
   public let direction: SuiActivityDirection
   /// Magnitude, scaled + formatted to a fixed 2 fraction digits, e.g. "12.50".
@@ -100,7 +100,7 @@ public struct SuiActivity: Sendable, Equatable {
 /// A concrete type, not `Page<SuiActivity>`: swift-java can't bridge a generic `Page`'s `[T]` array
 /// (only `pageInfo` crosses), so the Android client could never read the rows. A concrete struct with
 /// a concrete `[SuiActivity]` array bridges cleanly. Continue with `nextCursor` while `hasMore`.
-public struct SuiActivityFeed: Sendable, Equatable {
+public struct SuiActivityFeed: Codable, Sendable, Equatable {
   public let items: [SuiActivity]
   public let nextCursor: String?
   public let hasMore: Bool

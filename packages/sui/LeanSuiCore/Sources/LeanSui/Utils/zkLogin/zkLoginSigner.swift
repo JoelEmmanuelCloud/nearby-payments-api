@@ -91,17 +91,23 @@ public final class ZkLoginSigner: @unchecked Sendable {
     )
   }
 
-  /// Sign raw bytes with the ephemeral keypair and create a complete zkLogin signature
-  /// - Parameter bytes: The bytes to sign
-  /// - Returns: A complete zkLogin signature
-  private func signBytes(_ bytes: SuiData) throws -> zkLoginSignature {
-    // Sign with the ephemeral keypair
-    let ephemeralSignature = try ephemeralKeyPair.sign(bytes)
-
-    // Create a complete zkLogin signature with the user signature
+  /// Assembles the complete zkLogin signature from a freshly-produced ephemeral signature: the
+  /// persisted proof template plus the ephemeral key's **serialized** signature as the
+  /// `userSignature`. Sui's zkLogin authenticator expects `userSignature` to be the serialized
+  /// simple signature of the ephemeral key — `flag || rawSignature || publicKey` — not the bare
+  /// signature. The flag is taken from the ephemeral signature's own scheme: this app's ephemeral
+  /// key is a Secure Enclave (HSM) key, i.e. **secp256r1** (flag `0x02`), and `HSMPrivateKey.sign`
+  /// labels it correctly.
+  private func completeSignature(ephemeral: Signature) throws -> zkLoginSignature {
+    guard
+      let flag = SignatureSchemeFlags.SIGNATURE_SCHEME_TO_FLAG[ephemeral.signatureScheme.rawValue]
+    else {
+      throw SuiError.customError(
+        message: "Unsupported ephemeral signature scheme: \(ephemeral.signatureScheme.rawValue)")
+    }
+    let serialized = [flag] + ephemeral.signature.bytes + ephemeral.publicKey.bytes
     var completeSignature = zkLoginSignatureTemplate
-    completeSignature.userSignature = ephemeralSignature.signature
-
+    completeSignature.userSignature = SuiData(serialized)
     return completeSignature
   }
 
@@ -109,18 +115,18 @@ public final class ZkLoginSigner: @unchecked Sendable {
   /// - Parameter transactionData: The transaction data bytes to sign
   /// - Returns: A serialized zkLogin signature string
   public func signTransaction(_ transactionData: SuiData) throws -> String {
-    let signature = try signBytes(transactionData)
-    return try signature.getSignature()
+    // The ephemeral key signs `blake2b256(intent(TransactionData) || txData)`.
+    let ephemeral = try ephemeralKeyPair.signTransactionBlock(transactionData)
+    return try completeSignature(ephemeral: ephemeral).getSignature()
   }
 
   /// Sign a personal message and return the serialized signature
   /// - Parameter message: The message bytes to sign
   /// - Returns: A serialized zkLogin signature string
   public func signPersonalMessage(_ message: SuiData) throws -> String {
-    // For personal messages, we need to add the personal message prefix
-    let messageWithPrefix = IntentHelper.messageWithIntent(.PersonalMessage, message.data)
-    let signature = try signBytes(messageWithPrefix.suiData)
-    return try signature.getSignature()
+    // `signPersonalMessage` applies the PersonalMessage intent + BCS framing + blake2b internally.
+    let ephemeral = try ephemeralKeyPair.signPersonalMessage(message)
+    return try completeSignature(ephemeral: ephemeral).getSignature()
   }
 
   /// Sign and execute a transaction using zkLogin authentication

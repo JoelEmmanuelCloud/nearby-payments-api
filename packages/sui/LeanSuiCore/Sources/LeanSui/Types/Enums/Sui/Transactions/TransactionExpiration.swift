@@ -34,6 +34,19 @@ public enum TransactionExpiration: SuiBCSBridged {
   /// Expiration time set as an epoch timestamp.
   case epoch(UInt64)
 
+  /// Bounded validity window with a nonce. Required for transactions whose gas is paid from an
+  /// address balance (gasless): without a mutated gas-coin object there is no natural transaction
+  /// uniqueness, so validators rely on the `chain` + `nonce` + epoch bounds for replay protection.
+  /// `chain` is the 32-byte genesis checkpoint digest (the full chain identifier).
+  case validDuring(
+    minEpoch: UInt64?,
+    maxEpoch: UInt64?,
+    minTimestamp: UInt64?,
+    maxTimestamp: UInt64?,
+    chain: [UInt8],
+    nonce: UInt32
+  )
+
   public func serialize(_ serializer: Serializer) throws {
     switch self {
     case .none:
@@ -41,6 +54,28 @@ public enum TransactionExpiration: SuiBCSBridged {
     case .epoch(let int):
       try Serializer.u8(serializer, UInt8(1))
       try Serializer.u64(serializer, UInt64(int))
+    case .validDuring(
+      let minEpoch, let maxEpoch, let minTimestamp, let maxTimestamp, let chain, let nonce):
+      try Serializer.u8(serializer, UInt8(2))
+      try Self.serializeOptionalU64(serializer, minEpoch)
+      try Self.serializeOptionalU64(serializer, maxEpoch)
+      try Self.serializeOptionalU64(serializer, minTimestamp)
+      try Self.serializeOptionalU64(serializer, maxTimestamp)
+      // `chain` is a `Digest([u8; 32])` annotated `serde_as(as = "Bytes")`, so BCS encodes it as a
+      // length-prefixed byte buffer (`ULEB(32) || 32 bytes`) — NOT a raw fixed array.
+      try serializer.uleb128(UInt(chain.count))
+      serializer.fixedBytes(chain)
+      try Serializer.u32(serializer, nonce)
+    }
+  }
+
+  /// BCS `Option<u64>`: a single-byte tag (0 = none, 1 = some) followed by the little-endian value.
+  private static func serializeOptionalU64(_ serializer: Serializer, _ value: UInt64?) throws {
+    if let value {
+      try Serializer.u8(serializer, UInt8(1))
+      try Serializer.u64(serializer, value)
+    } else {
+      try Serializer.u8(serializer, UInt8(0))
     }
   }
 
@@ -54,8 +89,33 @@ public enum TransactionExpiration: SuiBCSBridged {
       return TransactionExpiration.epoch(
         try Deserializer.u64(deserializer)
       )
+    case 2:
+      let minEpoch = try deserializeOptionalU64(deserializer)
+      let maxEpoch = try deserializeOptionalU64(deserializer)
+      let minTimestamp = try deserializeOptionalU64(deserializer)
+      let maxTimestamp = try deserializeOptionalU64(deserializer)
+      let chainLength = try deserializer.uleb128()
+      var chain: [UInt8] = []
+      for _ in 0..<chainLength { chain.append(try Deserializer.u8(deserializer)) }
+      let nonce = try Deserializer.u32(deserializer)
+      return TransactionExpiration.validDuring(
+        minEpoch: minEpoch,
+        maxEpoch: maxEpoch,
+        minTimestamp: minTimestamp,
+        maxTimestamp: maxTimestamp,
+        chain: chain,
+        nonce: nonce
+      )
     default:
       throw SuiError.customError(message: "Unable to Deserialize")
+    }
+  }
+
+  private static func deserializeOptionalU64(_ deserializer: Deserializer) throws -> UInt64? {
+    switch try Deserializer.u8(deserializer) {
+    case 0: return nil
+    case 1: return try Deserializer.u64(deserializer)
+    default: throw SuiError.customError(message: "Unable to Deserialize Option<u64>")
     }
   }
 }
