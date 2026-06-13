@@ -6,22 +6,23 @@ import UI
 struct SendAmountView: View {
   @StateObject private var viewModel: SendAmountViewModel
 
-  private let onNext: (Decimal) -> Void
+  private let coinSymbol: String
+
+  @State private var enteredAmount: Decimal?
 
   init(
     coinSymbol: String,
     maxFractionDigits: Int,
     suiAddress: String?,
-    store: AppSessionStore,
-    onNext: @escaping (Decimal) -> Void
+    store: AppSessionStore
   ) {
+    self.coinSymbol = coinSymbol
     _viewModel = StateObject(
       wrappedValue: SendAmountViewModel(
         coinSymbol: coinSymbol,
         maxFractionDigits: maxFractionDigits,
         suiAddress: suiAddress,
         store: store))
-    self.onNext = onNext
   }
 
   var body: some View {
@@ -56,12 +57,19 @@ struct SendAmountView: View {
       NumericKeypadView { viewModel.handle($0) }
 
       UIButton("Next", isDisabled: !viewModel.canContinue) {
-        onNext(viewModel.input.decimalValue)
+        enteredAmount = viewModel.input.decimalValue
       }
     }
     .padding(24)
     .navigationTitle("Send")
     .navigationBarTitleDisplayMode(.inline)
     .task { await viewModel.refreshBalance() }
+    .navigationDestination(item: $enteredAmount) { amount in
+      RecipientView(
+        amount: amount,
+        coinSymbol: coinSymbol,
+        onContinue: { _ in }  // 6d: build/sign/execute the gasless send.
+      )
+    }
   }
 }

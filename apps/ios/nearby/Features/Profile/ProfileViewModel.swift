@@ -31,7 +31,7 @@ final class ProfileViewModel: ObservableObject {
 
   // MARK: Edit-screen state
 
-  /// The sanitized name being edited. Written only via `onNameInputChange`.
+  /// The raw name being edited; validated (not stripped) in `onNameInputChange`.
   @Published
   private(set) var nameInput = ""
 
@@ -109,12 +109,6 @@ final class ProfileViewModel: ObservableObject {
 
   // MARK: - Name editing
 
-  /// SuiNS labels are lowercase `[a-z0-9-]` — strip everything else so the gateway never sees an
-  /// invalid name (a space used to error).
-  static func sanitize(_ raw: String) -> String {
-    raw.lowercased().filter { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-") }
-  }
-
   /// Clears transient name-entry state so the edit screen always starts fresh (the shared view model
   /// otherwise retains the last "available" message after you leave and re-enter).
   func resetNameEntry() {
@@ -124,22 +118,29 @@ final class ProfileViewModel: ObservableObject {
     isAvailable = false
   }
 
-  /// Entry point from the edit field: sanitize, store, and debounce an availability check.
+  /// Entry point from the edit field: store the raw text, validate it, and debounce an availability
+  /// check. Invalid input (e.g. a space) is rejected outright rather than silently stripped.
   func onNameInputChange(_ raw: String) {
-    let clean = Self.sanitize(raw)
-    nameInput = clean
+    nameInput = raw
 
     nameCheckTask?.cancel()
     isAvailable = false
-    statusMessage = nil
 
-    guard !clean.isEmpty, suinsName == nil else { return }
+    guard suinsName == nil else { return }
 
-    nameCheckTask = Task {
-      try? await Task.sleep(
-        nanoseconds: UInt64(AppConstants.nameCheckDebounce * 1_000_000_000))
-      guard !Task.isCancelled else { return }
-      await checkName(clean)
+    switch LeafNameInput.parse(raw) {
+    case .empty:
+      statusMessage = nil
+    case .invalid:
+      statusMessage = "Use letters, numbers, and hyphens only."
+    case .valid(let name):
+      statusMessage = nil
+      nameCheckTask = Task {
+        try? await Task.sleep(
+          nanoseconds: UInt64(AppConstants.nameCheckDebounce * 1_000_000_000))
+        guard !Task.isCancelled else { return }
+        await checkName(name)
+      }
     }
   }
 
@@ -156,14 +157,16 @@ final class ProfileViewModel: ObservableObject {
   }
 
   func registerName() async {
-    guard isAvailable, !nameInput.isEmpty, suinsName == nil else { return }
+    guard isAvailable, suinsName == nil,
+      case .valid(let name) = LeafNameInput.parse(nameInput)
+    else { return }
     isSaving = true
     statusMessage = "Registering name..."
     do {
       let deviceProvider = AppAttestProvider.provider
 
       let regRes = try await identityManager.registerName(
-        leafName: nameInput,
+        leafName: name,
         deviceProvider: deviceProvider
       )
 
@@ -174,7 +177,7 @@ final class ProfileViewModel: ObservableObject {
       )
 
       isSaving = false
-      suinsName = nameInput
+      suinsName = name
       statusMessage = nil
 
       if let suiAddress,

@@ -357,6 +357,14 @@ public struct GraphQLSuiProvider: Sendable, SuiNSResolverProtocol {
     return result.data?.address?.address
   }
 
+  /// Bridge-safe variant of `resolveNameServiceAddress`: returns "" for an unregistered name instead
+  /// of nil. The swift-java JNI bridge mis-marshals an optional-`String` async return (it completes the
+  /// `CompletableFuture<String>` with the discriminator `byte[]`, throwing `ClassCastException` on
+  /// Android), so clients go through a non-optional `String` return; "" means "not found".
+  public func resolveNameServiceAddressOrEmpty(name: String) async throws -> String {
+    (try await resolveNameServiceAddress(name: name)) ?? ""
+  }
+
   /// Resolve an address to its default SuiNS name, if any.
   public func resolveNameServiceNames(address: String) async throws -> String? {
     let result = try await GraphQLClient.fetchQuery(

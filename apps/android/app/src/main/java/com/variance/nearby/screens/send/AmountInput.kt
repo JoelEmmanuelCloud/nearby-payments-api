@@ -10,6 +10,8 @@ import java.math.BigDecimal
 data class AmountInput(
     val maxFractionDigits: Int,
     val text: String = "",
+    /** Upper bound on the entered amount; digits that would exceed it are ignored. */
+    val maxValue: BigDecimal = BigDecimal(1_000_000_000),
 ) {
     /** What the big number shows — "0" while empty so the field is never blank. */
     val display: String get() = text.ifEmpty { "0" }
@@ -22,8 +24,10 @@ data class AmountInput(
     fun appendDigit(digit: Int): AmountInput {
         if (digit !in 0..9 || fractionIsFull) return this
         // Replace a lone leading "0" so we never produce "07" or "00".
-        val next = if (text == "0") digit.toString() else text + digit.toString()
-        return copy(text = next)
+        val candidate = if (text == "0") digit.toString() else text + digit.toString()
+        val value = candidate.toBigDecimalOrNull()
+        if (value != null && value > maxValue) return this
+        return copy(text = candidate)
     }
 
     fun appendDecimal(): AmountInput {

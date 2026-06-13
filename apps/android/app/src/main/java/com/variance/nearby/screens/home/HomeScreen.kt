@@ -41,13 +41,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.variance.nearby.R
-import com.variance.nearby.core.AppConstants
 import com.variance.nearby.core.AppViewModel
 import com.variance.nearby.screens.auth.AppleLogo
 import com.variance.nearby.screens.auth.GoogleLogo
 import com.variance.nearby.screens.deposit.DepositScreen
-import com.variance.nearby.screens.send.SendAmountViewModel
-import com.variance.nearby.screens.send.SendScreen
+import com.variance.nearby.screens.send.SendFlow
 import com.variance.nearby.ui.Card
 import com.variance.nearby.ui.MutedText
 import com.variance.nearby.ui.SecondaryButton
@@ -93,23 +91,11 @@ fun HomeScreen(
             BackHandler { route = null }
             DepositScreen(onBack = { route = null }, modifier = modifier)
         }
-        HomeRoute.SEND -> {
-            BackHandler { route = null }
-            val sendViewModel = remember(viewModel) {
-                SendAmountViewModel(
-                    balanceService = BalanceService(viewModel.suiNetwork, viewModel.swiftArena),
-                    store = viewModel.sessionStore,
-                    address = viewModel.currentSuiAddress,
-                    maxFractionDigits = AppConstants.BALANCE_COIN_DECIMALS,
-                )
-            }
-            SendScreen(
-                viewModel = sendViewModel,
-                onBack = { route = null },
-                onNext = { /* 6c: navigate to the recipient step. */ },
-                modifier = modifier,
-            )
-        }
+        HomeRoute.SEND -> SendFlow(
+            viewModel = viewModel,
+            onExit = { route = null },
+            modifier = modifier,
+        )
         null -> HomeContent(
             userName = displayName,
             currentProvider = viewModel.currentProvider,

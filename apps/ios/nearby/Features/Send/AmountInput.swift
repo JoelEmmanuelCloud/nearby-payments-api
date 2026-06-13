@@ -8,9 +8,13 @@ struct AmountInput: Equatable {
 
   let maxFractionDigits: Int
 
-  init(maxFractionDigits: Int) {
+  /// Upper bound on the entered amount; digits that would exceed it are ignored.
+  let maxValue: Decimal
+
+  init(maxFractionDigits: Int, maxValue: Decimal = 1_000_000_000) {
     self.text = ""
     self.maxFractionDigits = maxFractionDigits
+    self.maxValue = maxValue
   }
 
   /// What the big number shows — "0" while empty so the field is never blank.
@@ -31,11 +35,9 @@ struct AmountInput: Equatable {
     guard (0...9).contains(digit) else { return }
     guard !fractionIsFull else { return }
     // Replace a lone leading "0" so we never produce "07" or "00".
-    if text == "0" {
-      text = String(digit)
-    } else {
-      text.append(String(digit))
-    }
+    let candidate = text == "0" ? String(digit) : text + String(digit)
+    if let value = Decimal(string: candidate), value > maxValue { return }
+    text = candidate
   }
 
   mutating func appendDecimal() {

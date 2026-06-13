@@ -110,8 +110,7 @@ struct HomeView: View {
             coinSymbol: AppConstants.balanceCoinSymbol,
             maxFractionDigits: AppConstants.balanceCoinDecimals,
             suiAddress: suiAddress,
-            store: store,
-            onNext: { _ in }  // 6c: navigate to the recipient step.
+            store: store
           )
         }
       }

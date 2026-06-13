@@ -13,7 +13,7 @@ public struct Input: View {
 
   public var body: some View {
     TextField(placeholder, text: $text)
-      .textFieldStyle(.roundedBorder)
+      .font(.system(.body, design: .monospaced))
       .autocorrectionDisabled()
       #if os(iOS)
         .textInputAutocapitalization(.never)

@@ -1,15 +1,13 @@
 import SwiftUI
 import UI
 
-/// The minimal name-registration screen, pushed from the main profile page. The text field is driven
-/// by local `@State` (typing stays fluid — keystrokes don't round-trip through the view model), and
-/// only sanitized, debounced values are pushed to the view model for the availability check.
+/// The minimal name-registration screen, pushed from the main profile page. The field binds straight
+/// to the view model: each keystroke is parsed/validated there (a space is rejected, not stripped) and
+/// drives a debounced availability check — the same decoupled pattern as the send recipient field.
 struct ProfileEditView: View {
   @ObservedObject var viewModel: ProfileViewModel
 
   @Environment(\.dismiss) private var dismiss
-
-  @State private var name = ""
 
   var body: some View {
     ScrollView {
@@ -19,13 +17,11 @@ struct ProfileEditView: View {
         )
 
         HStack {
-          Input("username", text: $name)
+          Input("username", text: nameBinding)
             .disabled(viewModel.isSaving)
-            .onChange(of: name) { _, newValue in
-              let clean = ProfileViewModel.sanitize(newValue)
-              if clean != newValue { name = clean }  // reflect sanitization in the field
-              viewModel.onNameInputChange(clean)
-            }
+            .padding(14)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
 
           Text(".nearby.sui")
             .foregroundColor(.secondary)
@@ -39,7 +35,7 @@ struct ProfileEditView: View {
 
         UIButton(
           viewModel.isSaving ? "Registering…" : "Register",
-          isDisabled: !viewModel.isAvailable || viewModel.isSaving || name.isEmpty
+          isDisabled: !viewModel.isAvailable || viewModel.isSaving
         ) {
           Task { await viewModel.registerName() }
         }
@@ -53,5 +49,12 @@ struct ProfileEditView: View {
       // the view model's `onFinish` already routes home, so this is a harmless no-op there.
       if newValue != nil { dismiss() }
     }
+  }
+
+  private var nameBinding: Binding<String> {
+    Binding(
+      get: { viewModel.nameInput },
+      set: { viewModel.onNameInputChange($0) }
+    )
   }
 }

@@ -73,11 +73,6 @@ class ProfileViewModel(
 
     val displayName: String get() = suinsName?.let { "$it.nearby.sui" } ?: "myname.nearby.sui"
 
-    companion object {
-        /** SuiNS labels are lowercase [a-z0-9-]; strip everything else so the gateway never errors. */
-        fun sanitize(raw: String): String = raw.lowercase().filter { it in 'a'..'z' || it in '0'..'9' || it == '-' }
-    }
-
     fun loadProfile() {
         // 1. Prefill from the app-side cache for an instant badge resolution on re-entry.
         store.cachedProfile(userId)?.let {
@@ -124,17 +119,22 @@ class ProfileViewModel(
     }
 
     fun onNameInputChange(input: String) {
-        val clean = sanitize(input)
-        nameInput = clean
+        nameInput = input
         isAvailable = false
-        statusMessage = null
         nameCheckJob?.cancel()
 
-        if (clean.isEmpty() || suinsName != null) return
+        if (suinsName != null) return
 
-        nameCheckJob = viewModelScope.launch {
-            delay(AppConstants.NAME_CHECK_DEBOUNCE_MS.milliseconds)
-            checkNameAvailability(clean)
+        when (val parsed = LeafNameInput.parse(input)) {
+            LeafNameInput.Empty -> statusMessage = null
+            LeafNameInput.Invalid -> statusMessage = "Use letters, numbers, and hyphens only."
+            is LeafNameInput.Valid -> {
+                statusMessage = null
+                nameCheckJob = viewModelScope.launch {
+                    delay(AppConstants.NAME_CHECK_DEBOUNCE_MS.milliseconds)
+                    checkNameAvailability(parsed.value)
+                }
+            }
         }
     }
 
@@ -155,7 +155,9 @@ class ProfileViewModel(
     }
 
     fun registerProfileName() {
-        if (!isAvailable || nameInput.isEmpty() || suinsName != null) return
+        val parsed = LeafNameInput.parse(nameInput)
+        if (!isAvailable || suinsName != null || parsed !is LeafNameInput.Valid) return
+        val name = parsed.value
         isSaving = true
         statusMessage = "Registering name..."
 
@@ -164,7 +166,7 @@ class ProfileViewModel(
                 val deviceProvider = PlayIntegrityProvider.PROVIDER
 
                 val regRes = identityManager.registerName(
-                    nameInput,
+                    name,
                     deviceProvider,
                     swiftArena,
                 ).await()
@@ -183,7 +185,7 @@ class ProfileViewModel(
 
                 withContext(Dispatchers.Main) {
                     isSaving = false
-                    suinsName = nameInput
+                    suinsName = name
                     statusMessage = null
                     store.cacheProfile(userId, suinsName, avatarUrl)
                 }
