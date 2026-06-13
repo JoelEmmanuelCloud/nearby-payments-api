@@ -11,9 +11,9 @@ struct ActivityView: View {
 
   private let suiAddress: String?
 
-  init(suiAddress: String?) {
+  init(suiAddress: String?, store: AppSessionStore) {
     self.suiAddress = suiAddress
-    _viewModel = StateObject(wrappedValue: ActivityViewModel(suiAddress: suiAddress))
+    _viewModel = StateObject(wrappedValue: ActivityViewModel(suiAddress: suiAddress, store: store))
   }
 
   var body: some View {
@@ -21,6 +21,10 @@ struct ActivityView: View {
       content
         .navigationTitle("Activity")
         .task { await viewModel.load() }
+        .task {
+          // Refresh live when a send/consolidation reports an account change.
+          for await _ in AccountRefresh.events { await viewModel.load() }
+        }
         .refreshable { await viewModel.load() }
         .sheet(item: $selected) { ActivityDetailView(activity: $0, currentAddress: suiAddress) }
     }

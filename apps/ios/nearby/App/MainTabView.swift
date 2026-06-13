@@ -14,6 +14,8 @@ struct MainTabView: View {
   let userId: String
   let suiAddress: String?
   let currentProvider: OAuthProvider?
+  let zkLoginService: ZkLoginService
+  let toastController: ToastController
   let onSignOut: () -> Void
 
   /// One shared profile model for the whole tab shell: the Profile screen edits it, and the "You" tab
@@ -36,6 +38,7 @@ struct MainTabView: View {
     currentProvider: OAuthProvider?,
     identityManager: IdentityManager,
     toastController: ToastController,
+    zkLoginService: ZkLoginService,
     onSignOut: @escaping () -> Void
   ) {
     self.userName = userName
@@ -43,6 +46,8 @@ struct MainTabView: View {
     self.userId = userId
     self.suiAddress = suiAddress
     self.currentProvider = currentProvider
+    self.zkLoginService = zkLoginService
+    self.toastController = toastController
     self.onSignOut = onSignOut
     _profileViewModel = StateObject(
       wrappedValue: ProfileViewModel(
@@ -63,6 +68,8 @@ struct MainTabView: View {
         userId: userId,
         suiAddress: suiAddress,
         currentProvider: currentProvider,
+        zkLoginService: zkLoginService,
+        toastController: toastController,
         onSignOut: onSignOut
       )
       .tabItem {
@@ -74,7 +81,7 @@ struct MainTabView: View {
       }
       .tag(Tab.home)
 
-      ActivityView(suiAddress: suiAddress)
+      ActivityView(suiAddress: suiAddress, store: store)
         .tabItem {
           Label {
             Text("Activity")
@@ -171,6 +178,7 @@ extension UIImage {
       )
     ),
     toastController: ToastController(),
+    zkLoginService: .preview,
     onSignOut: {}
   )
 }

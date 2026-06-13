@@ -22,6 +22,10 @@ final class ZkLoginService: ObservableObject {
     case missingAddress
     /// No in-memory ephemeral session is available to generate a fresh proof.
     case noEphemeral
+    /// The zkLogin session can no longer sign: the ephemeral key's `maxEpoch` has passed or the
+    /// Secure Enclave key is unavailable. The caller must re-authenticate (fresh nonce + OAuth with
+    /// the current provider) before a signer can be produced — see `freshSigner(...)`.
+    case sessionUnusable
   }
 
   private let zkAuth: ZkLoginAuthenticator
@@ -94,10 +98,27 @@ final class ZkLoginService: ObservableObject {
     try await resolveSigner()
   }
 
+  /// Whether the persisted session can currently produce a valid signature: its `maxEpoch` is still
+  /// ahead of the chain's current epoch and the Secure Enclave key is present. A fresh login (with a
+  /// `pendingZKEphemeral` in memory) is also usable even before its proof is persisted.
+  func isSessionUsable() async throws -> Bool {
+    if pendingZKEphemeral != nil { return true }
+    let epoch = try await zkAuth.getCurrentEpoch().epoch
+    return try sessionManager.isZkLoginSessionUsable(currentEpoch: epoch)
+  }
+
   /// Returns a ready-to-use signer, constructing it just-in-time from the persisted proof (or, if
   /// none is cached yet, by generating one). Shares the in-flight warm-up task when present.
+  ///
+  /// Throws `ZkLoginServiceError.sessionUnusable` when the session can no longer sign (expired
+  /// `maxEpoch` / missing Secure Enclave key) so the caller routes a just-in-time re-authentication
+  /// instead of submitting a signature that the network will reject. Without this guard the signer
+  /// would be assembled from a stale proof and fail only at execution, with an opaque error.
   func signer() async throws -> ZkLoginSigner {
-    try await resolveSigner()
+    guard try await isSessionUsable() else {
+      throw ZkLoginServiceError.sessionUnusable
+    }
+    return try await resolveSigner()
   }
 
   /// Clears any active pending zkLogin ephemeral session and cached signer.

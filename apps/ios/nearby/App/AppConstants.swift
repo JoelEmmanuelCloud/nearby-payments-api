@@ -36,4 +36,19 @@ nonisolated enum AppConstants {
 
   /// Debounce before checking SuiNS name availability as the user types.
   static let nameCheckDebounce: TimeInterval = 0.5
+
+  /// Full 32-byte genesis checkpoint digests (the chain identifier) per network, base58-encoded.
+  /// These are the canonical values from `sui-types` (their first 4 bytes are the familiar short
+  /// chain ids — testnet `4c78adac`, mainnet `35834a8a`). Used in the `ValidDuring` expiration of
+  /// gasless (address-balance) transactions for cross-chain replay protection.
+  static let suiTestnetGenesisDigestBase58 = "69WiPg3DAQiwdxfncX6wYQ2siKwAe6L9BZthQea3JNMD"
+  static let suiMainnetGenesisDigestBase58 = "4btiuiMPvEENsttpZC7CZ53DruC3MAgfznDbASZ7DR6S"
+
+  /// The base58 genesis digest for the configured network.
+  static var suiChainIdentifierBase58: String {
+    switch suiNetwork {
+    case .mainnet: return suiMainnetGenesisDigestBase58
+    default: return suiTestnetGenesisDigestBase58
+    }
+  }
 }

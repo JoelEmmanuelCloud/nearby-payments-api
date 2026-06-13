@@ -25,6 +25,7 @@ final class ActivityViewModel: ObservableObject {
 
   private let service: ActivityService
   private let address: String?
+  private let store: AppSessionStore
 
   private var cursor: String?
 
@@ -32,11 +33,22 @@ final class ActivityViewModel: ObservableObject {
 
   init(
     suiAddress: String?,
+    store: AppSessionStore,
     service: ActivityService = ActivityService(
       network: AppConstants.suiNetwork, coinType: AppConstants.usdSuiCoinType)
   ) {
     self.address = suiAddress
+    self.store = store
     self.service = service
+    // Seed from cache so re-entering Activity shows the last-known feed immediately (no skeleton);
+    // `load` then refreshes it silently.
+    if let suiAddress, !suiAddress.isEmpty {
+      let cached = store.cachedActivity(for: suiAddress)
+      if !cached.isEmpty {
+        items = cached
+        phase = .content
+      }
+    }
   }
 
   /// Initial load (and pull-to-refresh): resets to the newest page.
@@ -54,8 +66,8 @@ final class ActivityViewModel: ObservableObject {
       canLoadMore = feed.hasMore
       try await fillIfStarved()
       phase = items.isEmpty ? .empty : .content
+      store.cacheActivity(items, for: address)
     } catch {
-      debugPrint("ActivityViewModel.load failed: \(error)")
       phase = items.isEmpty ? .error : .content
     }
   }

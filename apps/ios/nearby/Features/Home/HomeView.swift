@@ -1,5 +1,6 @@
 import Gateway
 import Identity
+import LeanSui
 import SwiftUI
 import UI
 
@@ -9,6 +10,8 @@ struct HomeView: View {
   let userId: String
   let suiAddress: String?
   let currentProvider: OAuthProvider?
+  let zkLoginService: ZkLoginService
+  let toastController: ToastController
   let onSignOut: () -> Void
 
   @MainActor @StateObject private var balanceModel: HomeViewModel
@@ -30,6 +33,8 @@ struct HomeView: View {
     userId: String,
     suiAddress: String?,
     currentProvider: OAuthProvider?,
+    zkLoginService: ZkLoginService,
+    toastController: ToastController,
     onSignOut: @escaping () -> Void
   ) {
     self.userName = userName
@@ -37,9 +42,16 @@ struct HomeView: View {
     self.userId = userId
     self.suiAddress = suiAddress
     self.currentProvider = currentProvider
+    self.zkLoginService = zkLoginService
+    self.toastController = toastController
     self.onSignOut = onSignOut
     _balanceModel = StateObject(
-      wrappedValue: HomeViewModel(suiAddress: suiAddress, store: store))
+      wrappedValue: HomeViewModel(
+        suiAddress: suiAddress,
+        store: store,
+        consolidateService: ConsolidateService(
+          signerProvider: { try await zkLoginService.signer() }),
+        toastController: toastController))
   }
 
   var body: some View {
@@ -90,6 +102,12 @@ struct HomeView: View {
                   }
                 }
               }
+
+              // Pending (coin-object) balance: a thin call-to-action shown only when there's value
+              // to move into the spendable address balance. Tapping runs the gasless consolidation.
+              if !balanceModel.isHidden && balanceModel.hasPendingBalance {
+                pendingBalanceStrip
+              }
             }
           }
 
@@ -110,7 +128,9 @@ struct HomeView: View {
             coinSymbol: AppConstants.balanceCoinSymbol,
             maxFractionDigits: AppConstants.balanceCoinDecimals,
             suiAddress: suiAddress,
-            store: store
+            store: store,
+            zkLoginService: zkLoginService,
+            onFinish: { destination = nil }
           )
         }
       }
@@ -134,6 +154,40 @@ struct HomeView: View {
     }
   }
 
+  /// The thin "pending balance" call to action at the bottom of the balance card. Surfaces value held
+  /// as coin objects and moves it into the spendable address balance with one gasless transaction.
+  @ViewBuilder
+  private var pendingBalanceStrip: some View {
+    Button {
+      Task { await balanceModel.consolidate() }
+    } label: {
+      HStack(spacing: 8) {
+        if balanceModel.isConsolidating {
+          ProgressView().controlSize(.mini)
+          Text("Moving to balance…")
+            .foregroundColor(.secondary)
+        } else {
+          Image(systemName: "tray.and.arrow.down.fill")
+            .foregroundColor(.accentColor)
+          Text("\(balanceModel.formattedPendingBalance) USDsui pending")
+            .foregroundColor(.primary)
+          Spacer(minLength: 8)
+          Text("Move to balance")
+            .fontWeight(.semibold)
+            .foregroundColor(.accentColor)
+        }
+      }
+      .font(.footnote)
+      .padding(.vertical, 10)
+      .padding(.horizontal, 12)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(Color.accentColor.opacity(0.12))
+      .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+    .buttonStyle(.plain)
+    .disabled(!balanceModel.canConsolidate)
+  }
+
   private func loadCachedIdentity() {
     guard let cached = store.cachedProfile(userId: userId) else { return }
     self.suinsName = cached.suinsName
@@ -148,6 +202,8 @@ struct HomeView: View {
     userId: "preview",
     suiAddress: nil,
     currentProvider: .google,
+    zkLoginService: .preview,
+    toastController: ToastController(),
     onSignOut: {}
   )
 }

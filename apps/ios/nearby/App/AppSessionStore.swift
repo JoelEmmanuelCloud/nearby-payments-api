@@ -1,13 +1,18 @@
 import Foundation
 import Identity
+import LeanSuiApi
 
 struct AppSessionStore {
+  /// How many activity rows to cache for instant display on the next launch.
+  private static let cachedActivityLimit = 30
+
   private enum Key {
     static let didCompleteOnboarding = "nearby.didCompleteOnboarding"
     static let userName = "nearby.userName"
     static let balanceHidden = "nearby.balanceHidden"
     static let lastBalance = "nearby.lastUsdSuiBalance"
     static func profile(_ userId: String) -> String { "nearby.profile.\(userId)" }
+    static func activity(_ address: String) -> String { "nearby.activity.\(address)" }
   }
 
   private let defaults: UserDefaults
@@ -70,5 +75,23 @@ struct AppSessionStore {
   func cachedProfile(userId: String) -> IdentityProfile? {
     guard let data = defaults.data(forKey: Key.profile(userId)) else { return nil }
     return try? JSONDecoder().decode(IdentityProfile.self, from: data)
+  }
+
+  // MARK: - Activity cache
+  //
+  // The newest page of activity rows, so the Activity tab shows the last-known feed immediately on
+  // re-entry while a silent refresh runs (mirrors `lastUsdSuiBalance`). Keyed by address.
+
+  func cacheActivity(_ items: [SuiActivity], for address: String) {
+    let trimmed = Array(items.prefix(Self.cachedActivityLimit))
+    guard let data = try? JSONEncoder().encode(trimmed) else { return }
+    defaults.set(data, forKey: Key.activity(address))
+  }
+
+  func cachedActivity(for address: String) -> [SuiActivity] {
+    guard let data = defaults.data(forKey: Key.activity(address)),
+      let items = try? JSONDecoder().decode([SuiActivity].self, from: data)
+    else { return [] }
+    return items
   }
 }

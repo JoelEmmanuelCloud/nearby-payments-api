@@ -36,6 +36,7 @@ struct ContentView: View {
             currentProvider: viewModel.currentProvider,
             identityManager: viewModel.identityManager,
             toastController: viewModel.toastController,
+            zkLoginService: viewModel.zkLoginService,
             onSignOut: {
               viewModel.signOut()
             }

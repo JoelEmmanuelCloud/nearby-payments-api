@@ -10,38 +10,40 @@ struct ProfileEditView: View {
   @Environment(\.dismiss) private var dismiss
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 16) {
-        MutedText(
-          "Choose your unique Nearby handle. This registers an on-chain sub-domain under nearby.sui and cannot be changed."
-        )
+    // Button pinned at the bottom (thumb-reachable), mirroring the send recipient screen, with the
+    // input and helper text at the top.
+    VStack(alignment: .leading, spacing: 16) {
+      MutedText(
+        "Choose your unique Nearby handle. This registers an on-chain sub-domain under nearby.sui and cannot be changed."
+      )
 
-        HStack {
-          Input("username", text: nameBinding)
-            .disabled(viewModel.isSaving)
-            .padding(14)
-            .background(Color(.secondarySystemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+      HStack {
+        Input("username", text: nameBinding)
+          .disabled(viewModel.isSaving)
+          .padding(14)
+          .background(Color(.secondarySystemBackground))
+          .clipShape(RoundedRectangle(cornerRadius: 12))
 
-          Text(".nearby.sui")
-            .foregroundColor(.secondary)
-        }
-
-        if let status = viewModel.statusMessage {
-          Text(status)
-            .font(.caption)
-            .foregroundColor(viewModel.isAvailable ? .green : .red)
-        }
-
-        UIButton(
-          viewModel.isSaving ? "Registering…" : "Register",
-          isDisabled: !viewModel.isAvailable || viewModel.isSaving
-        ) {
-          Task { await viewModel.registerName() }
-        }
+        Text(".nearby.sui")
+          .foregroundColor(.secondary)
       }
-      .padding(24)
+
+      if let status = viewModel.statusMessage {
+        Text(status)
+          .font(.caption)
+          .foregroundColor(viewModel.isAvailable ? .green : .red)
+      }
+
+      Spacer()
+
+      UIButton(
+        viewModel.isSaving ? "Registering…" : "Register",
+        isDisabled: !viewModel.isAvailable || viewModel.isSaving
+      ) {
+        Task { await viewModel.registerName() }
+      }
     }
+    .padding(24)
     .navigationTitle("Choose your name")
     .navigationBarTitleDisplayMode(.inline)
     .onChange(of: viewModel.suinsName) { _, newValue in

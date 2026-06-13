@@ -1,12 +1,15 @@
+import LeanSui
 import SwiftUI
 import UI
 
-/// Step 1 of the send flow (#6a): enter an amount of the balance coin on a custom numeric keypad.
-/// `onNext` hands the entered amount to the recipient step (#6c).
+/// Step 1 of the send flow (#6a): enter an amount of the balance coin on a custom numeric keypad. The
+/// amount flows to the recipient screen (#6c), which sends and shows the result (#6d/#6e).
 struct SendAmountView: View {
   @StateObject private var viewModel: SendAmountViewModel
 
   private let coinSymbol: String
+  private let zkLoginService: ZkLoginService
+  private let onFinish: () -> Void
 
   @State private var enteredAmount: Decimal?
 
@@ -14,9 +17,13 @@ struct SendAmountView: View {
     coinSymbol: String,
     maxFractionDigits: Int,
     suiAddress: String?,
-    store: AppSessionStore
+    store: AppSessionStore,
+    zkLoginService: ZkLoginService,
+    onFinish: @escaping () -> Void
   ) {
     self.coinSymbol = coinSymbol
+    self.zkLoginService = zkLoginService
+    self.onFinish = onFinish
     _viewModel = StateObject(
       wrappedValue: SendAmountViewModel(
         coinSymbol: coinSymbol,
@@ -68,7 +75,8 @@ struct SendAmountView: View {
       RecipientView(
         amount: amount,
         coinSymbol: coinSymbol,
-        onContinue: { _ in }  // 6d: build/sign/execute the gasless send.
+        zkLoginService: zkLoginService,
+        onFinish: onFinish
       )
     }
   }

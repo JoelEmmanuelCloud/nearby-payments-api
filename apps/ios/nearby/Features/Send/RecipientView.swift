@@ -1,16 +1,34 @@
+import LeanSui
 import SwiftUI
 import UI
 
-/// Step 2 of the send flow (#6c): enter the recipient as a SuiNS name or `0x` address. The field shows
-/// a live idle → resolving → ✓ / ✗ state; `onContinue` hands the resolved address to #6d.
+/// The second (and final input) screen of the send flow (#6c/#6d): enter the recipient as a SuiNS
+/// name or `0x` address, then send. The field shows a live idle → resolving → ✓ / ✗ state; the
+/// bottom-pinned "Send" button executes the gasless transfer inline and, once it settles, pushes the
+/// success / failure result (#6e).
 struct RecipientView: View {
   let amount: Decimal
   let coinSymbol: String
-  let onContinue: (String) -> Void
+  let onFinish: () -> Void
 
   @StateObject private var viewModel = RecipientViewModel()
+  @StateObject private var sendModel: SendViewModel
+
+  @State private var result: SendResultView.Outcome?
 
   @FocusState private var fieldFocused: Bool
+
+  init(
+    amount: Decimal, coinSymbol: String, zkLoginService: ZkLoginService,
+    onFinish: @escaping () -> Void
+  ) {
+    self.amount = amount
+    self.coinSymbol = coinSymbol
+    self.onFinish = onFinish
+    let service = SendService(signerProvider: { try await zkLoginService.signer() })
+    _sendModel = StateObject(
+      wrappedValue: SendViewModel(amount: amount, coinSymbol: coinSymbol, service: service))
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
@@ -19,6 +37,7 @@ struct RecipientView: View {
       HStack(spacing: 8) {
         Input("name.sui or 0x address", text: fieldBinding)
           .focused($fieldFocused)
+          .disabled(sendModel.isSending)
 
         status
       }
@@ -30,16 +49,39 @@ struct RecipientView: View {
 
       Spacer()
 
-      UIButton("Continue", isDisabled: viewModel.resolvedAddress == nil) {
-        if let address = viewModel.resolvedAddress {
-          onContinue(address)
-        }
+      UIButton(
+        sendModel.isSending ? "Sending…" : "Send",
+        isDisabled: viewModel.resolvedAddress == nil || sendModel.isSending
+      ) {
+        Task { await send() }
       }
     }
     .padding(24)
     .navigationTitle("Recipient")
     .navigationBarTitleDisplayMode(.inline)
+    .navigationBarBackButtonHidden(sendModel.isSending)
     .onAppear { fieldFocused = true }
+    .navigationDestination(item: $result) { outcome in
+      SendResultView(
+        outcome: outcome,
+        amount: amount,
+        coinSymbol: coinSymbol,
+        recipient: viewModel.resolvedAddress ?? "",
+        onDone: onFinish,
+        onRetry: { result = nil }
+      )
+    }
+  }
+
+  private func send() async {
+    guard let address = viewModel.resolvedAddress else { return }
+    fieldFocused = false
+    await sendModel.send(to: address)
+    switch sendModel.state {
+    case .success(let digest): result = .success(digest: digest)
+    case .failure(let message): result = .failure(message: message)
+    case .idle, .sending: break
+    }
   }
 
   private var fieldBinding: Binding<String> {
