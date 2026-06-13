@@ -35,6 +35,7 @@ type Config struct {
 	WalrusPublisherURL     string
 	WalrusAggregatorURL    string
 	ZkLoginProverURL       string
+	AppCallbackURL         string
 }
 
 func Load() (*Config, error) {
@@ -83,6 +84,7 @@ func Load() (*Config, error) {
 		WalrusPublisherURL:     optional("WALRUS_PUBLISHER_URL", ""),
 		WalrusAggregatorURL:    optional("WALRUS_AGGREGATOR_URL", ""),
 		ZkLoginProverURL:       optional("ZKLOGIN_PROVER_URL", "https://prover.mystenlabs.com/v1"),
+		AppCallbackURL:         optional("APP_CALLBACK_URL", "https://variance.space/callback"),
 	}
 
 	if len(missing) > 0 {

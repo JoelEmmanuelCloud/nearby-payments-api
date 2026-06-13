@@ -56,6 +56,7 @@ type ServiceDeps struct {
 	CredentialSignKey     ed25519.PrivateKey
 	CredentialPubKey      ed25519.PublicKey
 	ProverURL             string
+	AppCallbackURL        string
 }
 
 type Service struct {
@@ -77,6 +78,7 @@ type Service struct {
 	credPubKey            ed25519.PublicKey
 	proverURL             string
 	proverClient          *http.Client
+	appCallbackURL        string
 	appleJWKSCache        appleJWKSCache
 }
 
@@ -100,6 +102,7 @@ func NewService(deps ServiceDeps) *Service {
 		credPubKey:            deps.CredentialPubKey,
 		proverURL:             deps.ProverURL,
 		proverClient:          &http.Client{Timeout: 60 * time.Second},
+		appCallbackURL:        deps.AppCallbackURL,
 	}
 }
 

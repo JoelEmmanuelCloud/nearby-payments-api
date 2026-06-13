@@ -112,6 +112,7 @@ func main() {
 		CredentialSignKey:     credSignKey,
 		CredentialPubKey:      credPubKey,
 		ProverURL:             cfg.ZkLoginProverURL,
+		AppCallbackURL:        cfg.AppCallbackURL,
 	})
 	authHandler := auth.NewHandler(authSvc)
 
