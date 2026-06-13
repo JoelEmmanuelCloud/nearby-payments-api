@@ -127,8 +127,9 @@ func main() {
 		AppleTeamID:           cfg.AppleTeamID,
 		CredentialSignKey:     credSignKey,
 		CredentialPubKey:      credPubKey,
-		ProverURL:             cfg.ZkLoginProverURL,
-		ProverClient:          proverClient,
+		ProverURL:      cfg.ZkLoginProverURL,
+		ProverClient:   proverClient,
+		AppCallbackURL: cfg.AppCallbackURL,
 	})
 	authHandler := auth.NewHandler(authSvc)
 

@@ -55,10 +55,9 @@ type ServiceDeps struct {
 	AppleTeamID           string
 	CredentialSignKey     ed25519.PrivateKey
 	CredentialPubKey      ed25519.PublicKey
-	ProverURL             string
-	// HTTP client for prover calls. When the prover is a private Cloud Run service this is an ID-token
-	// client (audience = the service URL); otherwise a plain client. Built in main.
-	ProverClient *http.Client
+	ProverURL      string
+	ProverClient   *http.Client
+	AppCallbackURL string
 }
 
 type Service struct {
@@ -78,10 +77,11 @@ type Service struct {
 	appleTeamID           string
 	credSignKey           ed25519.PrivateKey
 	credPubKey            ed25519.PublicKey
-	proverURL             string
-	proverClient          *http.Client // Apple token/keys calls
-	zkProverClient        *http.Client // zkLogin prover (may carry a Cloud Run ID token)
-	appleJWKSCache        appleJWKSCache
+	proverURL      string
+	proverClient   *http.Client
+	zkProverClient *http.Client
+	appCallbackURL string
+	appleJWKSCache appleJWKSCache
 }
 
 func NewService(deps ServiceDeps) *Service {
@@ -102,9 +102,10 @@ func NewService(deps ServiceDeps) *Service {
 		appleTeamID:           deps.AppleTeamID,
 		credSignKey:           deps.CredentialSignKey,
 		credPubKey:            deps.CredentialPubKey,
-		proverURL:             deps.ProverURL,
-		proverClient:          &http.Client{Timeout: 60 * time.Second},
-		zkProverClient:        deps.ProverClient,
+		proverURL:      deps.ProverURL,
+		proverClient:   &http.Client{Timeout: 60 * time.Second},
+		zkProverClient: deps.ProverClient,
+		appCallbackURL: deps.AppCallbackURL,
 	}
 }
 

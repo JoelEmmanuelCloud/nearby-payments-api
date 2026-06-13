@@ -314,7 +314,7 @@ func (h *Handler) OAuthAppleCallback(w http.ResponseWriter, r *http.Request) {
 	q := url.Values{}
 	q.Set("code", r.FormValue("code"))
 	q.Set("state", r.FormValue("state"))
-	http.Redirect(w, r, "nearby-auth://callback?"+q.Encode(), http.StatusFound)
+	http.Redirect(w, r, h.svc.appCallbackURL+"?"+q.Encode(), http.StatusFound)
 }
 
 var _ = chi.RouteContext
