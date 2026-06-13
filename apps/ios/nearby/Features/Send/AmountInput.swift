@@ -52,6 +52,17 @@ struct AmountInput: Equatable {
     text = ""
   }
 
+  /// Replaces the entry with `value` (used by the quick-select chips). Formatted with "." and no
+  /// grouping so it round-trips through `decimalValue` and the display unchanged.
+  mutating func set(_ value: Decimal) {
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .decimal
+    formatter.usesGroupingSeparator = false
+    formatter.maximumFractionDigits = maxFractionDigits
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    text = formatter.string(from: value as NSDecimalNumber) ?? "0"
+  }
+
   /// Whether the fraction already holds `maxFractionDigits` digits (further digits are ignored).
   private var fractionIsFull: Bool {
     guard let dot = text.firstIndex(of: ".") else { return false }

@@ -6,13 +6,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.variance.nearby.R
 
 /** The custom 3×4 numeric keypad for entering a send amount. Stateless — taps are reported via [onKey]. */
 @Composable
@@ -45,15 +49,24 @@ private fun Key(key: KeypadKey, onClick: () -> Unit, modifier: Modifier = Modifi
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = when (key) {
-                is KeypadKey.Digit -> key.value.toString()
-                KeypadKey.Decimal -> "."
-                KeypadKey.Backspace -> "⌫"
-            },
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+        val content = when (key) {
+            KeypadKey.Backspace -> null
+            KeypadKey.Decimal -> "•"
+            is KeypadKey.Digit -> key.value.toString()
+        }
+        if (!content.isNullOrEmpty()) {
+            Text(
+                text = content,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        } else {
+            Icon(
+                painter = painterResource(R.drawable.backspace),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }

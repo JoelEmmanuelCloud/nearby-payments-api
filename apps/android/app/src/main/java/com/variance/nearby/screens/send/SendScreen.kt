@@ -96,6 +96,15 @@ fun SendScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            QuickSelectChips(
+                suggestions = viewModel.suggestions,
+                isEnabled = viewModel::isWithinBalance,
+                onSelect = viewModel::select,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             NumericKeypad(
                 onKey = viewModel::handle,
                 modifier = Modifier.fillMaxWidth(),

@@ -33,6 +33,10 @@ data class AmountInput(
 
     fun backspace(): AmountInput = if (text.isEmpty()) this else copy(text = text.dropLast(1))
 
+    /** Replaces the entry with [value] (used by the quick-select chips), as a plain "."-separated
+     *  string so it round-trips through [decimalValue] and [display] unchanged. */
+    fun set(value: BigDecimal): AmountInput = copy(text = value.stripTrailingZeros().toPlainString())
+
     /** Whether the fraction already holds [maxFractionDigits] digits (further digits are ignored). */
     private val fractionIsFull: Boolean
         get() {

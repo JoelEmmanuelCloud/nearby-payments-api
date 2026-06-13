@@ -39,6 +39,18 @@ class SendAmountViewModel(
     val canContinue: Boolean
         get() = input.isValid && !exceedsBalance
 
+    /** The predictive quick-pick amounts for the current entry. */
+    val suggestions: List<BigDecimal>
+        get() = QuickSelect.suggestions(input.decimalValue)
+
+    /** Whether a suggestion fits the known balance (chips above it are disabled). */
+    fun isWithinBalance(value: BigDecimal): Boolean = availableBalance?.let { value <= it } ?: true
+
+    /** Fills the entry from a tapped quick-select chip. */
+    fun select(value: BigDecimal) {
+        input = input.set(value)
+    }
+
     fun handle(key: KeypadKey) {
         input = when (key) {
             is KeypadKey.Digit -> input.appendDigit(key.value)

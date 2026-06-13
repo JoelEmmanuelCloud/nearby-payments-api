@@ -47,6 +47,12 @@ struct SendAmountView: View {
 
       Spacer()
 
+      QuickSelectChipsView(
+        suggestions: viewModel.suggestions,
+        isEnabled: { viewModel.isWithinBalance($0) },
+        onSelect: { viewModel.select($0) }
+      )
+
       NumericKeypadView { viewModel.handle($0) }
 
       UIButton("Next", isDisabled: !viewModel.canContinue) {

@@ -47,6 +47,22 @@ final class SendAmountViewModel: ObservableObject {
     input.isValid && !exceedsBalance
   }
 
+  /// The predictive quick-pick amounts for the current entry.
+  var suggestions: [Decimal] {
+    QuickSelect.suggestions(forValue: input.decimalValue)
+  }
+
+  /// Whether a suggestion fits the known balance (chips above it are disabled).
+  func isWithinBalance(_ value: Decimal) -> Bool {
+    guard let availableBalance else { return true }
+    return value <= availableBalance
+  }
+
+  /// Fills the entry from a tapped quick-select chip.
+  func select(_ value: Decimal) {
+    input.set(value)
+  }
+
   func handle(_ key: KeypadKey) {
     switch key {
     case .digit(let value):

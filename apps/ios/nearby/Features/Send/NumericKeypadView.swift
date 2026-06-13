@@ -50,7 +50,7 @@ struct NumericKeypadView: View {
     case .digit(let value):
       Text(String(value))
     case .decimal:
-      Text(".")
+      Text("•")
     case .backspace:
       Image(systemName: "delete.left")
     }
