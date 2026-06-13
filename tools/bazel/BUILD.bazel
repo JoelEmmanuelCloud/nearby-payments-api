@@ -1,0 +1,4 @@
+# Makes //tools/bazel a loadable package so other packages can
+# `load("//tools/bazel:defs.bzl", ...)`. The .bzl is exported for visibility.
+
+exports_files(["defs.bzl"])

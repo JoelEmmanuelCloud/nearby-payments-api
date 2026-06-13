@@ -5,17 +5,17 @@ type FiatUsdDepositState struct {
 }
 
 type KycRequiredState struct {
-	Kind          string `json:"kind"`
+	Kind            string `json:"kind"`
 	BridgeKycLinkID string `json:"bridgeKycLinkId"`
-	KycURL        string `json:"kycUrl"`
-	TosURL        string `json:"tosUrl"`
-	Status        string `json:"status"`
+	KycURL          string `json:"kycUrl"`
+	TosURL          string `json:"tosUrl"`
+	Status          string `json:"status"`
 }
 
 type KycPendingState struct {
-	Kind          string `json:"kind"`
+	Kind            string `json:"kind"`
 	BridgeKycLinkID string `json:"bridgeKycLinkId"`
-	Status        string `json:"status"`
+	Status          string `json:"status"`
 }
 
 type AccountDetailsState struct {
@@ -24,17 +24,17 @@ type AccountDetailsState struct {
 }
 
 type UsdAccount struct {
-	ID                  string   `json:"id"`
-	Currency            string   `json:"currency"`
-	Rails               []string `json:"rails"`
-	BankName            string   `json:"bankName"`
-	AccountNumberLast4  string   `json:"accountNumberLast4"`
-	RoutingNumber       string   `json:"routingNumber"`
-	AccountHolderName   string   `json:"accountHolderName"`
+	ID                 string   `json:"id"`
+	Currency           string   `json:"currency"`
+	Rails              []string `json:"rails"`
+	BankName           string   `json:"bankName"`
+	AccountNumberLast4 string   `json:"accountNumberLast4"`
+	RoutingNumber      string   `json:"routingNumber"`
+	AccountHolderName  string   `json:"accountHolderName"`
 }
 
 type CryptoDepositState struct {
-	Kind   string              `json:"kind"`
+	Kind   string               `json:"kind"`
 	Routes []CryptoDepositRoute `json:"routes"`
 }
 
@@ -60,20 +60,20 @@ type BridgeLink struct {
 }
 
 type DepositRoute struct {
-	ID                   string
-	UserID               string
-	Provider             string
-	ProviderRouteID      string
-	Kind                 string
-	SourceRail           string
-	SourceCurrency       string
-	SourceAddress        string
-	DestinationRail      string
-	DestinationCurrency  string
-	DestinationAddrHash  string
-	State                string
-	CreatedAt            int64
-	UpdatedAt            int64
+	ID                  string
+	UserID              string
+	Provider            string
+	ProviderRouteID     string
+	Kind                string
+	SourceRail          string
+	SourceCurrency      string
+	SourceAddress       string
+	DestinationRail     string
+	DestinationCurrency string
+	DestinationAddrHash string
+	State               string
+	CreatedAt           int64
+	UpdatedAt           int64
 }
 
 type DepositSummary struct {
@@ -92,12 +92,12 @@ type ListDepositsResponse struct {
 }
 
 type BridgeWebhookEvent struct {
-	ID             string
+	ID              string
 	ProviderEventID string
-	EventType      string
-	RawPayload     []byte
-	Processed      bool
-	CreatedAt      int64
+	EventType       string
+	RawPayload      []byte
+	Processed       bool
+	CreatedAt       int64
 }
 
 type BridgeHostedKycLink struct {

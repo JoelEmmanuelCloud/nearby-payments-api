@@ -1,0 +1,39 @@
+load("@rules_swift//swift:swift.bzl", "swift_library", "swift_test")
+
+swift_library(
+    name = "LeanSui",
+    srcs = glob(
+        [
+            "LeanSuiCore/Sources/LeanSui/**/*.swift",
+        ],
+        exclude = [
+            "LeanSuiCore/Sources/LeanSui/swift-java.config",
+        ],
+    ),
+    module_name = "LeanSui",
+    visibility = ["//visibility:public"],
+    deps = [
+        # The GraphQL Sui client (provider/client/DTOs) lives in sui-api;
+        # Apollo is pulled in transitively from there.
+        "//packages/sui-api:LeanSuiApi",
+        "//packages/hsm:HSM",
+        # The cross-platform BCS serializer lives in sui-bcs.
+        "//packages/sui-bcs:LeanSuiBCS",
+        "@swiftpkg_bigint//:BigInt",
+        # swift-crypto for cross-platform Ed25519 + SHA (replaced ed25519swift /
+        # CryptoSwift / CommonCrypto). SwiftyJSON and JWTDecode are vendored into
+        # Sources/Sui/Vendor (no longer external deps).
+        "@swiftpkg_swift_crypto//:Crypto",
+        "@swiftpkg_uint256//:UInt256",
+    ],
+)
+
+swift_test(
+    name = "LeanSuiTests",
+    srcs = glob([
+        "LeanSuiCore/Tests/LeanSuiTests/**/*.swift",
+    ]),
+    deps = [
+        ":LeanSui",
+    ],
+)

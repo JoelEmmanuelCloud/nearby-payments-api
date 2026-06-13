@@ -41,6 +41,22 @@ func (s *Store) GetTaskByID(ctx context.Context, id string) (*NameOperationTask,
 	return t, err
 }
 
+func (s *Store) GetActiveTaskByPayloadHash(ctx context.Context, payloadHash string, now int64) (*NameOperationTask, error) {
+	t := &NameOperationTask{}
+	err := s.db.QueryRow(ctx,
+		`SELECT id, user_id, action, payload_hash, nonce, status, avs_task_id, created_at, updated_at, expires_at
+		 FROM name_operation_tasks
+		 WHERE payload_hash = $1 AND status IN ('authorized', 'submitted') AND expires_at > $2
+		 ORDER BY created_at DESC LIMIT 1`,
+		payloadHash, now,
+	).Scan(&t.ID, &t.UserID, &t.Action, &t.PayloadHash, &t.Nonce,
+		&t.Status, &t.AVSTaskID, &t.CreatedAt, &t.UpdatedAt, &t.ExpiresAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return t, err
+}
+
 func (s *Store) UpdateTaskStatus(ctx context.Context, id, status string, updatedAt int64) error {
 	_, err := s.db.Exec(ctx,
 		`UPDATE name_operation_tasks SET status = $1, updated_at = $2 WHERE id = $3`,

@@ -1,0 +1,722 @@
+# Nearby Payments API — Test Guide
+
+## Environments
+
+| | Base URL |
+|---|---|
+| **Local** | `http://localhost:8080` |
+| **Production** | `https://nearby-api-nry2jzv3qq-uc.a.run.app` |
+
+The Postman collection variable `{{baseUrl}}` defaults to production. To test locally, set it to `http://localhost:8080` in the collection **Variables** tab. `{{localUrl}}` is pre-set to the local value as a convenience.
+
+**Run the local server:**
+```
+cd apps/api
+go run ./cmd/api/main.go
+```
+Confirm it is up: `GET {{baseUrl}}/health` → `{"status":"ok"}`
+
+---
+
+## Auth Levels
+
+Every protected endpoint uses one of two auth levels:
+
+| Level | What it checks |
+|-------|----------------|
+| **low** | Valid Bearer token only |
+| **high** | Bearer token + `X-Device-Provider`, `X-Request-Nonce`, `X-Request-Timestamp` headers. Nonce must be unique (replay protection via Redis). Timestamp must be within 5 minutes of now. |
+
+The Postman pre-request scripts on `high` endpoints generate these headers automatically.
+
+---
+
+## Step 1 — Get an Access Token
+
+1. Open `{{baseUrl}}/static/auth_test.html` in your browser
+2. Select platform (`ios` or `android`) and click **Sign in with Google** or **Sign in with Apple**
+3. Complete sign-in — the page redirects back and completes the exchange automatically
+4. Copy the **Access Token** from the green box
+
+Paste the token into the Postman collection variable `accessToken`:
+- Click the collection name → **Variables** tab → set `accessToken` current value
+
+All requests using `Authorization: Bearer {{accessToken}}` will now authenticate.
+
+**What sign-in creates:**
+- A `users` row
+- A `sessions` row (access + refresh tokens)
+- A `devices` and `device_integrity_records` row
+
+> Wallet binding is no longer part of sign-in. After completing OAuth, call `PUT /v1/me/wallet` with the derived `suiAddress` to bind the wallet (see Step 4). Deposit endpoints require a wallet binding.
+
+**Token TTLs:**
+- Access token: 15 minutes
+- Refresh token: 30 days
+
+---
+
+## Step 2 — Health & Public Key
+
+No auth required.
+
+### Health Check
+```
+GET /health
+```
+Expected: `200 {"status":"ok"}`
+
+### Get Server Public Key
+```
+GET /v1/auth/server-public-key
+```
+Expected: `200` with the server's ed25519 public key. Mobile clients use this to verify credential signatures.
+
+---
+
+## Step 3 — Auth Endpoints
+
+### OAuth Begin
+No auth required. Returns a `state` token (and an `authURL` for web flow) that must be passed to OAuth Complete.
+
+**Web flow** (browser PKCE):
+```
+POST /v1/auth/oauth/begin
+Body:
+{
+  "provider": "google",
+  "flowType": "web",
+  "codeChallenge": "<SHA256(codeVerifier), base64url-encoded>",
+  "codeChallengeMethod": "S256",
+  "zkLoginNonce": "<ephemeral public key nonce>"
+}
+```
+Expected: `200` — redirect the user to `authURL`. Google returns `code` + `state` to the redirect URI.
+
+**Google native** (iOS / Android SDK):
+```
+POST /v1/auth/oauth/begin
+Body:
+{
+  "provider": "google",
+  "flowType": "native",
+  "zkLoginNonce": "<ephemeral public key nonce>"
+}
+```
+Expected: `200` — only `state` is returned. The Google Sign-In SDK handles auth and produces an `idToken`.
+
+**Apple native** (iOS only — Sign in with Apple SDK):
+```
+POST /v1/auth/oauth/begin
+Body:
+{
+  "provider": "apple",
+  "flowType": "native",
+  "zkLoginNonce": "<ephemeral public key nonce>"
+}
+```
+Expected: `200` — only `state` is returned. `ASAuthorizationAppleIDProvider` handles auth and produces an `identityToken`.
+
+**Apple web** (browser-based Sign in with Apple):
+```
+POST /v1/auth/oauth/begin
+Body:
+{
+  "provider": "apple",
+  "flowType": "web",
+  "zkLoginNonce": "<ephemeral public key nonce>"
+}
+```
+Expected: `200` — returns `state` and `authURL`. Redirect the user to `authURL`. Apple POSTs `code` and `state` to `POST /v1/auth/oauth/callback/apple`, which redirects to `/static/auth_test.html?code=...&state=...`.
+
+> Requires `APPLE_WEB_CLIENT_ID`, `APPLE_WEB_REDIRECT_URI`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY_PEM`, and `APPLE_TEAM_ID` set in the backend env. Returns `501 oauth_provider_unsupported` if any are missing.
+
+> `flowType` defaults to `"web"` if omitted. Supported providers: `google`, `apple`.
+
+---
+
+### Apple OAuth Callback
+No auth required. **Called by Apple — not by the client directly.**
+
+After the user completes Sign in with Apple on the web, Apple POSTs `code` and `state` as `application/x-www-form-urlencoded` to this endpoint. The server extracts both values and redirects the browser to `/static/auth_test.html?code=...&state=...`, from which the client calls `POST /v1/auth/oauth/complete`.
+
+```
+POST /v1/auth/oauth/callback/apple
+Content-Type: application/x-www-form-urlencoded   (sent by Apple, not by you)
+Body: code=<auth_code>&state=<state>
+```
+Expected: `302` redirect to `/static/auth_test.html?code=...&state=...`
+
+Configure `APPLE_WEB_REDIRECT_URI=https://nearby-api.variance.space/v1/auth/oauth/callback/apple` in both Apple Developer Console (Services ID → Web Authentication → Return URLs) and in the backend env.
+
+---
+
+### OAuth Complete
+No auth required. Exchanges credentials for an access token, refresh token, JWT, and zkLogin salt.
+
+**Google web flow:**
+```
+POST /v1/auth/oauth/complete
+Body:
+{
+  "flowType": "web",
+  "code": "<authorization code from Google redirect>",
+  "state": "<state from oauth/begin>",
+  "codeVerifier": "<original PKCE secret>",
+  "platform": "ios",
+  "osVersion": "18.0",
+  "appBundleId": "com.variance.nearby",
+  "deviceIntegrity": { "provider": "stub" }
+}
+```
+
+**Apple web flow:**
+```
+POST /v1/auth/oauth/complete
+Body:
+{
+  "flowType": "web",
+  "code": "<authorization code from Apple callback>",
+  "state": "<state from oauth/begin>",
+  "platform": "ios",
+  "osVersion": "18.0",
+  "appBundleId": "com.variance.nearby",
+  "deviceIntegrity": {
+    "provider": "ios_app_attest",
+    "keyId": "<key id>",
+    "assertion": "<assertion>",
+    "clientDataHash": "<client data hash>"
+  }
+}
+```
+> No `codeVerifier` for Apple web — Apple uses a server-generated ES256 client_secret JWT (derived from `APPLE_PRIVATE_KEY_PEM`) instead of PKCE. The `jwt` in the response will have `aud=com.variance.nearby.auth` (the web service ID, not the app bundle ID).
+
+**Google native:**
+```
+POST /v1/auth/oauth/complete
+Body:
+{
+  "flowType": "native",
+  "idToken": "<id_token from Google Sign-In SDK>",
+  "state": "<state from oauth/begin>",
+  "platform": "ios",
+  "osVersion": "18.0",
+  "appBundleId": "com.variance.nearby",
+  "deviceIntegrity": {
+    "provider": "apple_dcapp_attest",
+    "keyId": "<key id>",
+    "assertion": "<assertion>",
+    "clientDataHash": "<client data hash>"
+  }
+}
+```
+
+**Apple native:**
+```
+POST /v1/auth/oauth/complete
+Body:
+{
+  "flowType": "native",
+  "idToken": "<identityToken from ASAuthorizationAppleIDCredential>",
+  "authorizationCode": "<authorizationCode from ASAuthorizationAppleIDCredential>",
+  "state": "<state from oauth/begin>",
+  "platform": "ios",
+  "osVersion": "18.0",
+  "appBundleId": "com.variance.nearby",
+  "deviceIntegrity": {
+    "provider": "apple_dcapp_attest",
+    "keyId": "<key id>",
+    "assertion": "<assertion>",
+    "clientDataHash": "<client data hash>"
+  }
+}
+```
+
+Expected: `200`
+```json
+{
+  "accessToken": "...",
+  "refreshToken": "...",
+  "expiresAt": 1234567890,
+  "refreshExpiresAt": 1234567890,
+  "userId": "...",
+  "jwt": "<google id token>",
+  "salt": "<zklogin salt, 128-bit decimal string>"
+}
+```
+
+> `state` is required for both flows (CSRF protection). After receiving `jwt` and `salt`, compute `suiAddress = jwtToAddress(jwt, salt)` using the Sui SDK, then call `PUT /v1/me/wallet` to bind it.
+
+---
+
+### Refresh Session
+No auth required. The refresh token in the body is the credential — no `Authorization` header needed.
+
+The `refreshToken` variable is auto-populated after sign-in. Send as-is — the test script saves the new tokens automatically.
+
+```
+POST /v1/auth/refresh
+Body: { "refreshToken": "{{refreshToken}}" }
+```
+Expected: `200`
+```json
+{
+  "accessToken": "...",
+  "refreshToken": "...",
+  "expiresAt": 1234567890,
+  "refreshExpiresAt": 1234597890
+}
+```
+
+> Each refresh token is single-use — the old one is invalidated immediately on success. `refreshExpiresAt` is the Unix timestamp when the new refresh token itself expires (30 days from now).
+
+### Revoke Session
+Auth level: **low**
+
+Signs out the current session; the access token becomes invalid immediately.
+
+```
+POST /v1/auth/revoke
+```
+Expected: `204 No Content`
+
+After revoking, sign in again via the browser page to get a fresh token.
+
+### Assert Device Integrity
+Auth level: **high** (headers auto-generated by pre-request script)
+
+Used by mobile clients after attestation. In testing, `provider: stub` bypasses real attestation.
+
+```
+POST /v1/auth/integrity
+Body:
+{
+  "deviceIntegrity": { "provider": "stub", "keyId": "" },
+  "timestampMs": {{$timestamp}}000
+}
+```
+Expected: `204 No Content`
+
+### Issue Device Credential
+Auth level: **high** (headers auto-generated)
+
+Issues a signed ed25519 credential tied to the device's local proof key.
+
+```
+POST /v1/auth/credential
+Body: { "localProofPublicKey": "0x0000000000000000000000000000000000000000000000000000000000000001" }
+```
+Expected: `200` with a signed `DeviceIdentityCredential` object containing a `signature` field.
+
+---
+
+## Step 4 — Me (Profile, Avatar & Wallet)
+
+Auth level: **low** for all endpoints.
+
+### Bind Wallet
+Binds a zkLogin-derived Sui address to the authenticated user. Must be called after OAuth Complete once the client has computed `suiAddress = jwtToAddress(jwt, salt)` using the Sui SDK.
+
+```
+PUT /v1/me/wallet
+Body: { "suiAddress": "0x<64 hex chars>" }
+```
+Expected: `204 No Content`
+
+Re-calling with a different address updates the binding (upsert). Required before deposit endpoints will work.
+
+### Get Profile
+```
+GET /v1/me/profile
+```
+Expected: `200`
+```json
+{
+  "userId": "...",
+  "status": "active",
+  "avatarUrl": "https://aggregator.walrus-testnet.walrus.space/v1/blobs/...",
+  "createdAt": 1234567890
+}
+```
+`avatarUrl` is omitted if no avatar has been uploaded yet.
+
+### Upload Avatar
+Uploads a profile picture to Walrus decentralized storage and stores the blob ID.
+
+```
+PUT /v1/me/avatar
+Content-Type: image/jpeg   (or image/png, image/webp, image/gif)
+Body: <binary image data>
+```
+
+**In Postman:**
+1. Set the `Content-Type` header to match your image type
+2. In the **Body** tab select **binary** and choose an image file from disk
+3. Send
+
+Expected: `200`
+```json
+{ "avatarUrl": "https://aggregator.walrus-testnet.walrus.space/v1/blobs/..." }
+```
+
+After uploading, `GET /v1/me/profile` returns `avatarUrl` with the same URL.
+
+**Constraints:**
+- Max file size: 5 MB
+- Accepted types: `image/jpeg`, `image/png`, `image/webp`, `image/gif`
+- Returns `415` for unsupported content types
+- Returns `413` for files over 5 MB
+
+---
+
+## Step 5 — Deposit Endpoints
+
+All deposit endpoints require **low** auth and a wallet binding. Call `PUT /v1/me/wallet` after sign-in to create the binding before using these endpoints.
+
+If you get `422 Unprocessable Entity`, the wallet binding is missing — call `PUT /v1/me/wallet` with a valid Sui address.
+
+### Get Deposit Options
+```
+GET /v1/deposit/options
+```
+Expected: `200` — response shape depends on KYC status:
+
+**First call (KYC not started):**
+```json
+{
+  "fiatUsd": {
+    "kind": "kyc_required",
+    "bridgeKycLinkId": "...",
+    "kycUrl": "https://bridge.withpersona.com/verify?...",
+    "tosUrl": "https://compliance.sandbox.bridge.xyz/accept-terms-of-service?...",
+    "status": "not_started"
+  },
+  "crypto": {
+    "kind": "deposit_addresses",
+    "routes": []
+  }
+}
+```
+
+**After KYC approved:**
+```json
+{
+  "fiatUsd": {
+    "kind": "account_details",
+    "account": {
+      "id": "...",
+      "currency": "usd",
+      "rails": ["ach_push", "wire"],
+      "bankName": "...",
+      "accountNumberLast4": "...",
+      "routingNumber": "...",
+      "accountHolderName": "..."
+    }
+  },
+  "crypto": {
+    "kind": "deposit_addresses",
+    "routes": [
+      { "rail": "evm", "currency": "usdc", "address": "0x..." },
+      { "rail": "solana", "currency": "usdc", "address": "..." },
+      { "rail": "solana", "currency": "usdt", "address": "..." }
+    ]
+  }
+}
+```
+
+> Complete KYC by visiting the `kycUrl` from the first call. Use the Bridge sandbox test identity to approve quickly.
+
+### Get Deposit History
+```
+GET /v1/deposit/history?limit=20&offset=0
+```
+Expected: `200` with a list of deposits (empty array if none yet). `limit` and `offset` are optional.
+
+### Get Deposit by ID
+Set `depositId` collection variable to an ID from the history response.
+
+```
+GET /v1/deposit/{{depositId}}
+```
+Expected: `200` with deposit details, or `404` if the ID doesn't exist / belongs to another user.
+
+---
+
+## Step 6 — Payment Endpoints
+
+### Create Payment Intent
+Auth level: **high** (headers + idempotency key auto-generated by pre-request script)
+
+```
+POST /v1/payments/intents
+Headers: Idempotency-Key: <auto-generated>
+Body:
+{
+  "recipientAddress": "0x0000000000000000000000000000000000000000000000000000000000000002",
+  "recipientName": "alice@nearby.sui",
+  "asset": "USDsui",
+  "amountAtomic": "1000000",
+  "fundingMode": "sponsored",
+  "idempotencyKey": "<copy value from Idempotency-Key header>"
+}
+```
+
+**Before sending:** copy the value that the pre-request script sets for `Idempotency-Key` header into the body field `idempotencyKey`. Both must match.
+
+**Constraints:**
+- `asset` must be `"USDsui"`
+- `recipientAddress` must be `0x` + 64 hex characters (66 chars total)
+- `amountAtomic` is in micro-units (`"1000000"` = 1 USDsui)
+- `fundingMode`: `"sponsored"` (server pays gas) or `"user_paid"` (user pays gas)
+- Intent expires in **2 minutes** — submit or cancel before then
+
+Expected: `201` — test script saves `intentId` to `{{intentId}}`
+
+Resending with the same `Idempotency-Key` returns `409 idempotent_replay`.
+
+### Get Payment Intent
+Auth level: **low**
+
+```
+GET /v1/payments/intents/{{intentId}}
+```
+Expected: `200` with current `status` (`pending`, `submitted`, `cancelled`, `failed`)
+
+### Cancel Payment Intent
+Auth level: **low** — only works while intent is `pending`
+
+```
+POST /v1/payments/intents/{{intentId}}/cancel
+```
+Expected: `204 No Content`
+
+### Submit Payment Intent
+Auth level: **low** — requires a real Sui transaction built and signed by the mobile app
+
+```
+POST /v1/payments/intents/{{intentId}}/submit
+Body:
+{
+  "txBytes": "<base64-encoded Sui transaction bytes>",
+  "userSignature": "<Sui signature>"
+}
+```
+Expected: `200` with `paymentId`, `txDigest`, `status: "confirmed"`
+
+### Get Payment by ID
+Auth level: **low**
+
+```
+GET /v1/payments/{{paymentId}}
+```
+Expected: `200` with full payment details including `txDigest` and `confirmedAt`
+
+---
+
+## Step 7 — Names Endpoints
+
+Leaf-name registration is a **two-phase flow**, mirroring payments:
+
+1. **Register** (`POST /v1/names/leaf`) — obtains AVS quorum authorization, creates a task with status `authorized`, and **reserves the name**. Does not touch the chain.
+2. **Submit** (`POST /v1/names/tasks/{id}/submit`) — the client submits a signed SuiNS register transaction; the backend sponsors and executes it on-chain, moving the task to `submitted`.
+
+Names are **case-insensitive**: `Alice`, `ALICE`, and `alice` all normalise to the lowercase canonical `alice.nearby`. Allowed characters are `a-z`, `0-9`, and hyphens (not leading/trailing).
+
+### Check Name Availability
+Auth level: **low**
+
+```
+GET /v1/names/leaf/{leafName}/available
+```
+Expected: `200`
+```json
+{ "name": "alice.nearby", "available": true }
+```
+
+`available` is `false` when the name is either registered on-chain **or** has an active (non-expired) registration task reserving it. Returns `400` for an invalid name format, `503` (`suins_unavailable`) if the Sui node is unreachable.
+
+### Register Leaf Name
+Auth level: **high** (headers auto-generated)
+
+Phase 1 — authorise and reserve the name.
+
+```
+POST /v1/names/leaf
+Body: { "leafName": "alice" }
+```
+Expected: `202 Accepted` — test script saves `taskId` to `{{taskId}}` and `sponsorAddress` to `{{sponsorAddress}}`
+```json
+{
+  "taskId": "...",
+  "nameHash": "0x...",
+  "action": "leaf_name.register_initial",
+  "status": "authorized",
+  "sponsorAddress": "0x...",
+  "expiresAt": 1234567890
+}
+```
+
+- **Reservation:** the name is held against other users for the authorization window (~5 min). Until the task is submitted or expires, `available` returns `false` for everyone.
+- **Dedup:** re-calling as the **same user** returns the existing task (no duplicate authorization). Registering a name another user has actively reserved returns `409` (`name_taken`).
+- `sponsorAddress` is the gas sponsor for the on-chain submit transaction — the client builds the SuiNS register tx using it as the gas owner.
+
+### Submit Leaf Registration
+Auth level: **high** (headers auto-generated) — requires a real SuiNS transaction built and signed by the mobile app
+
+Phase 2 — execute the registration on-chain.
+
+```
+POST /v1/names/tasks/{{taskId}}/submit
+Body:
+{
+  "txBytes": "<base64-encoded SuiNS register transaction bytes>",
+  "userSignature": "<Sui signature>"
+}
+```
+Expected: `200` with `taskId`, `txDigest`, `status: "submitted"`
+
+The backend adds the AVS multisig sponsor signature and executes the transaction; it does **not** construct the transaction. After a successful submit, `Check Name Availability` returns `available: false` from on-chain resolution.
+
+**Errors:**
+- `409` (`task_not_submittable`) — the task is not in `authorized` status
+- `410` (`task_expired`) — the authorization window lapsed; register again
+- `502` (`registration_failed`) — on-chain execution failed
+
+### Get Name Task
+Auth level: **high** (headers auto-generated)
+
+Poll to check registration status.
+
+```
+GET /v1/names/tasks/{{taskId}}
+```
+Expected: `200` with `status` — one of `authorized` (reserved, awaiting submit), `submitted` (executed on-chain), or `failed`
+
+---
+
+## Step 8 — Nearby Sessions
+
+All three require **high** auth (headers auto-generated).
+
+### Initiate Session
+Sender opens a proximity payment session targeting a recipient Sui address.
+
+```
+POST /v1/nearby/sessions
+Body:
+{
+  "recipientSuiAddress": "0x0000000000000000000000000000000000000000000000000000000000000002",
+  "payloadType": "payment_request",
+  "payloadData": "{\"amount\": \"1000000\"}"
+}
+```
+Expected: `201` — test script saves `id` to `{{sessionId}}`
+
+### Get Session
+```
+GET /v1/nearby/sessions/{{sessionId}}
+```
+Expected: `200` with session status and payload
+
+### Acknowledge Session
+Recipient accepts or rejects.
+
+```
+POST /v1/nearby/sessions/{{sessionId}}/acknowledge
+Body: { "accept": true }
+```
+Expected: `200`
+
+---
+
+## Step 9 — Webhooks
+
+### Bridge Webhook
+
+Called by Bridge when a fiat deposit arrives. Not user-triggered.
+
+```
+POST /v1/webhooks/bridge
+Headers:
+  Content-Type: application/json
+  X-Bridge-Signature: <RSA-SHA256 signature, base64-encoded>
+Body: { "id": "...", "type": "virtual_account.activity", "data": {} }
+```
+
+**Signature format:** Bridge signs the raw request body with their RSA private key using PKCS1v15 + SHA256. The server verifies with the configured `BRIDGE_WEBHOOK_PUBLIC_KEY`.
+
+You cannot generate a valid signature without Bridge's private key. To test this endpoint:
+- Use the **Send Test Webhook** feature in the [Bridge sandbox dashboard](https://dashboard.bridge.xyz)
+- Or trigger a real deposit event through the sandbox
+
+The unit test suite (`webhook_test.go`) validates the full signature flow with a generated key pair — run it with:
+```
+cd apps/api
+go test ./internal/domain/deposit/... -run TestHandleBridgeWebhook -v
+```
+
+---
+
+## Common Error Responses
+
+| Status | Code | Cause |
+|--------|------|-------|
+| 400 | `bad_request` | Malformed JSON body |
+| 400 | `validation_error` | Missing required field |
+| 400 | `idempotency_key_required` | Missing `Idempotency-Key` header on payment intents |
+| 400 | `asset_unsupported` | Asset is not `USDsui` |
+| 400 | `invalid_address` | Recipient address not 66 chars or not `0x`-prefixed |
+| 401 | `unauthorized` | Missing or invalid Bearer token |
+| 401 | `webhook_signature_invalid` | Missing or incorrect `X-Bridge-Signature` |
+| 401 | `high_fidelity_required` | Missing `X-Device-Provider`, `X-Request-Nonce`, or `X-Request-Timestamp` |
+| 401 | `timestamp_out_of_window` | Timestamp more than 5 minutes old |
+| 401 | `replay_detected` | Nonce already used |
+| 404 | `not_found` | Resource doesn't exist or belongs to another user |
+| 409 | `idempotent_replay` | `Idempotency-Key` already used within 24 hours |
+| 409 | `name_taken` | Leaf name is already reserved or registered by another user |
+| 409 | `task_not_submittable` | Name task is not in `authorized` status |
+| 410 | `task_expired` | Name task's authorization window lapsed — register again |
+| 413 | `payload_too_large` | Avatar image exceeds 5 MB |
+| 415 | `unsupported_media_type` | Avatar content type not jpeg/png/webp/gif |
+| 422 | `unprocessable` | Wallet binding missing — sign in again |
+| 502 | `registration_failed` | On-chain SuiNS registration transaction failed |
+| 503 | `bridge_unavailable` | Bridge API returned an error |
+| 503 | `suins_unavailable` | Sui node unreachable for name resolution |
+| 500 | `internal_error` | Database or external service error |
+
+---
+
+## Recommended Test Sequence
+
+```
+1.  Health Check
+2.  Get Server Public Key
+3.  OAuth Begin (Web or Native)     (get state; web flows also return authURL)
+4.  Sign in via browser / SDK
+      Google web:   redirect to authURL → OAuth Complete (Google Web) with code + codeVerifier
+      Apple web:    redirect to authURL → Apple POSTs to /oauth/callback/apple → OAuth Complete (Apple Web) with code (no codeVerifier)
+      Google/Apple native: use OAuth Complete (Native) directly with idToken from SDK
+5.  Bind Wallet                     (PUT /v1/me/wallet with suiAddress derived from jwt + salt)
+6.  Get Profile                     (no avatarUrl yet)
+7.  Upload Avatar                   (set Content-Type + binary body in Postman)
+8.  Get Profile                     (avatarUrl now present)
+9.  Get Deposit Options             (confirms wallet binding; expect kyc_required on first call)
+10. Get Deposit History             (empty array expected)
+11. Create Payment Intent           (copy Idempotency-Key header value into body field)
+12. Get Payment Intent              (status: pending)
+13. Cancel Payment Intent           (status → cancelled)
+14. Create another Payment Intent   (new Idempotency-Key auto-generated)
+15. Get Payment Intent              (status: pending)
+16. Refresh Session                 (new tokens saved automatically)
+17. Assert Device Integrity
+18. Issue Device Credential
+19. Initiate Nearby Session
+20. Get Nearby Session
+21. Acknowledge Nearby Session
+22. Check Name Availability         (GET /v1/names/leaf/alice/available — expect available:true)
+23. Register Leaf Name              (phase 1: authorize + reserve; saves taskId + sponsorAddress)
+24. Check Name Availability         (now available:false — name is reserved for ~5 min)
+25. Submit Leaf Registration        (phase 2: client-built/signed SuiNS tx → executed on-chain)
+26. Get Name Task                   (poll: authorized → submitted)
+27. Revoke Session
+```

@@ -34,21 +34,11 @@ func (s *Sponsor) Address() string {
 
 func (s *Sponsor) SubmitSponsoredTransaction(ctx context.Context, txBytes []byte, userSignature string) (*ExecuteTransactionResponse, error) {
 	txBytesB64 := base64.StdEncoding.EncodeToString(txBytes)
-	txHash := fmt.Sprintf("0x%x", txBytes[:32])
+	digest := TransactionSigningDigest(txBytes)
 
-	result, err := s.avsClient.ApproveSponsorTx(txHash)
+	signatures, bitmap, err := s.avsClient.SignSponsorTransaction(digest)
 	if err != nil {
-		return nil, fmt.Errorf("avs approve sponsor tx: %w", err)
-	}
-	if result.Status != "authorized" {
-		return nil, fmt.Errorf("avs rejected sponsorship: %s", result.Reason)
-	}
-
-	var signatures [][]byte
-	var bitmap uint16
-	for i, sig := range result.Authorization.Signatures {
-		signatures = append(signatures, sig.Signature)
-		bitmap |= 1 << uint(i)
+		return nil, fmt.Errorf("avs sign sponsor tx: %w", err)
 	}
 
 	sponsorMultisig := CombineMultisigSignature(
@@ -62,6 +52,9 @@ func (s *Sponsor) SubmitSponsoredTransaction(ctx context.Context, txBytes []byte
 	if err != nil {
 		return nil, fmt.Errorf("execute sponsored transaction: %w", err)
 	}
+	if err := resp.ExecutionError(); err != nil {
+		return nil, err
+	}
 
 	return resp, nil
 }
@@ -71,6 +64,9 @@ func (s *Sponsor) RelayUserTransaction(ctx context.Context, txBytes []byte, user
 	resp, err := s.suiClient.ExecuteTransactionBlock(ctx, txBytesB64, []string{userSignature})
 	if err != nil {
 		return nil, fmt.Errorf("relay transaction: %w", err)
+	}
+	if err := resp.ExecutionError(); err != nil {
+		return nil, err
 	}
 	return resp, nil
 }

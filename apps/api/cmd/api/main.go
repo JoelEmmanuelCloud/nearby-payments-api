@@ -22,6 +22,7 @@ import (
 	"github.com/vaariance/nearby/internal/domain/nearby"
 	"github.com/vaariance/nearby/internal/domain/payment"
 	"github.com/vaariance/nearby/internal/sui"
+	"github.com/vaariance/nearby/internal/walrus"
 	"github.com/vaariance/nearby/router"
 )
 
@@ -90,15 +91,28 @@ func main() {
 		}
 	}
 
+	walrusClient := walrus.NewClient(cfg.WalrusPublisherURL, cfg.WalrusAggregatorURL)
+
 	authStore := auth.NewStore(pool)
 	authSvc := auth.NewService(auth.ServiceDeps{
-		Store:              authStore,
-		Redis:              rdb,
-		GoogleClientID:     cfg.GoogleClientID,
-		GoogleClientSecret: cfg.GoogleClientSecret,
-		GoogleRedirectURI:  cfg.GoogleRedirectURI,
-		CredentialSignKey:  credSignKey,
-		CredentialPubKey:   credPubKey,
+		Store:                 authStore,
+		Redis:                 rdb,
+		Walrus:                walrusClient,
+		GoogleClientID:        cfg.GoogleClientID,
+		GoogleClientSecret:    cfg.GoogleClientSecret,
+		GoogleRedirectURI:     cfg.GoogleRedirectURI,
+		GoogleIOSClientID:     cfg.GoogleIOSClientID,
+		GoogleAndroidClientID: cfg.GoogleAndroidClientID,
+		AppleBundleID:         cfg.AppleBundleID,
+		AppleWebClientID:      cfg.AppleWebClientID,
+		AppleWebRedirectURI:   cfg.AppleWebRedirectURI,
+		AppleKeyID:            cfg.AppleKeyID,
+		ApplePrivateKeyPEM:    cfg.ApplePrivateKeyPEM,
+		AppleTeamID:           cfg.AppleTeamID,
+		CredentialSignKey:     credSignKey,
+		CredentialPubKey:      credPubKey,
+		ProverURL:             cfg.ZkLoginProverURL,
+		AppCallbackURL:        cfg.AppCallbackURL,
 	})
 	authHandler := auth.NewHandler(authSvc)
 
@@ -130,6 +144,8 @@ func main() {
 		Store:     namesStore,
 		AuthStore: authStore,
 		AVSClient: avsClient,
+		SuiClient: suiClient,
+		Sponsor:   sponsor,
 	})
 	namesHandler := names.NewHandler(namesSvc)
 

@@ -8,8 +8,15 @@ swift_library(
         "nearby/**/*.swift",
     ]),
     module_name = "nearby",
+    target_compatible_with = ["@platforms//os:ios"],
     deps = [
-        "//packages/hello:Hello",
+        "//packages/auth:Auth",
+        "//packages/gateway:Gateway",
+        "//packages/hsm:HSM",
+        "//packages/identity:Identity",
+        "//packages/storage:Storage",
+        "//packages/sui:LeanSui",
+        "//packages/sui-api:LeanSuiApi",
         "//packages/ui:UI",
     ],
 )
@@ -22,12 +29,12 @@ apple_bundle_version(
 
 ios_application(
     name = "Nearby",
-    bundle_id = "com.vaariance.nearby",
+    bundle_id = "com.variance.nearby",
     families = [
         "iphone",
     ],
     infoplists = ["info.plist"],
-    minimum_os_version = "17.0",
+    minimum_os_version = "18.0",
     version = ":NearbyVersion",
     visibility = ["//visibility:public"],
     deps = [

@@ -1,0 +1,78 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+query devInspectTransactionBlock(
+    $transaction: JSON!
+    $showBalanceChanges: Boolean = false
+    $showEffects: Boolean = false
+    $showRawEffects: Boolean = false
+    $showEvents: Boolean = false
+    $showObjectChanges: Boolean = false
+) {
+    simulateTransaction(transaction: $transaction) {
+        outputs {
+            mutatedReferences {
+                argument {
+                    __typename
+                    ... on Input {
+                        inputIndex: ix
+                    }
+                    ... on TxResult {
+                        cmd
+                        resultIndex: ix
+                    }
+                }
+                value {
+                    type {
+                        repr
+                    }
+                    bcs
+                }
+            }
+            returnValues {
+                value {
+                    type {
+                        repr
+                    }
+                    bcs
+                }
+            }
+        }
+        effects {
+            effectsBcs @include(if: $showEffects)
+            effectsBcs @include(if: $showRawEffects)
+
+            balanceChanges @include(if: $showBalanceChanges) {
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+                nodes {
+                    owner { address }
+                    coinType { repr }
+                    amount
+                }
+            }
+
+            objectChanges @include(if: $showObjectChanges) {
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+                nodes {
+                    address
+                    inputState { version }
+                    outputState { version }
+                }
+            }
+
+            events @include(if: $showEvents) {
+                nodes {
+                    sender {
+                        address
+                    }
+                }
+            }
+        }
+    }
+}

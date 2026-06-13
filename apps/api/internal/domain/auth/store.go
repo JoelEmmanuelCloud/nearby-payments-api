@@ -28,13 +28,21 @@ func (s *Store) CreateUser(ctx context.Context, u *User) error {
 func (s *Store) GetUserByID(ctx context.Context, id string) (*User, error) {
 	u := &User{}
 	err := s.db.QueryRow(ctx,
-		`SELECT id, status, created_at, updated_at FROM users WHERE id = $1`,
+		`SELECT id, status, COALESCE(walrus_avatar_blob_id, ''), created_at, updated_at FROM users WHERE id = $1`,
 		id,
-	).Scan(&u.ID, &u.Status, &u.CreatedAt, &u.UpdatedAt)
+	).Scan(&u.ID, &u.Status, &u.AvatarBlobID, &u.CreatedAt, &u.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	return u, err
+}
+
+func (s *Store) UpdateUserAvatar(ctx context.Context, userID, blobID string, updatedAt int64) error {
+	_, err := s.db.Exec(ctx,
+		`UPDATE users SET walrus_avatar_blob_id = $1, updated_at = $2 WHERE id = $3`,
+		blobID, updatedAt, userID,
+	)
+	return err
 }
 
 func (s *Store) GetOAuthIdentity(ctx context.Context, issuer, subject, audience string) (*OAuthIdentity, error) {
@@ -43,6 +51,19 @@ func (s *Store) GetOAuthIdentity(ctx context.Context, issuer, subject, audience 
 		`SELECT id, user_id, issuer, subject, audience, email, email_verified, created_at
 		 FROM oauth_identities WHERE issuer = $1 AND subject = $2 AND audience = $3`,
 		issuer, subject, audience,
+	).Scan(&oi.ID, &oi.UserID, &oi.Issuer, &oi.Subject, &oi.Audience, &oi.Email, &oi.EmailVerified, &oi.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return oi, err
+}
+
+func (s *Store) GetOAuthIdentityByUserID(ctx context.Context, userID string) (*OAuthIdentity, error) {
+	oi := &OAuthIdentity{}
+	err := s.db.QueryRow(ctx,
+		`SELECT id, user_id, issuer, subject, audience, email, email_verified, created_at
+		 FROM oauth_identities WHERE user_id = $1 LIMIT 1`,
+		userID,
 	).Scan(&oi.ID, &oi.UserID, &oi.Issuer, &oi.Subject, &oi.Audience, &oi.Email, &oi.EmailVerified, &oi.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil

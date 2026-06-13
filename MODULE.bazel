@@ -3,7 +3,8 @@ module(
     version = "0.1.0",
 )
 
-bazel_dep(name = "gazelle", version = "0.47.0")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "gazelle", version = "0.50.0")
 bazel_dep(name = "rules_go", version = "0.60.0")
 bazel_dep(name = "apple_support", version = "2.3.0")
 bazel_dep(name = "rules_apple", version = "4.5.3")
@@ -15,6 +16,15 @@ bazel_dep(name = "rules_jvm_external", version = "7.0")
 bazel_dep(name = "rules_java", version = "9.3.0")
 bazel_dep(name = "rules_android_ndk", version = "0.1.5")
 bazel_dep(name = "protobuf", version = "33.4", repo_name = "com_google_protobuf")
+bazel_dep(name = "rules_swift_package_manager", version = "1.17.1")
+
+single_version_override(
+    module_name = "rules_android",
+    patch_strip = 1,
+    patches = ["//tools/bazel/patches:rules_android_java_base_extras.patch"],
+    version = "0.7.2",
+)
+
 single_version_override(
     module_name = "protobuf",
     version = "33.4",
@@ -37,17 +47,19 @@ maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.artifact(
     artifact = "activity-ktx",
     group = "androidx.activity",
-    version = "1.9.3",
+    version = "1.13.0",
 )
 maven.artifact(
     artifact = "collection",
+    force_version = True,
     group = "androidx.collection",
-    version = "1.4.2",
+    version = "1.5.0",
 )
 maven.artifact(
     artifact = "collection-jvm",
+    force_version = True,
     group = "androidx.collection",
-    version = "1.4.2",
+    version = "1.5.0",
 )
 maven.artifact(
     artifact = "emoji2",
@@ -55,42 +67,65 @@ maven.artifact(
     version = "1.3.0",
 )
 maven.artifact(
+    artifact = "savedstate",
+    force_version = True,
+    group = "androidx.savedstate",
+    version = "1.4.0",
+)
+maven.artifact(
+    artifact = "savedstate-android",
+    force_version = True,
+    group = "androidx.savedstate",
+    version = "1.4.0",
+)
+maven.artifact(
+    artifact = "savedstate-compose",
+    force_version = True,
+    group = "androidx.savedstate",
+    version = "1.3.2",
+)
+maven.artifact(
     artifact = "lifecycle-common",
+    force_version = True,
     group = "androidx.lifecycle",
-    version = "2.8.7",
+    version = "2.10.0",
 )
 maven.artifact(
     artifact = "lifecycle-runtime",
+    force_version = True,
     group = "androidx.lifecycle",
-    version = "2.8.7",
+    version = "2.10.0",
 )
 maven.artifact(
     artifact = "lifecycle-viewmodel",
+    force_version = True,
     group = "androidx.lifecycle",
-    version = "2.8.7",
+    version = "2.10.0",
 )
 maven.install(
     artifacts = [
         # AndroidX Core & Lifecycle
-        "androidx.core:core:1.15.0",
-        "androidx.core:core-ktx:1.15.0",
-        "androidx.lifecycle:lifecycle-livedata-core:2.8.7",
-        "androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.7",
-        "androidx.lifecycle:lifecycle-livedata:2.8.7",
-        "androidx.lifecycle:lifecycle-process:2.8.7",
-        "androidx.lifecycle:lifecycle-runtime:2.8.7",
-        "androidx.lifecycle:lifecycle-runtime-ktx:2.8.7",
-        "androidx.lifecycle:lifecycle-runtime-compose-android:2.8.7",
-        "androidx.lifecycle:lifecycle-service:2.8.7",
-        "androidx.lifecycle:lifecycle-viewmodel:2.8.7",
-        "androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7",
-        "androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7",
-        "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7",
+        "androidx.core:core:1.18.0",
+        "androidx.core:core-ktx:1.18.0",
+        "androidx.lifecycle:lifecycle-livedata-core:2.10.0",
+        "androidx.lifecycle:lifecycle-livedata-core-ktx:2.10.0",
+        "androidx.lifecycle:lifecycle-livedata:2.10.0",
+        "androidx.lifecycle:lifecycle-process:2.10.0",
+        "androidx.lifecycle:lifecycle-runtime:2.10.0",
+        "androidx.lifecycle:lifecycle-runtime-ktx:2.10.0",
+        "androidx.lifecycle:lifecycle-runtime-compose-android:2.10.0",
+        "androidx.lifecycle:lifecycle-service:2.10.0",
+        "androidx.lifecycle:lifecycle-viewmodel:2.10.0",
+        "androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0",
+        "androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0",
+        "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.10.0",
 
         # Activity Compose
-        "androidx.activity:activity:1.9.3",
-        "androidx.activity:activity-compose:1.9.3",
-        "androidx.activity:activity-ktx:1.9.3",
+        "androidx.activity:activity:1.13.0",
+        "androidx.activity:activity-compose:1.13.0",
+        "androidx.activity:activity-ktx:1.13.0",
+        "androidx.biometric:biometric:1.4.0-alpha07",
+        "androidx.biometric:biometric-compose:1.4.0-alpha07",
 
         # Compose compiler plugin for the Bazel Kotlin target.
         "org.jetbrains.kotlin:kotlin-compose-compiler-plugin-embeddable:2.3.20",
@@ -108,9 +143,17 @@ maven.install(
 
         # Third-party / Other
         "org.swift.swiftkit:swiftkit-core:1.0-SNAPSHOT",
+        "com.google.android.play:integrity:1.6.0",
+        "com.google.android.gms:play-services-tasks:18.4.1",
+        "androidx.security:security-crypto:1.1.0-alpha06",
+        "androidx.credentials:credentials:1.6.0",
+        "androidx.credentials:credentials-play-services-auth:1.6.0",
+        "com.google.android.libraries.identity.googleid:googleid:1.2.0",
+        "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0",
+        "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0",
     ],
     boms = [
-        "androidx.compose:compose-bom:2024.12.01",
+        "androidx.compose:compose-bom:2026.05.01",
     ],
     known_contributing_modules = ["protobuf"],
     lock_file = "//tools/android:maven_install.json",
@@ -119,6 +162,24 @@ maven.install(
         "https://dl.google.com/dl/android/maven2",
         "https://repo1.maven.org/maven2",
     ],
-    version_conflict_policy = "pinned",
+    version_conflict_policy = "default",
 )
 use_repo(maven, "maven")
+
+swift_deps = use_extension(
+    "@rules_swift_package_manager//:extensions.bzl",
+    "swift_deps",
+)
+swift_deps.from_package(
+    resolved = "//packages/workspace:Package.resolved",
+    swift = "//packages/workspace:Package.swift",
+)
+use_repo(
+    swift_deps,
+    "swift_package",
+    "swiftpkg_apollo_ios",
+    "swiftpkg_bigint",
+    "swiftpkg_googlesignin_ios",
+    "swiftpkg_swift_crypto",
+    "swiftpkg_uint256",
+)

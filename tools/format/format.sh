@@ -14,6 +14,8 @@ cd apps/android
 ./gradlew spotlessApply
 cd ../..
 
+bash tools/format/package_ktlint.sh format
+
 find . \
     \( -path "./.git" -o -path "./out" -o -path "./packages/*/.build" -o -path "./apps/android/.gradle" -o -path "./apps/android/*/build" \) -prune \
     -o \( -name "BUILD" -o -name "BUILD.bazel" -o -name "MODULE.bazel" -o -name "*.bzl" \) -print0 |

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nearby API — Auth Test</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0a0a0a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; color: #4ade80; margin-bottom: 4px; }
+    .subtitle { color: #6b7280; font-size: 0.875rem; margin-bottom: 32px; }
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 16px; }
+    label { display: block; font-size: 0.875rem; color: #9ca3af; margin-bottom: 6px; margin-top: 12px; }
+    label:first-of-type { margin-top: 0; }
+    select, input[type="text"] {
+      background: #1f2937;
+      color: #e2e8f0;
+      border: 1px solid #374151;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      width: 200px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #4ade80;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px;
+      margin-top: 16px;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #22c55e; }
+    .btn:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+    .btn-secondary {
+      background: #1f2937;
+      color: #e2e8f0;
+      border: 1px solid #374151;
+      font-size: 0.8rem;
+      padding: 8px 14px;
+    }
+    .btn-secondary:hover { background: #374151; }
+    pre {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 16px;
+      font-size: 0.8rem;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 320px;
+      overflow-y: auto;
+      color: #cbd5e1;
+    }
+    .token-box {
+      background: #052e16;
+      border: 1px solid #166534;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 0.75rem;
+      font-family: monospace;
+      word-break: break-all;
+      color: #4ade80;
+      margin-bottom: 8px;
+    }
+    .token-box.dim {
+      background: #0f172a;
+      border-color: #1e293b;
+      color: #94a3b8;
+    }
+    .token-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-bottom: 4px;
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .token-label span { color: #374151; }
+    .status { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; margin-bottom: 16px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #6b7280; flex-shrink: 0; }
+    .dot.green { background: #4ade80; }
+    .dot.yellow { background: #facc15; }
+    .dot.red { background: #f87171; }
+    .hidden { display: none; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-top: 16px; }
+    .divider { border: none; border-top: 1px solid #1f2937; margin: 20px 0; }
+    .ttl-badge {
+      display: inline-block;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      color: #9ca3af;
+      font-family: monospace;
+    }
+    .ttl-badge.warn { border-color: #78350f; color: #fbbf24; background: #1c1003; }
+    #countdown { font-size: 0.75rem; color: #6b7280; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Nearby API — Auth Test</h1>
+    <p class="subtitle">Web OAuth flow test page. Access token: 15 min &nbsp;|&nbsp; Refresh token: 30 days.</p>
+
+    <div class="card" id="sign-in-card">
+      <div class="card-title">Step 1 — Sign in with Google (web flow)</div>
+      <div>
+        <label for="platform">Platform</label>
+        <select id="platform">
+          <option value="ios">ios</option>
+          <option value="android">android</option>
+        </select>
+      </div>
+      <div>
+        <label for="os-version">OS Version</label>
+        <input type="text" id="os-version" value="18.0" style="width:120px" />
+      </div>
+      <button class="btn" id="sign-in-btn" onclick="beginAuth()">Sign in with Google</button>
+    </div>
+
+    <div class="card hidden" id="token-card">
+      <div class="card-title">Step 2 — Tokens</div>
+      <div class="status">
+        <div class="dot green" id="status-dot"></div>
+        <span id="status-text">Signed in</span>
+      </div>
+
+      <div class="token-label">Access Token <span class="ttl-badge" id="access-ttl">15 min</span></div>
+      <div class="token-box" id="access-token-box">—</div>
+
+      <div class="token-label">User ID</div>
+      <div class="token-box dim" id="user-id-box">—</div>
+
+      <div class="token-label">JWT (for zkLogin prover)</div>
+      <div class="token-box dim" id="jwt-box">—</div>
+
+      <div class="token-label">zkLogin Salt</div>
+      <div class="token-box dim" id="salt-box">—</div>
+
+      <div id="countdown"></div>
+
+      <div class="row">
+        <button class="btn btn-secondary" onclick="copyValue('accessToken', 'Access token')">Copy Access Token</button>
+        <button class="btn btn-secondary" onclick="copyValue('refreshToken', 'Refresh token')">Copy Refresh Token</button>
+        <button class="btn btn-secondary" onclick="copyValue('jwt', 'JWT')">Copy JWT</button>
+        <button class="btn btn-secondary" onclick="copyValue('salt', 'Salt')">Copy Salt</button>
+        <button class="btn btn-secondary" onclick="doRefresh()">Refresh Session</button>
+        <button class="btn btn-secondary" style="color:#f87171;border-color:#7f1d1d" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="wallet-card">
+      <div class="card-title">Step 3 — Bind Wallet (PUT /v1/me/wallet)</div>
+      <p style="font-size:0.825rem;color:#9ca3af;margin-bottom:14px;">
+        Compute <code style="background:#1f2937;padding:2px 6px;border-radius:4px;font-size:0.8rem">suiAddress = jwtToAddress(jwt, salt)</code> using the Sui SDK,
+        then paste it below to bind it to this account. Required before deposit endpoints will work.
+      </p>
+      <label for="sui-address-input">Sui Address</label>
+      <input type="text" id="sui-address-input" placeholder="0x..." style="width:100%;max-width:560px;font-family:monospace;font-size:0.8rem" />
+      <div class="row">
+        <button class="btn" onclick="bindWallet()">Bind Wallet</button>
+      </div>
+      <div id="wallet-status" style="margin-top:12px;font-size:0.825rem;color:#4ade80;display:none"></div>
+    </div>
+
+    <div class="card hidden" id="response-card">
+      <div class="card-title">Raw Response</div>
+      <pre id="output">—</pre>
+    </div>
+
+    <div class="card hidden" id="error-card">
+      <div class="card-title">Error</div>
+      <pre id="error-output" style="color:#f87171">—</pre>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+    let countdownInterval = null;
+
+    function generateVerifier() {
+      const arr = new Uint8Array(32);
+      crypto.getRandomValues(arr);
+      return btoa(String.fromCharCode(...arr))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    async function generateChallenge(verifier) {
+      const data = new TextEncoder().encode(verifier);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return btoa(String.fromCharCode(...new Uint8Array(hash)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    async function beginAuth() {
+      const btn = document.getElementById('sign-in-btn');
+      btn.disabled = true;
+      btn.textContent = 'Redirecting to Google...';
+
+      const verifier = generateVerifier();
+      const challenge = await generateChallenge(verifier);
+      const nonce = 'test-' + Date.now();
+      const platform = document.getElementById('platform').value;
+      const osVersion = document.getElementById('os-version').value || '18.0';
+
+      sessionStorage.setItem('codeVerifier', verifier);
+      sessionStorage.setItem('platform', platform);
+      sessionStorage.setItem('osVersion', osVersion);
+
+      try {
+        const res = await fetch(API + '/v1/auth/oauth/begin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider: 'google',
+            flowType: 'web',
+            codeChallenge: challenge,
+            codeChallengeMethod: 'S256',
+            zkLoginNonce: nonce
+          })
+        });
+        const data = await res.json();
+        if (data.authURL) {
+          window.location.href = data.authURL;
+        } else {
+          showError(data);
+          btn.disabled = false;
+          btn.textContent = 'Sign in with Google';
+        }
+      } catch (e) {
+        showError({ error: e.message });
+        btn.disabled = false;
+        btn.textContent = 'Sign in with Google';
+      }
+    }
+
+    async function handleCallback() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      const state = params.get('state');
+      if (!code || !state) return;
+
+      window.history.replaceState({}, '', '/static/auth_test.html');
+
+      const verifier = sessionStorage.getItem('codeVerifier');
+      const platform = sessionStorage.getItem('platform') || 'ios';
+      const osVersion = sessionStorage.getItem('osVersion') || '18.0';
+
+      if (!verifier) {
+        showError({ error: 'codeVerifier missing from sessionStorage — start the flow from Step 1.' });
+        return;
+      }
+
+      try {
+        const res = await fetch(API + '/v1/auth/oauth/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            flowType: 'web',
+            code,
+            state,
+            codeVerifier: verifier,
+            platform,
+            osVersion,
+            appBundleId: 'com.variance.nearby',
+            deviceIntegrity: { provider: 'stub' }
+          })
+        });
+        const data = await res.json();
+
+        document.getElementById('response-card').classList.remove('hidden');
+        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+
+        if (data.accessToken) {
+          sessionStorage.setItem('accessToken', data.accessToken);
+          sessionStorage.setItem('refreshToken', data.refreshToken || '');
+          sessionStorage.setItem('userId', data.userId || '');
+          sessionStorage.setItem('jwt', data.jwt || '');
+          sessionStorage.setItem('salt', data.salt || '');
+          sessionStorage.setItem('expiresAt', data.expiresAt || '');
+          sessionStorage.removeItem('codeVerifier');
+          sessionStorage.removeItem('platform');
+          sessionStorage.removeItem('osVersion');
+          showTokens(data);
+        } else {
+          showError(data);
+        }
+      } catch (e) {
+        showError({ error: e.message });
+      }
+    }
+
+    async function doRefresh() {
+      const refreshToken = sessionStorage.getItem('refreshToken');
+      if (!refreshToken) { showError({ error: 'No refresh token stored.' }); return; }
+
+      try {
+        const res = await fetch(API + '/v1/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
+        const data = await res.json();
+
+        document.getElementById('response-card').classList.remove('hidden');
+        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+
+        if (data.accessToken) {
+          sessionStorage.setItem('accessToken', data.accessToken);
+          sessionStorage.setItem('refreshToken', data.refreshToken || '');
+          sessionStorage.setItem('expiresAt', data.expiresAt || '');
+          document.getElementById('access-token-box').textContent = data.accessToken;
+          startCountdown(data.expiresAt);
+          document.getElementById('status-text').textContent = 'Refreshed';
+        } else {
+          showError(data);
+        }
+      } catch (e) {
+        showError({ error: e.message });
+      }
+    }
+
+    async function bindWallet() {
+      const accessToken = sessionStorage.getItem('accessToken');
+      if (!accessToken) { showError({ error: 'Not signed in.' }); return; }
+      const suiAddress = document.getElementById('sui-address-input').value.trim();
+      if (!suiAddress) { showError({ error: 'Sui address is required.' }); return; }
+
+      try {
+        const res = await fetch(API + '/v1/me/wallet', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + accessToken
+          },
+          body: JSON.stringify({ suiAddress })
+        });
+
+        if (res.status === 204) {
+          sessionStorage.setItem('suiAddress', suiAddress);
+          const el = document.getElementById('wallet-status');
+          el.style.display = 'block';
+          el.textContent = 'Wallet bound: ' + suiAddress;
+        } else {
+          const data = await res.json();
+          showError(data);
+        }
+      } catch (e) {
+        showError({ error: e.message });
+      }
+    }
+
+    function showTokens(data) {
+      document.getElementById('sign-in-card').classList.add('hidden');
+      document.getElementById('token-card').classList.remove('hidden');
+      document.getElementById('wallet-card').classList.remove('hidden');
+      const stored = sessionStorage.getItem('suiAddress');
+      if (stored) {
+        document.getElementById('sui-address-input').value = stored;
+        const el = document.getElementById('wallet-status');
+        el.style.display = 'block';
+        el.textContent = 'Wallet bound: ' + stored;
+      }
+      document.getElementById('access-token-box').textContent = data.accessToken || sessionStorage.getItem('accessToken') || '—';
+      document.getElementById('user-id-box').textContent = data.userId || sessionStorage.getItem('userId') || '—';
+      document.getElementById('jwt-box').textContent = data.jwt || sessionStorage.getItem('jwt') || '—';
+      document.getElementById('salt-box').textContent = data.salt || sessionStorage.getItem('salt') || '—';
+      const expiresAt = data.expiresAt || parseInt(sessionStorage.getItem('expiresAt'));
+      if (expiresAt) startCountdown(expiresAt);
+    }
+
+    function startCountdown(expiresAt) {
+      if (countdownInterval) clearInterval(countdownInterval);
+      const el = document.getElementById('countdown');
+      const badge = document.getElementById('access-ttl');
+      function tick() {
+        const secs = expiresAt - Math.floor(Date.now() / 1000);
+        if (secs <= 0) {
+          el.textContent = 'Access token expired — click Refresh Session.';
+          badge.className = 'ttl-badge warn';
+          badge.textContent = 'expired';
+          clearInterval(countdownInterval);
+          return;
+        }
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        el.textContent = 'Access token expires in ' + m + 'm ' + s + 's';
+        badge.className = secs < 120 ? 'ttl-badge warn' : 'ttl-badge';
+        badge.textContent = m + 'm ' + s + 's';
+      }
+      tick();
+      countdownInterval = setInterval(tick, 1000);
+    }
+
+    function showError(data) {
+      document.getElementById('error-card').classList.remove('hidden');
+      document.getElementById('error-output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    function copyValue(key, label) {
+      const val = sessionStorage.getItem(key) || '';
+      if (!val) { alert(label + ' not available.'); return; }
+      navigator.clipboard.writeText(val).then(() => alert(label + ' copied!'));
+    }
+
+    function signOut() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      ['accessToken','refreshToken','userId','jwt','salt','expiresAt','suiAddress'].forEach(k => sessionStorage.removeItem(k));
+      document.getElementById('token-card').classList.add('hidden');
+      document.getElementById('wallet-card').classList.add('hidden');
+      document.getElementById('sign-in-card').classList.remove('hidden');
+      document.getElementById('response-card').classList.add('hidden');
+      document.getElementById('error-card').classList.add('hidden');
+      document.getElementById('wallet-status').style.display = 'none';
+      document.getElementById('sui-address-input').value = '';
+      document.getElementById('sign-in-btn').disabled = false;
+      document.getElementById('sign-in-btn').textContent = 'Sign in with Google';
+      document.getElementById('countdown').textContent = '';
+    }
+
+    window.addEventListener('load', () => {
+      const stored = sessionStorage.getItem('accessToken');
+      if (stored) {
+        showTokens({
+          accessToken: stored,
+          userId: sessionStorage.getItem('userId'),
+          jwt: sessionStorage.getItem('jwt'),
+          salt: sessionStorage.getItem('salt'),
+          expiresAt: parseInt(sessionStorage.getItem('expiresAt'))
+        });
+        document.getElementById('sign-in-card').classList.add('hidden');
+      }
+      handleCallback();
+    });
+  </script>
+</body>
+</html>

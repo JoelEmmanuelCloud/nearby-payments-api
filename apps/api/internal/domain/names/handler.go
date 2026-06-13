@@ -30,8 +30,8 @@ func (h *Handler) RegisterLeaf(w http.ResponseWriter, r *http.Request) {
 		apperr.Write(w, apperr.ErrBadRequest)
 		return
 	}
-	if req.LeafName == "" || req.ParentName == "" {
-		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "leafName and parentName are required")
+	if req.LeafName == "" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "leafName is required")
 		return
 	}
 
@@ -43,6 +43,62 @@ func (h *Handler) RegisterLeaf(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handler) CheckAvailability(w http.ResponseWriter, r *http.Request) {
+	sessCtx := auth.GetSession(r.Context())
+	if sessCtx == nil {
+		apperr.Write(w, apperr.ErrUnauthorized)
+		return
+	}
+
+	leafName := chi.URLParam(r, "leafName")
+	if leafName == "" {
+		apperr.Write(w, apperr.ErrBadRequest)
+		return
+	}
+
+	resp, err := h.svc.CheckAvailability(r.Context(), leafName)
+	if err != nil {
+		apperr.Write(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handler) SubmitLeaf(w http.ResponseWriter, r *http.Request) {
+	sessCtx := auth.GetSession(r.Context())
+	if sessCtx == nil {
+		apperr.Write(w, apperr.ErrUnauthorized)
+		return
+	}
+
+	taskID := chi.URLParam(r, "id")
+	if taskID == "" {
+		apperr.Write(w, apperr.ErrBadRequest)
+		return
+	}
+
+	var req SubmitLeafRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apperr.Write(w, apperr.ErrBadRequest)
+		return
+	}
+	if req.TxBytes == "" || req.UserSignature == "" {
+		apperr.WriteStatus(w, http.StatusBadRequest, "validation_error", "txBytes and userSignature are required")
+		return
+	}
+
+	resp, err := h.svc.SubmitLeafRegistration(r.Context(), taskID, sessCtx.User.ID, req)
+	if err != nil {
+		apperr.Write(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
 

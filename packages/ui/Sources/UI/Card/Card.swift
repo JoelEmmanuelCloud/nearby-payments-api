@@ -20,3 +20,12 @@ public struct Card<Content: View>: View {
     }
   }
 }
+
+#Preview {
+  VStack(spacing: 12) {
+    Card {
+      Text("i have steeze")
+    }
+  }
+  .padding()
+}

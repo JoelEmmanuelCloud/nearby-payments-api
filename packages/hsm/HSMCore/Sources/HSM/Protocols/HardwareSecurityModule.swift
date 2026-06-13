@@ -1,0 +1,52 @@
+import Foundation
+
+/// Defines a platform-agnostic interface for a hardware-backed security module.
+///
+/// Implementations of this protocol (e.g., iOS Secure Enclave, Android StrongBox)
+/// are responsible for securely generating and storing cryptographic keys,
+/// as well as performing signing operations without ever exposing the private key
+/// to the application memory space.
+///
+/// Not `Sendable`: this is a Java-callback interface (a Kotlin class implements
+/// it across the swift-java bridge). The swift-java convention is plain,
+/// non-`Sendable` callback protocols — making it `Sendable` forces the generated
+/// JNI wrapper to be `Sendable` while holding a non-`Sendable` Java handle. The
+/// concrete conformer owns thread-safety; holders that need it (e.g.
+/// `SessionManager`) assert it via `@unchecked Sendable`.
+public protocol HardwareSecurityModule {
+
+  /// Generates a new hardware-backed keypair and returns the public key.
+  ///
+  /// The generated key must be a NIST P-256 (secp256r1) elliptic curve key.
+  /// Any existing key for the application should be replaced or rotated.
+  ///
+  /// - Returns: The DER-encoded X.509 SubjectPublicKeyInfo representation of the public key.
+  func generateKey() throws -> DEREncodedItem
+
+  /// Returns the public key of the existing hardware key, if one exists.
+  ///
+  /// - Returns: The DER-encoded X.509 SubjectPublicKeyInfo representation of the public key,
+  ///            or `nil` if no key has been generated yet.
+  func getPublicKey() throws -> DEREncodedItem?
+
+  /// Signs the provided payload using the hardware-backed private key.
+  ///
+  /// The data should be hashed using SHA-256 before signing, depending on the
+  /// underlying platform APIs.
+  ///
+  /// - Parameter data: The raw data payload to be signed.
+  /// - Returns: The DER-encoded ECDSA signature.
+  func sign(_ data: [Int8]) throws -> DEREncodedItem
+
+  /// Validates that the existing key can be used for signing without prompting the user.
+  ///
+  /// Implementations should perform a silent key usability check, such as initializing
+  /// a signing operation against the private key. They must not present biometric UI
+  /// and must not delete keys or mutate app session state.
+  ///
+  /// - Returns: `true` if an existing key is present and usable for signing.
+  func validateKeyForSigning() throws -> Bool
+
+  /// Deletes the hardware-backed key from the secure storage.
+  func deleteKey() throws
+}

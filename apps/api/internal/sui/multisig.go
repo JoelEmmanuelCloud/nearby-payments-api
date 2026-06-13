@@ -10,6 +10,15 @@ const (
 	multisigFlag byte = 0x03
 )
 
+var transactionDataIntent = []byte{0x00, 0x00, 0x00}
+
+func TransactionSigningDigest(txBytes []byte) []byte {
+	message := make([]byte, 0, len(transactionDataIntent)+len(txBytes))
+	message = append(message, transactionDataIntent...)
+	message = append(message, txBytes...)
+	return blake2b256(message)
+}
+
 func BuildMultisigAddress(publicKeys [][]byte, threshold uint16) string {
 	var payload []byte
 	payload = append(payload, multisigFlag)

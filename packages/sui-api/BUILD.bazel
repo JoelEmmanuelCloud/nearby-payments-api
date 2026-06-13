@@ -1,0 +1,28 @@
+load("@rules_swift//swift:swift.bzl", "swift_library", "swift_test")
+
+swift_library(
+    name = "LeanSuiApi",
+    srcs = glob(
+        [
+            "LeanSuiApiCore/Sources/LeanSuiApi/**/*.swift",
+        ],
+    ),
+    module_name = "LeanSuiApi",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@swiftpkg_apollo_ios//:Apollo",
+        "@swiftpkg_apollo_ios//:ApolloAPI",
+        "@swiftpkg_bigint//:BigInt",
+    ],
+)
+
+swift_test(
+    name = "LeanSuiApiTests",
+    srcs = glob([
+        "LeanSuiApiCore/Tests/LeanSuiApiTests/**/*.swift",
+    ]),
+    deps = [
+        ":LeanSuiApi",
+        "@swiftpkg_bigint//:BigInt",
+    ],
+)

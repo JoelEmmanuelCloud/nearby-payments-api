@@ -132,43 +132,22 @@ func (c *Client) AuthorizeParentRenewal(targetPackage, targetObject string) (*Au
 	}, nil
 }
 
-func (c *Client) ApproveSponsorTx(txBytesHash string) (*AuthorizeResult, error) {
-	payload := map[string]string{
-		"transactionBytesHash": txBytesHash,
+func (c *Client) SignSponsorTransaction(digest []byte) ([][]byte, uint16, error) {
+	if !AllowedActions[ActionSponsorTxApprove] {
+		return nil, 0, ErrActionForbidden
 	}
-	payloadJSON, _ := json.Marshal(payload)
-	payloadHash := "0x" + utils.SHA256Hex(payloadJSON)
 
-	nonce, err := utils.RandomHex(16)
+	sigs, bitmap, err := c.aggregator.SignDigest(digest)
 	if err != nil {
-		return nil, fmt.Errorf("generate nonce: %w", err)
+		return nil, 0, err
 	}
 
-	expiresAtMs := utils.NowUnixMs() + 2*60*1000
-
-	sigs, err := c.aggregator.Authorize(ActionSponsorTxApprove, payloadHash, nonce, expiresAtMs)
-	if err != nil {
-		return nil, err
-	}
-
-	signerIDs := make([]string, len(sigs))
+	signatures := make([][]byte, len(sigs))
 	for i, s := range sigs {
-		signerIDs[i] = s.OperatorID
+		signatures[i] = s.Signature
 	}
 
-	return &AuthorizeResult{
-		Status: "authorized",
-		Authorization: &Authorization{
-			Version:     1,
-			Action:      ActionSponsorTxApprove,
-			PayloadHash: payloadHash,
-			Nonce:       nonce,
-			ExpiresAtMs: expiresAtMs,
-			SignerSetID: c.aggregator.SignerSetID(),
-			Signers:     signerIDs,
-			Signatures:  sigs,
-		},
-	}, nil
+	return signatures, bitmap, nil
 }
 
 func (c *Client) SignerSetInfo() SignerSetInfo {

@@ -23,7 +23,7 @@ func NewBridgeClient(apiKey, baseURL string) *BridgeClient {
 	}
 }
 
-func (c *BridgeClient) do(ctx context.Context, method, path string, body interface{}, result interface{}) error {
+func (c *BridgeClient) do(ctx context.Context, method, path, idempotencyKey string, body interface{}, result interface{}) error {
 	var bodyReader io.Reader
 	if body != nil {
 		data, err := json.Marshal(body)
@@ -39,6 +39,9 @@ func (c *BridgeClient) do(ctx context.Context, method, path string, body interfa
 	}
 	req.Header.Set("Api-Key", c.apiKey)
 	req.Header.Set("Content-Type", "application/json")
+	if idempotencyKey != "" {
+		req.Header.Set("Idempotency-Key", idempotencyKey)
+	}
 
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -77,7 +80,7 @@ func (c *BridgeClient) CreateHostedKycLink(ctx context.Context, userID, customer
 		KycStatus  string `json:"kyc_status"`
 	}
 
-	if err := c.do(ctx, http.MethodPost, "/v0/kyc_links", body, &result); err != nil {
+	if err := c.do(ctx, http.MethodPost, "/v0/kyc_links", "kyc-link-"+userID, body, &result); err != nil {
 		return nil, fmt.Errorf("create kyc link: %w", err)
 	}
 
@@ -92,14 +95,14 @@ func (c *BridgeClient) CreateHostedKycLink(ctx context.Context, userID, customer
 
 func (c *BridgeClient) GetCustomerEligibility(ctx context.Context, customerID string) (*BridgeCustomerEligibility, error) {
 	var result struct {
-		KycStatus   string `json:"kyc_status"`
+		KycStatus    string `json:"kyc_status"`
 		Endorsements []struct {
 			Name   string `json:"endorsement"`
 			Status string `json:"status"`
 		} `json:"endorsements"`
 	}
 
-	if err := c.do(ctx, http.MethodGet, "/v0/customers/"+customerID, nil, &result); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/v0/customers/"+customerID, "", nil, &result); err != nil {
 		return nil, fmt.Errorf("get customer: %w", err)
 	}
 
@@ -126,7 +129,7 @@ func (c *BridgeClient) GetKycLink(ctx context.Context, kycLinkID string) (*Bridg
 		KycStatus  string `json:"kyc_status"`
 	}
 
-	if err := c.do(ctx, http.MethodGet, "/v0/kyc_links/"+kycLinkID, nil, &result); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/v0/kyc_links/"+kycLinkID, "", nil, &result); err != nil {
 		return nil, fmt.Errorf("get kyc link: %w", err)
 	}
 
@@ -142,12 +145,12 @@ func (c *BridgeClient) GetKycLink(ctx context.Context, kycLinkID string) (*Bridg
 func (c *BridgeClient) EnsureVirtualAccount(ctx context.Context, customerID, destinationAddress string) (*BridgeVirtualAccount, error) {
 	var listResult struct {
 		Data []struct {
-			ID       string `json:"id"`
-			Currency string `json:"currency"`
+			ID          string `json:"id"`
+			Currency    string `json:"currency"`
 			BankAccount struct {
-				BankName   string `json:"bank_name"`
-				LastFour   string `json:"last_four"`
-				Routing    string `json:"routing_number"`
+				BankName      string `json:"bank_name"`
+				LastFour      string `json:"last_four"`
+				Routing       string `json:"routing_number"`
 				AccountHolder string `json:"account_holder_name"`
 			} `json:"bank_account"`
 			Source struct {
@@ -157,7 +160,7 @@ func (c *BridgeClient) EnsureVirtualAccount(ctx context.Context, customerID, des
 	}
 
 	listPath := "/v0/customers/" + customerID + "/virtual_accounts"
-	if err := c.do(ctx, http.MethodGet, listPath, nil, &listResult); err == nil {
+	if err := c.do(ctx, http.MethodGet, listPath, "", nil, &listResult); err == nil {
 		for _, va := range listResult.Data {
 			if va.Currency == "usd" {
 				return &BridgeVirtualAccount{
@@ -175,29 +178,29 @@ func (c *BridgeClient) EnsureVirtualAccount(ctx context.Context, customerID, des
 
 	body := map[string]interface{}{
 		"source": map[string]interface{}{
-			"currency":      "usd",
-			"payment_rail":  []string{"ach_push", "wire"},
+			"currency":     "usd",
+			"payment_rail": []string{"ach_push", "wire"},
 		},
 		"destination": map[string]interface{}{
-			"currency":      "usdc",
-			"payment_rail":  "sui",
-			"to_address":    destinationAddress,
+			"currency":     "usdc",
+			"payment_rail": "sui",
+			"to_address":   destinationAddress,
 		},
 	}
 
 	var createResult struct {
-		ID       string `json:"id"`
-		Currency string `json:"currency"`
+		ID          string `json:"id"`
+		Currency    string `json:"currency"`
 		BankAccount struct {
-			BankName   string `json:"bank_name"`
-			LastFour   string `json:"last_four"`
-			Routing    string `json:"routing_number"`
+			BankName      string `json:"bank_name"`
+			LastFour      string `json:"last_four"`
+			Routing       string `json:"routing_number"`
 			AccountHolder string `json:"account_holder_name"`
 		} `json:"bank_account"`
 	}
 
 	createPath := "/v0/customers/" + customerID + "/virtual_accounts"
-	if err := c.do(ctx, http.MethodPost, createPath, body, &createResult); err != nil {
+	if err := c.do(ctx, http.MethodPost, createPath, "va-"+customerID, body, &createResult); err != nil {
 		return nil, fmt.Errorf("create virtual account: %w", err)
 	}
 
@@ -223,7 +226,7 @@ func (c *BridgeClient) EnsureLiquidationAddress(ctx context.Context, customerID,
 		} `json:"data"`
 	}
 
-	if err := c.do(ctx, http.MethodGet, listPath, nil, &listResult); err == nil {
+	if err := c.do(ctx, http.MethodGet, listPath, "", nil, &listResult); err == nil {
 		for _, la := range listResult.Data {
 			if la.Chain == chain && la.Currency == currency {
 				return &BridgeLiquidationAddress{
@@ -247,13 +250,13 @@ func (c *BridgeClient) EnsureLiquidationAddress(ctx context.Context, customerID,
 	}
 
 	var createResult struct {
-		ID      string `json:"id"`
-		Chain   string `json:"chain"`
+		ID       string `json:"id"`
+		Chain    string `json:"chain"`
 		Currency string `json:"currency"`
-		Address string `json:"address"`
+		Address  string `json:"address"`
 	}
 
-	if err := c.do(ctx, http.MethodPost, listPath, body, &createResult); err != nil {
+	if err := c.do(ctx, http.MethodPost, listPath, "la-"+customerID+"-"+chain+"-"+currency, body, &createResult); err != nil {
 		return nil, fmt.Errorf("create liquidation address chain=%s currency=%s: %w", chain, currency, err)
 	}
 

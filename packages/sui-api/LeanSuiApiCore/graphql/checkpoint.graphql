@@ -1,0 +1,68 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+query getCheckpoint($sequenceNumber: UInt53) {
+    checkpoint(sequenceNumber: $sequenceNumber) {
+        ...RPC_Checkpoint_Fields
+    }
+}
+
+query getCheckpoints($first: Int, $before: String, $last: Int, $after: String) {
+    checkpoints(first: $first, after: $after, last: $last, before: $before) {
+        pageInfo {
+            startCursor
+            endCursor
+            hasNextPage
+            hasPreviousPage
+        }
+        nodes {
+            ...RPC_Checkpoint_Fields
+        }
+    }
+}
+
+query paginateCheckpointTransactionBlocks($sequenceNumber: UInt53, $after: String) {
+    checkpoint(sequenceNumber: $sequenceNumber) {
+        transactions(after: $after) {
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
+            nodes {
+                digest
+            }
+        }
+    }
+}
+
+fragment RPC_Checkpoint_Fields on Checkpoint {
+    # checkpointCommitments
+    digest
+    epoch {
+        epochId
+    }
+
+    rollingGasSummary {
+        computationCost
+        storageCost
+        storageRebate
+        nonRefundableStorageFee
+    }
+    networkTotalTransactions
+    previousCheckpointDigest
+    sequenceNumber
+    timestamp
+    validatorSignatures {
+        signature
+        signersMap
+    }
+    transactions {
+        pageInfo {
+            hasNextPage
+            endCursor
+        }
+        nodes {
+            digest
+        }
+    }
+}

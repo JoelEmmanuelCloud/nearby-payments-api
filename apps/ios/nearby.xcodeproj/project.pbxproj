@@ -7,8 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D07F3D1B2FBE3672001B5E0B /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D07F3D1A2FBE3672001B5E0B /* UI */; };
-		D07F3D1E2FBE368A001B5E0B /* Hello in Frameworks */ = {isa = PBXBuildFile; productRef = D07F3D1D2FBE368A001B5E0B /* Hello */; };
+		D03134342FCDA4A000A3F665 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = D03134332FCDA4A000A3F665 /* Auth */; };
+		D03134372FCDBDA000A3F665 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D03134362FCDBDA000A3F665 /* UI */; };
+		D031343A2FCDF26000A3F665 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D03134382FCDF26000A3F665 /* GoogleSignIn */; };
+		D04619232FD2C1A4000625E1 /* LeanSui in Frameworks */ = {isa = PBXBuildFile; productRef = D04619222FD2C1A4000625E1 /* LeanSui */; };
+		D04619262FD34113000625E1 /* LeanSuiApi in Frameworks */ = {isa = PBXBuildFile; productRef = D04619252FD34113000625E1 /* LeanSuiApi */; };
+		D04619292FD4707F000625E1 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = D04619282FD4707F000625E1 /* Storage */; };
+		D046192C2FD4709F000625E1 /* HSM in Frameworks */ = {isa = PBXBuildFile; productRef = D046192B2FD4709F000625E1 /* HSM */; };
+		D046192F2FD470D6000625E1 /* Gateway in Frameworks */ = {isa = PBXBuildFile; productRef = D046192E2FD470D6000625E1 /* Gateway */; };
+		D04619322FD47100000625E1 /* Identity in Frameworks */ = {isa = PBXBuildFile; productRef = D04619312FD47100000625E1 /* Identity */; };
+		D0461AAA2FD864FF000625E1 /* SwiftCache in Frameworks */ = {isa = PBXBuildFile; productRef = D0461AA92FD864FF000625E1 /* SwiftCache */; };
+		D04646672FC60F4900B6B6E1 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D04646662FC60F4900B6B6E1 /* UI */; };
+		D05617CC2FC618910052C487 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D05617CB2FC618910052C487 /* UI */; };
+		D05617CF2FC61A440052C487 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D05617CE2FC61A440052C487 /* UI */; };
+		D08DE9502FD8D8500022CDCC /* DeviceIntegrity in Frameworks */ = {isa = PBXBuildFile; productRef = D08DE94F2FD8D8500022CDCC /* DeviceIntegrity */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,8 +69,20 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D07F3D1B2FBE3672001B5E0B /* UI in Frameworks */,
-				D07F3D1E2FBE368A001B5E0B /* Hello in Frameworks */,
+				D03134372FCDBDA000A3F665 /* UI in Frameworks */,
+				D05617CC2FC618910052C487 /* UI in Frameworks */,
+				D05617CF2FC61A440052C487 /* UI in Frameworks */,
+				D04619232FD2C1A4000625E1 /* LeanSui in Frameworks */,
+				D0461AAA2FD864FF000625E1 /* SwiftCache in Frameworks */,
+				D046192F2FD470D6000625E1 /* Gateway in Frameworks */,
+				D04619322FD47100000625E1 /* Identity in Frameworks */,
+				D03134342FCDA4A000A3F665 /* Auth in Frameworks */,
+				D08DE9502FD8D8500022CDCC /* DeviceIntegrity in Frameworks */,
+				D046192C2FD4709F000625E1 /* HSM in Frameworks */,
+				D04619262FD34113000625E1 /* LeanSuiApi in Frameworks */,
+				D04619292FD4707F000625E1 /* Storage in Frameworks */,
+				D031343A2FCDF26000A3F665 /* GoogleSignIn in Frameworks */,
+				D04646672FC60F4900B6B6E1 /* UI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,8 +143,20 @@
 			);
 			name = nearby;
 			packageProductDependencies = (
-				D07F3D1A2FBE3672001B5E0B /* UI */,
-				D07F3D1D2FBE368A001B5E0B /* Hello */,
+				D04646662FC60F4900B6B6E1 /* UI */,
+				D05617CB2FC618910052C487 /* UI */,
+				D05617CE2FC61A440052C487 /* UI */,
+				D03134332FCDA4A000A3F665 /* Auth */,
+				D03134382FCDF26000A3F665 /* GoogleSignIn */,
+				D03134362FCDBDA000A3F665 /* UI */,
+				D04619222FD2C1A4000625E1 /* LeanSui */,
+				D04619252FD34113000625E1 /* LeanSuiApi */,
+				D04619282FD4707F000625E1 /* Storage */,
+				D046192B2FD4709F000625E1 /* HSM */,
+				D046192E2FD470D6000625E1 /* Gateway */,
+				D04619312FD47100000625E1 /* Identity */,
+				D0461AA92FD864FF000625E1 /* SwiftCache */,
+				D08DE94F2FD8D8500022CDCC /* DeviceIntegrity */,
 			);
 			productName = nearby;
 			productReference = D07F3CDF2FBE35C1001B5E0B /* nearby.app */;
@@ -180,7 +216,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2630;
-				LastUpgradeCheck = 2630;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					D07F3CDE2FBE35C1001B5E0B = {
 						CreatedOnToolsVersion = 26.3;
@@ -205,8 +241,17 @@
 			mainGroup = D07F3CD62FBE35C1001B5E0B;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				D07F3D192FBE3672001B5E0B /* XCLocalSwiftPackageReference "../../packages/ui" */,
-				D07F3D1C2FBE368A001B5E0B /* XCLocalSwiftPackageReference "../../packages/hello" */,
+				D03134322FCDA4A000A3F665 /* XCLocalSwiftPackageReference "../../packages/auth/AuthCore" */,
+				D03134352FCDBDA000A3F665 /* XCLocalSwiftPackageReference "../../packages/ui" */,
+				D031343C2FCDF26000A3F665 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				D04619212FD2C1A4000625E1 /* XCLocalSwiftPackageReference "../../packages/sui/LeanSuiCore" */,
+				D04619242FD34113000625E1 /* XCLocalSwiftPackageReference "../../packages/sui-api/LeanSuiApiCore" */,
+				D04619272FD4707F000625E1 /* XCLocalSwiftPackageReference "../../packages/storage/StorageCore" */,
+				D046192A2FD4709F000625E1 /* XCLocalSwiftPackageReference "../../packages/hsm/HSMCore" */,
+				D046192D2FD470D6000625E1 /* XCLocalSwiftPackageReference "../../packages/gateway/GatewayCore" */,
+				D04619302FD47100000625E1 /* XCLocalSwiftPackageReference "../../packages/identity/IdentityCore" */,
+				D0461AA82FD864FF000625E1 /* XCRemoteSwiftPackageReference "SwiftCache-SDK" */,
+				D08DE94E2FD8D8500022CDCC /* XCLocalSwiftPackageReference "../../packages/device-integrity" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D07F3CE02FBE35C1001B5E0B /* Products */;
@@ -341,6 +386,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -398,6 +444,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -408,6 +455,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = nearby/nearby.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = QHUBYNZ482;
@@ -424,7 +472,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.peteranyaogu.nearby;
+				PRODUCT_BUNDLE_IDENTIFIER = com.variance.nearby;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -441,6 +489,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = nearby/nearby.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = QHUBYNZ482;
@@ -457,7 +506,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.peteranyaogu.nearby;
+				PRODUCT_BUNDLE_IDENTIFIER = com.variance.nearby;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -479,7 +528,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.peteranyaogu.nearbyTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.variance.nearbyTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -501,7 +550,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.peteranyaogu.nearbyTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.variance.nearbyTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -521,7 +570,7 @@
 				DEVELOPMENT_TEAM = QHUBYNZ482;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.peteranyaogu.nearbyUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.variance.nearbyUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -541,7 +590,7 @@
 				DEVELOPMENT_TEAM = QHUBYNZ482;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.peteranyaogu.nearbyUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.variance.nearbyUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -595,24 +644,121 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		D07F3D192FBE3672001B5E0B /* XCLocalSwiftPackageReference "../../packages/ui" */ = {
+		D03134322FCDA4A000A3F665 /* XCLocalSwiftPackageReference "../../packages/auth/AuthCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/auth/AuthCore;
+		};
+		D03134352FCDBDA000A3F665 /* XCLocalSwiftPackageReference "../../packages/ui" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../packages/ui;
 		};
-		D07F3D1C2FBE368A001B5E0B /* XCLocalSwiftPackageReference "../../packages/hello" */ = {
+		D04619212FD2C1A4000625E1 /* XCLocalSwiftPackageReference "../../packages/sui/LeanSuiCore" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../packages/hello;
+			relativePath = ../../packages/sui/LeanSuiCore;
+		};
+		D04619242FD34113000625E1 /* XCLocalSwiftPackageReference "../../packages/sui-api/LeanSuiApiCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../packages/sui-api/LeanSuiApiCore";
+		};
+		D04619272FD4707F000625E1 /* XCLocalSwiftPackageReference "../../packages/storage/StorageCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/storage/StorageCore;
+		};
+		D046192A2FD4709F000625E1 /* XCLocalSwiftPackageReference "../../packages/hsm/HSMCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/hsm/HSMCore;
+		};
+		D046192D2FD470D6000625E1 /* XCLocalSwiftPackageReference "../../packages/gateway/GatewayCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/gateway/GatewayCore;
+		};
+		D04619302FD47100000625E1 /* XCLocalSwiftPackageReference "../../packages/identity/IdentityCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/identity/IdentityCore;
+		};
+		D08DE94E2FD8D8500022CDCC /* XCLocalSwiftPackageReference "../../packages/device-integrity" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../packages/device-integrity";
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		D031343C2FCDF26000A3F665 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
+		D0461AA82FD864FF000625E1 /* XCRemoteSwiftPackageReference "SwiftCache-SDK" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SudhirGadhvi/SwiftCache-SDK.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
-		D07F3D1A2FBE3672001B5E0B /* UI */ = {
+		D03134332FCDA4A000A3F665 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Auth;
+		};
+		D03134362FCDBDA000A3F665 /* UI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = UI;
 		};
-		D07F3D1D2FBE368A001B5E0B /* Hello */ = {
+		D03134382FCDF26000A3F665 /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Hello;
+			package = D031343C2FCDF26000A3F665 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		D04619222FD2C1A4000625E1 /* LeanSui */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LeanSui;
+		};
+		D04619252FD34113000625E1 /* LeanSuiApi */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LeanSuiApi;
+		};
+		D04619282FD4707F000625E1 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Storage;
+		};
+		D046192B2FD4709F000625E1 /* HSM */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HSM;
+		};
+		D046192E2FD470D6000625E1 /* Gateway */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Gateway;
+		};
+		D04619312FD47100000625E1 /* Identity */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Identity;
+		};
+		D0461AA92FD864FF000625E1 /* SwiftCache */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D0461AA82FD864FF000625E1 /* XCRemoteSwiftPackageReference "SwiftCache-SDK" */;
+			productName = SwiftCache;
+		};
+		D04646662FC60F4900B6B6E1 /* UI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = UI;
+		};
+		D05617CB2FC618910052C487 /* UI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = UI;
+		};
+		D05617CE2FC61A440052C487 /* UI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = UI;
+		};
+		D08DE94F2FD8D8500022CDCC /* DeviceIntegrity */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DeviceIntegrity;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

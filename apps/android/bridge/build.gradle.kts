@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace = "com.variance.nearby.bridge"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 30
@@ -20,50 +20,83 @@ dependencies {
     implementation(libs.swiftkit.core)
 }
 
-// ── Config from gradle.properties (with Environment Variable fallback) ────────
-val swiftlyPath =
-    project.findProperty("swift.swiftly.path")?.toString() ?: System.getenv("SWIFTLY_PATH")
-        ?: throw GradleException("swift.swiftly.path not set")
-val swiftSdkRoot =
-    project.findProperty("swift.sdk.path")?.toString() ?: System.getenv("SWIFT_SDK_PATH")
-        ?: throw GradleException("swift.sdk.path not set")
-val swiftVersion = project.findProperty("swift.version")?.toString() ?: "6.3"
-val androidSdkVersion = project.findProperty("swift.android.sdk.version")?.toString()
-    ?: "$swiftVersion-RELEASE_android"
+// ── Config from Bazel-forwarded environment ──────────────────────────────────
+fun env(name: String): String? = System.getenv(name)
+
+val envToPropertyMap = mapOf(
+    "SWIFTLY_PATH" to "swift.swiftly.path",
+    "SWIFT_SDK_PATH" to "swift.sdk.path",
+    "SWIFT_VERSION" to "swift.version",
+    "SWIFT_ANDROID_SDK_VERSION" to "swift.android.sdk.version",
+)
+
+envToPropertyMap.forEach { (envKey, propKey) ->
+    if (env(envKey) == null && project.findProperty(propKey) == null) {
+        throw GradleException("$envKey environment variable or $propKey gradle property is required")
+    }
+}
+
+val swiftlyPath = env("SWIFTLY_PATH") ?: project.findProperty("swift.swiftly.path").toString()
+val swiftSdkRoot = env("SWIFT_SDK_PATH") ?: project.findProperty("swift.sdk.path").toString()
+val swiftVersion = env("SWIFT_VERSION") ?: project.findProperty("swift.version").toString()
+val androidSdkVersion = env("SWIFT_ANDROID_SDK_VERSION") ?: project.findProperty("swift.android.sdk.version").toString()
 val sdkBundlePath = "$swiftSdkRoot/swift-$androidSdkVersion.artifactbundle"
 val minSdk = android.defaultConfig.minSdk ?: 30
-
-val repoRoot = project.projectDir.resolve(
-    project.findProperty("repo.root")?.toString() ?: throw GradleException("repo.root not set"),
-)
+val repoRoot = project.projectDir.resolve("../../..")
 
 // ── Swift packages to bridge ──────────────────────────────────────────────────
 // Just add the name and relative path here.
 val swiftPackages = listOf(
-    mapOf("target" to "SwiftHello", "dir" to "packages/hello", "sourcePath" to "Sources/Java"),
+    mapOf("target" to "Gateway", "dir" to "packages/gateway", "sourcePath" to "GatewayCore/Sources/Gateway"),
+    mapOf("target" to "Storage", "dir" to "packages/storage", "sourcePath" to "StorageCore/Sources/Storage"),
+    mapOf("target" to "HSM", "dir" to "packages/hsm", "sourcePath" to "HSMCore/Sources/HSM"),
+    mapOf("target" to "Auth", "dir" to "packages/auth", "sourcePath" to "AuthCore/Sources/Auth"),
+    mapOf("target" to "Identity", "dir" to "packages/identity", "sourcePath" to "IdentityCore/Sources/Identity"),
+    mapOf("target" to "LeanSuiApi", "dir" to "packages/sui-api", "sourcePath" to "LeanSuiApiCore/Sources/LeanSuiApi"),
+    mapOf("target" to "LeanSuiBCS", "dir" to "packages/sui-bcs", "sourcePath" to "LeanSuiBCSCore/Sources/LeanSuiBCS"),
+    mapOf("target" to "LeanSui", "dir" to "packages/sui", "sourcePath" to "LeanSuiCore/Sources/LeanSui"),
+)
+val swiftRuntimePackage = swiftPackages.first()
+val swiftRuntimeTarget = swiftRuntimePackage["target"] ?: error("Swift runtime package target is required")
+val swiftRuntimePackageDir = repoRoot.resolve(
+    swiftRuntimePackage["dir"] ?: error("Swift runtime package dir is required"),
 )
 
 // ── ABI Configuration ────────────────────────────────────────────────────────
-val abiList = mapOf(
-    "arm64-v8a" to mapOf(
-        "triple" to "aarch64-unknown-linux-android$minSdk",
-        "libDir" to "swift-aarch64",
-        "ndkDir" to "aarch64-linux-android",
-    ),
-    "armeabi-v7a" to mapOf(
-        "triple" to "armv7-unknown-linux-android$minSdk",
-        "libDir" to "swift-armv7",
-        "ndkDir" to "arm-linux-androideabi",
-    ),
-    "x86_64" to mapOf(
-        "triple" to "x86_64-unknown-linux-android$minSdk",
-        "libDir" to "swift-x86_64",
-        "ndkDir" to "x86_64-linux-android",
-    ),
-)
+val isCi = System.getenv("CI") == "true"
 
-// Add this outside the forEach, at the top of the file
+val abiList = if (isCi) {
+    mapOf(
+        "arm64-v8a" to mapOf(
+            "triple" to "aarch64-unknown-linux-android$minSdk",
+            "libDir" to "swift-aarch64",
+            "ndkDir" to "aarch64-linux-android",
+        ),
+    )
+} else {
+    mapOf(
+        "arm64-v8a" to mapOf(
+            "triple" to "aarch64-unknown-linux-android$minSdk",
+            "libDir" to "swift-aarch64",
+            "ndkDir" to "aarch64-linux-android",
+        ),
+        "armeabi-v7a" to mapOf(
+            "triple" to "armv7-unknown-linux-android$minSdk",
+            "libDir" to "swift-armv7",
+            "ndkDir" to "arm-linux-androideabi",
+        ),
+        "x86_64" to mapOf(
+            "triple" to "x86_64-unknown-linux-android$minSdk",
+            "libDir" to "swift-x86_64",
+            "ndkDir" to "x86_64-linux-android",
+        ),
+    )
+}
+
 abstract class SyncSwiftJavaTask : DefaultTask() {
+    @get:Inject
+    abstract val fileSystemOperations: FileSystemOperations
+
     @get:InputDirectory
     @get:Optional
     abstract val extractOutput: DirectoryProperty
@@ -78,12 +111,18 @@ abstract class SyncSwiftJavaTask : DefaultTask() {
             javaOutput.get().asFile.mkdirs()
             return
         }
-        project.sync {
+        fileSystemOperations.sync {
             from(src)
             into(javaOutput)
         }
     }
 }
+
+fun requiredFile(description: String, vararg candidates: File): File = candidates.firstOrNull { it.isFile }
+    ?: error("$description not found. Checked: ${candidates.joinToString { it.absolutePath }}")
+
+fun requiredDirectory(description: String, vararg candidates: File): File = candidates.firstOrNull { it.isDirectory }
+    ?: error("$description not found. Checked: ${candidates.joinToString { it.absolutePath }}")
 
 // ── Build & Wire Logic ───────────────────────────────────────────────────────
 swiftPackages.forEach { pkg ->
@@ -97,6 +136,7 @@ swiftPackages.forEach { pkg ->
     val packageIdentity = packageDir.name.lowercase()
 
     val jniOutDir = layout.buildDirectory.dir("generated/jniLibs/$targetLow")
+    val javaOutDir = layout.buildDirectory.dir("generated/java/$targetLow")
     val extractOutputDir =
         file("$packageDir/.build/plugins/outputs/$packageIdentity/$target/destination/JExtractSwiftPlugin/src/generated/java")
 
@@ -115,15 +155,20 @@ swiftPackages.forEach { pkg ->
             group = "bridge"
             workingDir = packageDir
             executable = swiftlyPath
+            inputs.file(File(packageDir, "Package.swift"))
+            inputs.dir(File(packageDir, sourcePath))
             args(
                 "run",
                 "swift",
                 "build",
                 "+$swiftVersion",
+                "--product",
+                target,
                 "--swift-sdk",
                 triple,
                 "--build-system",
                 "native",
+                "--disable-sandbox",
             )
 
             outputs.dir(file("$packageDir/.build/$triple/debug"))
@@ -131,46 +176,16 @@ swiftPackages.forEach { pkg ->
         buildAll.configure { dependsOn(abiTask) }
     }
 
-    fun requiredFile(description: String, vararg candidates: File): File = candidates.firstOrNull { it.isFile }
-        ?: error("$description not found. Checked: ${candidates.joinToString { it.absolutePath }}")
-
-    fun requiredDirectory(description: String, vararg candidates: File): File = candidates.firstOrNull { it.isDirectory }
-        ?: error("$description not found. Checked: ${candidates.joinToString { it.absolutePath }}")
-
-    val copyLibs = tasks.register<Copy>("copyJniLibs_$target") {
+    val copyLibs = tasks.register<Sync>("copyJniLibs_$target") {
         group = "bridge"
         dependsOn(buildAll)
 
         abiList.forEach { (abi, info) ->
             val triple = info["triple"] ?: ""
-            val ndkDir = info["ndkDir"] ?: ""
-            val libDir = info["libDir"] ?: ""
 
             // 1. Built Swift binaries
             from(file("$packageDir/.build/$triple/debug")) {
-                include("*.so")
-                into(abi)
-            }
-
-            // 2. NDK C++ shared library
-            from(
-                requiredFile(
-                    "Swift Android C++ runtime",
-                    file("$sdkBundlePath/swift-android/ndk-sysroot/usr/lib/$ndkDir/libc++_shared.so"),
-                    file("$sdkBundlePath/swift-android/ndk-sysroot/usr/lib/$ndkDir/$minSdk/libc++_shared.so"),
-                ),
-            ) {
-                into(abi)
-            }
-
-            // 3. Swift runtime libraries
-            from(
-                requiredDirectory(
-                    "Swift Android runtime",
-                    file("$sdkBundlePath/swift-android/swift-resources/usr/lib/$libDir/android"),
-                ),
-            ) {
-                include("*.so")
+                include("lib$target.so")
                 into(abi)
             }
         }
@@ -180,13 +195,63 @@ swiftPackages.forEach { pkg ->
     val syncJava = tasks.register<SyncSwiftJavaTask>("syncSwiftJava_$target") {
         dependsOn(buildAll)
         extractOutput.set(extractOutputDir)
-        javaOutput.set(layout.buildDirectory.dir("generated/java/$targetLow"))
+        javaOutput.set(javaOutDir)
     }
 
-    android.sourceSets.getByName("main") {
-        java.srcDir(layout.buildDirectory.dir("generated/java/$targetLow").get().asFile)
-        jniLibs.srcDir(jniOutDir.get().asFile)
+    extensions.configure<com.android.build.api.dsl.LibraryExtension>("android") {
+        sourceSets.getByName("main").java.directories.add(javaOutDir.get().asFile.absolutePath)
+        sourceSets.getByName("main").jniLibs.directories.add(jniOutDir.get().asFile.absolutePath)
     }
 
-    tasks.named("preBuild").configure { dependsOn(syncJava, copyLibs) }
+    tasks.named("preBuild").configure {
+        dependsOn(syncJava, copyLibs)
+    }
+}
+
+val swiftRuntimeJniOutDir = layout.buildDirectory.dir("generated/jniLibs/swiftruntime")
+val copySwiftRuntimeLibs = tasks.register<Sync>("copySwiftRuntimeLibs") {
+    group = "bridge"
+    description = "Copies shared Swift Android runtime libraries once for all bridged packages"
+    dependsOn("buildSwiftAll_$swiftRuntimeTarget")
+
+    abiList.forEach { (abi, info) ->
+        val triple = info["triple"] ?: ""
+        val ndkDir = info["ndkDir"] ?: ""
+        val libDir = info["libDir"] ?: ""
+
+        from(file("$swiftRuntimePackageDir/.build/$triple/debug")) {
+            include("libSwiftJava.so")
+            into(abi)
+        }
+
+        from(
+            requiredFile(
+                "Swift Android C++ runtime",
+                file("$sdkBundlePath/swift-android/ndk-sysroot/usr/lib/$ndkDir/libc++_shared.so"),
+                file("$sdkBundlePath/swift-android/ndk-sysroot/usr/lib/$ndkDir/$minSdk/libc++_shared.so"),
+            ),
+        ) {
+            into(abi)
+        }
+
+        from(
+            requiredDirectory(
+                "Swift Android runtime",
+                file("$sdkBundlePath/swift-android/swift-resources/usr/lib/$libDir/android"),
+            ),
+        ) {
+            include("*.so")
+            into(abi)
+        }
+    }
+
+    into(swiftRuntimeJniOutDir)
+}
+
+extensions.configure<com.android.build.api.dsl.LibraryExtension>("android") {
+    sourceSets.getByName("main").jniLibs.directories.add(swiftRuntimeJniOutDir.get().asFile.absolutePath)
+}
+
+tasks.named("preBuild").configure {
+    dependsOn(copySwiftRuntimeLibs)
 }

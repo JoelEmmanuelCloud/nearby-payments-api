@@ -1,10 +1,12 @@
 package sui
 
 import (
-	"crypto/sha256"
 	"hash"
+
+	"golang.org/x/crypto/blake2b"
 )
 
 func newBlake2b256() hash.Hash {
-	return sha256.New()
+	h, _ := blake2b.New256(nil)
+	return h
 }

@@ -16,9 +16,9 @@ type ServiceDeps struct {
 }
 
 type Service struct {
-	store        *Store
-	bridge       *BridgeClient
-	authStore    *auth.Store
+	store     *Store
+	bridge    *BridgeClient
+	authStore *auth.Store
 }
 
 func NewService(deps ServiceDeps) *Service {

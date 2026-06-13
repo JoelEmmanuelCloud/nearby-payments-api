@@ -1,0 +1,19 @@
+diff --git a/tools/android/BUILD b/tools/android/BUILD
+index 7c4f0a6..29d7b9e 100644
+--- a/tools/android/BUILD
++++ b/tools/android/BUILD
+@@ -378,8 +378,12 @@ run_singlejar(
+     ],
+     out = "java_base_extras.jar",
+     include_prefixes = [
+-        "java/lang/invoke/",
+-        "java/lang/annotation/",
++        "java/",
++        "javax/",
++        "jdk/",
++        "org/w3c/",
++        "org/xml/",
++        "sun/",
+     ],
+     visibility = ["//visibility:private"],
+ )

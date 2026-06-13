@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -42,21 +43,34 @@ func New(deps Deps) http.Handler {
 
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
+	authLimit := middleware.RateLimit(deps.Redis, middleware.RateLimitConfig{Name: "auth", Limit: 20, Window: time.Minute})
+	deviceLimit := middleware.RateLimit(deps.Redis, middleware.RateLimitConfig{Name: "auth-device", Limit: 10, Window: time.Minute})
+	readLimit := middleware.RateLimit(deps.Redis, middleware.RateLimitConfig{Name: "read", Limit: 120, Window: time.Minute})
+	writeLimit := middleware.RateLimit(deps.Redis, middleware.RateLimitConfig{Name: "write", Limit: 30, Window: time.Minute})
+	webhookLimit := middleware.RateLimit(deps.Redis, middleware.RateLimitConfig{Name: "webhook", Limit: 300, Window: time.Minute})
+
 	r.Route("/v1", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
-			r.Get("/server-public-key", deps.AuthHandler.GetServerPublicKey)
-			r.Post("/oauth/begin", deps.AuthHandler.OAuthBegin)
-			r.Get("/oauth/complete", deps.AuthHandler.OAuthCallbackPage)
-			r.Post("/oauth/complete", deps.AuthHandler.OAuthComplete)
+			r.Group(func(r chi.Router) {
+				r.Use(authLimit)
+				r.Get("/server-public-key", deps.AuthHandler.GetServerPublicKey)
+				r.Post("/oauth/begin", deps.AuthHandler.OAuthBegin)
+				r.Get("/oauth/complete", deps.AuthHandler.OAuthCallbackPage)
+				r.Post("/oauth/complete", deps.AuthHandler.OAuthComplete)
+				r.Post("/oauth/callback/apple", deps.AuthHandler.OAuthAppleCallback)
+				r.Post("/zklogin/prove", deps.AuthHandler.ProveZkLogin)
+				r.Post("/refresh", deps.AuthHandler.RefreshSession)
+			})
 
 			r.Group(func(r chi.Router) {
 				r.Use(auth.Middleware(deps.AuthService, "low"))
-				r.Post("/refresh", deps.AuthHandler.RefreshSession)
+				r.Use(writeLimit)
 				r.Post("/revoke", deps.AuthHandler.RevokeSession)
 			})
 
 			r.Group(func(r chi.Router) {
 				r.Use(auth.Middleware(deps.AuthService, "high"))
+				r.Use(deviceLimit)
 				r.Post("/integrity", deps.AuthHandler.AssertDeviceIntegrity)
 				r.Post("/credential", deps.AuthHandler.IssueDeviceCredential)
 			})
@@ -64,6 +78,7 @@ func New(deps Deps) http.Handler {
 
 		r.Route("/deposit", func(r chi.Router) {
 			r.Use(auth.Middleware(deps.AuthService, "low"))
+			r.Use(readLimit)
 			r.Get("/options", deps.DepositHandler.GetOptions)
 			r.Get("/history", deps.DepositHandler.GetDeposits)
 			r.Get("/{id}", deps.DepositHandler.GetDeposit)
@@ -72,12 +87,14 @@ func New(deps Deps) http.Handler {
 		r.Route("/payments", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
 				r.Use(auth.Middleware(deps.AuthService, "high"))
+				r.Use(writeLimit)
 				r.Use(middleware.Idempotency(deps.Redis))
 				r.Post("/intents", deps.PaymentHandler.CreateIntent)
 			})
 
 			r.Group(func(r chi.Router) {
 				r.Use(auth.Middleware(deps.AuthService, "low"))
+				r.Use(readLimit)
 				r.Get("/intents/{id}", deps.PaymentHandler.GetIntent)
 				r.Post("/intents/{id}/submit", deps.PaymentHandler.SubmitIntent)
 				r.Post("/intents/{id}/cancel", deps.PaymentHandler.CancelIntent)
@@ -86,19 +103,40 @@ func New(deps Deps) http.Handler {
 		})
 
 		r.Route("/names", func(r chi.Router) {
-			r.Use(auth.Middleware(deps.AuthService, "high"))
-			r.Post("/leaf", deps.NamesHandler.RegisterLeaf)
-			r.Get("/tasks/{id}", deps.NamesHandler.GetTask)
+			r.Group(func(r chi.Router) {
+				r.Use(auth.Middleware(deps.AuthService, "low"))
+				r.Use(readLimit)
+				r.Get("/leaf/{leafName}/available", deps.NamesHandler.CheckAvailability)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(auth.Middleware(deps.AuthService, "high"))
+				r.Use(writeLimit)
+				r.Post("/leaf", deps.NamesHandler.RegisterLeaf)
+				r.Post("/tasks/{id}/submit", deps.NamesHandler.SubmitLeaf)
+				r.Get("/tasks/{id}", deps.NamesHandler.GetTask)
+			})
+		})
+
+		r.Route("/me", func(r chi.Router) {
+			r.Use(auth.Middleware(deps.AuthService, "low"))
+			r.Use(readLimit)
+			r.Get("/profile", deps.AuthHandler.GetProfile)
+			r.Put("/avatar", deps.AuthHandler.UploadAvatar)
+			r.Put("/wallet", deps.AuthHandler.BindWallet)
 		})
 
 		r.Route("/nearby", func(r chi.Router) {
 			r.Use(auth.Middleware(deps.AuthService, "high"))
+			r.Use(writeLimit)
 			r.Post("/sessions", deps.NearbyHandler.InitiateSession)
 			r.Get("/sessions/{id}", deps.NearbyHandler.GetSession)
 			r.Post("/sessions/{id}/acknowledge", deps.NearbyHandler.AcknowledgeSession)
 		})
 
-		r.Post("/webhooks/bridge", deps.WebhookHandler.HandleBridgeWebhook)
+		r.Group(func(r chi.Router) {
+			r.Use(webhookLimit)
+			r.Post("/webhooks/bridge", deps.WebhookHandler.HandleBridgeWebhook)
+		})
 	})
 
 	return r

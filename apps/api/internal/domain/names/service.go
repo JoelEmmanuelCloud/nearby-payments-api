@@ -2,14 +2,19 @@ package names
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/vaariance/nearby/internal/avs"
 	"github.com/vaariance/nearby/internal/domain/auth"
+	apperr "github.com/vaariance/nearby/internal/errors"
+	"github.com/vaariance/nearby/internal/sui"
 	"github.com/vaariance/nearby/internal/utils"
 )
+
+const parentName = "nearby"
 
 var leafNameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]$|^[a-z0-9]$`)
 
@@ -17,12 +22,16 @@ type ServiceDeps struct {
 	Store     *Store
 	AuthStore *auth.Store
 	AVSClient *avs.Client
+	SuiClient *sui.Client
+	Sponsor   *sui.Sponsor
 }
 
 type Service struct {
 	store     *Store
 	authStore *auth.Store
 	avsClient *avs.Client
+	suiClient *sui.Client
+	sponsor   *sui.Sponsor
 }
 
 func NewService(deps ServiceDeps) *Service {
@@ -30,18 +39,16 @@ func NewService(deps ServiceDeps) *Service {
 		store:     deps.Store,
 		authStore: deps.AuthStore,
 		avsClient: deps.AVSClient,
+		suiClient: deps.SuiClient,
+		sponsor:   deps.Sponsor,
 	}
 }
 
 func (s *Service) RegisterLeaf(ctx context.Context, userID string, req RegisterLeafRequest) (*RegisterLeafResponse, error) {
 	leafName := strings.ToLower(strings.TrimSpace(req.LeafName))
-	parentName := strings.TrimSpace(req.ParentName)
 
 	if !leafNameRe.MatchString(leafName) {
 		return nil, ErrNameInvalid
-	}
-	if parentName == "" {
-		return nil, ErrParentInvalid
 	}
 
 	wb, err := s.authStore.GetWalletBinding(ctx, userID)
@@ -54,6 +61,25 @@ func (s *Service) RegisterLeaf(ctx context.Context, userID string, req RegisterL
 
 	fullName := leafName + "." + parentName
 	nameHash := "0x" + utils.SHA256HexString(fullName)
+
+	existing, err := s.store.GetActiveTaskByPayloadHash(ctx, nameHash, utils.NowUnix())
+	if err != nil {
+		return nil, fmt.Errorf("check active task: %w", err)
+	}
+	if existing != nil {
+		if existing.UserID != userID {
+			return nil, ErrNameTaken
+		}
+		return &RegisterLeafResponse{
+			TaskID:         existing.ID,
+			NameHash:       existing.PayloadHash,
+			Action:         existing.Action,
+			Status:         existing.Status,
+			SponsorAddress: s.sponsor.Address(),
+			ExpiresAt:      existing.ExpiresAt,
+		}, nil
+	}
+
 	walletBindingHash := utils.SHA256HexString(wb.SuiAddress + ":" + wb.AuthScheme)
 
 	avsInput := avs.LeafRegistrationInput{
@@ -93,11 +119,78 @@ func (s *Service) RegisterLeaf(ctx context.Context, userID string, req RegisterL
 	}
 
 	return &RegisterLeafResponse{
-		TaskID:    task.ID,
-		NameHash:  nameHash,
-		Action:    task.Action,
-		Status:    task.Status,
-		ExpiresAt: task.ExpiresAt,
+		TaskID:         task.ID,
+		NameHash:       nameHash,
+		Action:         task.Action,
+		Status:         task.Status,
+		SponsorAddress: s.sponsor.Address(),
+		ExpiresAt:      task.ExpiresAt,
+	}, nil
+}
+
+func (s *Service) SubmitLeafRegistration(ctx context.Context, taskID, userID string, req SubmitLeafRequest) (*SubmitLeafResponse, error) {
+	task, err := s.store.GetTaskByID(ctx, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("get task: %w", err)
+	}
+	if task == nil || task.UserID != userID {
+		return nil, ErrTaskNotFound
+	}
+	if task.Status != "authorized" {
+		return nil, ErrTaskNotSubmittable
+	}
+	if task.ExpiresAt < utils.NowUnix() {
+		return nil, ErrTaskExpired
+	}
+
+	txBytes, err := base64.StdEncoding.DecodeString(req.TxBytes)
+	if err != nil {
+		return nil, apperr.ErrBadRequest
+	}
+
+	execResp, err := s.sponsor.SubmitSponsoredTransaction(ctx, txBytes, req.UserSignature)
+	if err != nil {
+		_ = s.store.UpdateTaskStatus(ctx, task.ID, "failed", utils.NowUnix())
+		return nil, ErrRegistrationFailed
+	}
+
+	_ = s.store.UpdateTaskStatus(ctx, task.ID, "submitted", utils.NowUnix())
+
+	return &SubmitLeafResponse{
+		TaskID:   task.ID,
+		TxDigest: execResp.Digest,
+		Status:   "submitted",
+	}, nil
+}
+
+func (s *Service) CheckAvailability(ctx context.Context, leafName string) (*NameAvailabilityResponse, error) {
+	leafName = strings.ToLower(strings.TrimSpace(leafName))
+	if !leafNameRe.MatchString(leafName) {
+		return nil, ErrNameInvalid
+	}
+
+	fullName := leafName + "." + parentName
+	nameHash := "0x" + utils.SHA256HexString(fullName)
+
+	address, err := s.suiClient.ResolveNameServiceAddress(ctx, fullName)
+	if err != nil {
+		return nil, ErrSuiNSUnavailable
+	}
+
+	available := address == ""
+	if available {
+		active, err := s.store.GetActiveTaskByPayloadHash(ctx, nameHash, utils.NowUnix())
+		if err != nil {
+			return nil, fmt.Errorf("check active task: %w", err)
+		}
+		if active != nil {
+			available = false
+		}
+	}
+
+	return &NameAvailabilityResponse{
+		Name:      fullName,
+		Available: available,
 	}, nil
 }
 

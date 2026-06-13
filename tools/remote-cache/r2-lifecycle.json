@@ -1,15 +1,28 @@
 {
   "rules": [
     {
-      "id": "expire-bazel-cache",
+      "id": "expire-action-cache",
       "enabled": true,
       "conditions": {
-        "prefix": ""
+        "prefix": "ac/"
       },
       "deleteObjectsTransition": {
         "condition": {
           "type": "Age",
-          "maxAge": 604800
+          "maxAge": 1209600
+        }
+      }
+    },
+    {
+      "id": "expire-cas-blobs",
+      "enabled": true,
+      "conditions": {
+        "prefix": "cas/"
+      },
+      "deleteObjectsTransition": {
+        "condition": {
+          "type": "Age",
+          "maxAge": 7776000
         }
       }
     }

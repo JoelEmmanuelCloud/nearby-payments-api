@@ -2,6 +2,7 @@ package apperr
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 )
 
@@ -15,6 +16,7 @@ func Write(w http.ResponseWriter, err error) {
 	if e, ok := err.(*AppError); ok {
 		appErr = e
 	} else {
+		slog.Error("unhandled internal error", "error", err)
 		appErr = ErrInternal
 	}
 

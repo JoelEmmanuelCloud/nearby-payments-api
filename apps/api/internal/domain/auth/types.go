@@ -1,10 +1,18 @@
 package auth
 
 type User struct {
-	ID        string
-	Status    string
-	CreatedAt int64
-	UpdatedAt int64
+	ID           string
+	Status       string
+	AvatarBlobID string
+	CreatedAt    int64
+	UpdatedAt    int64
+}
+
+type UserProfileResponse struct {
+	UserID    string `json:"userId"`
+	Status    string `json:"status"`
+	AvatarURL string `json:"avatarUrl,omitempty"`
+	CreatedAt int64  `json:"createdAt"`
 }
 
 type OAuthIdentity struct {
@@ -106,6 +114,7 @@ type SessionContext struct {
 
 type OAuthBeginRequest struct {
 	Provider            string `json:"provider"`
+	FlowType            string `json:"flowType"`
 	CodeChallenge       string `json:"codeChallenge"`
 	CodeChallengeMethod string `json:"codeChallengeMethod"`
 	ZkLoginNonce        string `json:"zkLoginNonce"`
@@ -113,29 +122,36 @@ type OAuthBeginRequest struct {
 
 type OAuthBeginResponse struct {
 	State   string `json:"state"`
-	AuthURL string `json:"authUrl"`
+	AuthURL string `json:"authURL"`
 }
 
 type DeviceIntegrityProof struct {
 	Provider       string `json:"provider"`
-	Assertion      string `json:"assertion"`
+	Assertion      string `json:"assertion,omitempty"`
 	KeyID          string `json:"keyId,omitempty"`
-	Nonce          string `json:"nonce"`
-	TimestampMs    int64  `json:"timestampMs"`
+	Token          string `json:"token,omitempty"`
+	ClientDataHash string `json:"clientDataHash,omitempty"`
+	Nonce          string `json:"nonce,omitempty"`
+	TimestampMs    int64  `json:"timestampMs,omitempty"`
 	RequestHash    string `json:"requestHash,omitempty"`
-	IntegrityToken string `json:"integrityToken,omitempty"`
 }
 
 type OAuthCompleteRequest struct {
+	FlowType            string               `json:"flowType"`
 	Code                string               `json:"code"`
 	State               string               `json:"state"`
 	CodeVerifier        string               `json:"codeVerifier"`
+	IDToken             string               `json:"idToken"`
+	AuthorizationCode   string               `json:"authorizationCode"`
 	DeviceIntegrity     DeviceIntegrityProof `json:"deviceIntegrity"`
 	LocalProofPublicKey string               `json:"localProofPublicKey"`
 	Platform            string               `json:"platform"`
 	OsVersion           string               `json:"osVersion"`
 	AppBundleID         string               `json:"appBundleId"`
-	SuiAddress          string               `json:"suiAddress"`
+}
+
+type BindWalletRequest struct {
+	SuiAddress string `json:"suiAddress"`
 }
 
 type OAuthCompleteResponse struct {
@@ -145,12 +161,15 @@ type OAuthCompleteResponse struct {
 	RefreshExpiresAt int64  `json:"refreshExpiresAt"`
 	UserID           string `json:"userId"`
 	SuiAddress       string `json:"suiAddress"`
-	ZkLoginSalt      string `json:"zkLoginSalt"`
+	JWT              string `json:"jwt"`
+	Salt             string `json:"salt"`
 }
 
 type SessionRefreshResponse struct {
-	AccessToken string `json:"accessToken"`
-	ExpiresAt   int64  `json:"expiresAt"`
+	AccessToken      string `json:"accessToken"`
+	RefreshToken     string `json:"refreshToken"`
+	ExpiresAt        int64  `json:"expiresAt"`
+	RefreshExpiresAt int64  `json:"refreshExpiresAt"`
 }
 
 type AssertIntegrityRequest struct {
@@ -167,4 +186,13 @@ type IssueCredentialRequest struct {
 type ServerPublicKeyResponse struct {
 	PublicKey string `json:"publicKey"`
 	Format    string `json:"format"`
+}
+
+type ZkLoginProveRequest struct {
+	JWT                        string `json:"jwt"`
+	ExtendedEphemeralPublicKey string `json:"extendedEphemeralPublicKey"`
+	MaxEpoch                   uint64 `json:"maxEpoch"`
+	JwtRandomness              string `json:"jwtRandomness"`
+	Salt                       string `json:"salt"`
+	KeyClaimName               string `json:"keyClaimName"`
 }

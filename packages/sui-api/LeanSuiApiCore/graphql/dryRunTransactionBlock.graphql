@@ -1,0 +1,68 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+query dryRunTransactionBlock(
+    $transaction: JSON!
+    $showBalanceChanges: Boolean = false
+    $showEffects: Boolean = false
+    $showRawEffects: Boolean = false
+    $showEvents: Boolean = false
+    $showObjectChanges: Boolean = false
+) {
+    simulateTransaction(transaction: $transaction) {
+        effects {
+            effectsBcs @include(if: $showEffects)
+            effectsBcs @include(if: $showRawEffects)
+
+            balanceChanges @include(if: $showBalanceChanges) {
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+                nodes {
+                    owner { address }
+                    coinType { repr }
+                    amount
+                }
+            }
+
+            objectChanges @include(if: $showObjectChanges) {
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+                nodes {
+                    address
+                    inputState { version }
+                    outputState { version }
+                }
+            }
+
+            status
+            executionError {
+                message
+            }
+            gasEffects {
+                gasSummary {
+                    computationCost
+                    storageCost
+                    storageRebate
+                    nonRefundableStorageFee
+                }
+            }
+
+            events @include(if: $showEvents) {
+                nodes {
+                    sender {
+                        address
+                    }
+                    contents {
+                        json
+                        bcs
+                    }
+                    timestamp
+                }
+            }
+        }
+    }
+}

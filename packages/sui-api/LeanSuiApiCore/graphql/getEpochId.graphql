@@ -1,0 +1,13 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+# Minimal epoch lookup for the zkLogin nonce flow: just the current epoch id and
+# its timestamps. Deliberately avoids the heavy `systemState { json }` and
+# `validatorSet { contents { json } }` fields of `getLatestSuiSystemState`.
+query getEpochId {
+    epoch {
+        epochId
+        startTimestamp
+        endTimestamp
+    }
+}

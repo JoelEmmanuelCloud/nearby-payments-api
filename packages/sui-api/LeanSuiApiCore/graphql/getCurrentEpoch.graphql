@@ -1,0 +1,22 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+query getCurrentEpoch {
+    epoch {
+        epochId
+        totalTransactions
+        firstCheckpoint: checkpoints(first: 1) {
+            nodes {
+                sequenceNumber
+            }
+        }
+        startTimestamp
+        endTimestamp
+        referenceGasPrice
+        validatorSet {
+            contents {
+                json
+            }
+        }
+    }
+}

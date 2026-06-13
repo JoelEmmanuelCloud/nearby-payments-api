@@ -1,0 +1,69 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+mutation executeTransactionBlock(
+    $transactionDataBcs: Base64!
+    $signatures: [Base64!]!
+    $showBalanceChanges: Boolean = false
+    $showEffects: Boolean = false
+    $showRawEffects: Boolean = false
+    $showEvents: Boolean = false
+    $showInput: Boolean = false
+    $showObjectChanges: Boolean = false
+    $showRawInput: Boolean = false
+) {
+    executeTransaction(transactionDataBcs: $transactionDataBcs, signatures: $signatures) {
+        effects {
+            effectsBcs @include(if: $showEffects)
+            effectsBcs @include(if: $showRawEffects)
+
+            events @include(if: $showEvents) {
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+                nodes {
+                    sender { address }
+                    contents { json }
+                }
+            }
+
+            balanceChanges @include(if: $showBalanceChanges) {
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+                nodes {
+                    owner { address }
+                    coinType { repr }
+                    amount
+                }
+            }
+
+            objectChanges @include(if: $showObjectChanges) {
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+                nodes {
+                    address
+                    inputState { version }
+                    outputState { version }
+                }
+            }
+
+            transaction {
+                digest
+                sender { address }
+                transactionBcs @include(if: $showInput)
+                transactionBcs @include(if: $showRawInput)
+            }
+
+            status
+
+            executionError {
+                message
+            }
+        }
+    }
+}
