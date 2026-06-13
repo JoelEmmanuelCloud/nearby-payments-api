@@ -662,7 +662,10 @@ public class TransactionBlock {
   /// as an argument. At execution the validator converts it into a
   /// `sui::funds_accumulator::Withdrawal<T>`; pass it to `0x2::balance::redeem_funds<T>` to get a
   /// `Balance<T>`.
-  public func fundsWithdrawal(_ arg: FundsWithdrawalArg) throws -> TransactionArgument {
+  // Internal (not bridged): `FundsWithdrawalArg` wraps a `TypeTag`/enums that jextract can't marshal,
+  // so exposing this would generate a Java method referencing a class it can't produce. Callers use
+  // the bridge-friendly `gaslessSendFunds` / `gaslessDepositCoins` instead.
+  func fundsWithdrawal(_ arg: FundsWithdrawalArg) throws -> TransactionArgument {
     .input(
       try self.input(type: .pure, value: .callArg(Input(type: .fundsWithdrawal(arg))))
     )

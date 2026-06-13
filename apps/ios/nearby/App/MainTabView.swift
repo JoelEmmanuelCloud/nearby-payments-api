@@ -14,7 +14,7 @@ struct MainTabView: View {
   let userId: String
   let suiAddress: String?
   let currentProvider: OAuthProvider?
-  let zkLoginService: ZkLoginService
+  let signerProvider: SignerProvider
   let toastController: ToastController
   let onSignOut: () -> Void
 
@@ -38,7 +38,7 @@ struct MainTabView: View {
     currentProvider: OAuthProvider?,
     identityManager: IdentityManager,
     toastController: ToastController,
-    zkLoginService: ZkLoginService,
+    signerProvider: @escaping SignerProvider,
     onSignOut: @escaping () -> Void
   ) {
     self.userName = userName
@@ -46,7 +46,7 @@ struct MainTabView: View {
     self.userId = userId
     self.suiAddress = suiAddress
     self.currentProvider = currentProvider
-    self.zkLoginService = zkLoginService
+    self.signerProvider = signerProvider
     self.toastController = toastController
     self.onSignOut = onSignOut
     _profileViewModel = StateObject(
@@ -68,7 +68,7 @@ struct MainTabView: View {
         userId: userId,
         suiAddress: suiAddress,
         currentProvider: currentProvider,
-        zkLoginService: zkLoginService,
+        signerProvider: signerProvider,
         toastController: toastController,
         onSignOut: onSignOut
       )
@@ -178,7 +178,7 @@ extension UIImage {
       )
     ),
     toastController: ToastController(),
-    zkLoginService: .preview,
+    signerProvider: { try await ZkLoginService.preview.signer() },
     onSignOut: {}
   )
 }

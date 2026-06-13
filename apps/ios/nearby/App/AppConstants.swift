@@ -37,6 +37,12 @@ nonisolated enum AppConstants {
   /// Debounce before checking SuiNS name availability as the user types.
   static let nameCheckDebounce: TimeInterval = 0.5
 
+  /// DEBUG ONLY — leave `false`. When `true`, the zkLogin session is treated as expired so the
+  /// just-in-time re-login (OAuth) path runs on the next sign. To test: set `true`, **cold-launch**
+  /// the app (so the in-memory ephemeral is cleared), then tap Send or "Move to balance" — the OAuth
+  /// sheet should appear, re-auth, and the action complete. Set back to `false` afterwards.
+  static let debugForceSessionExpired = false
+
   /// Full 32-byte genesis checkpoint digests (the chain identifier) per network, base58-encoded.
   /// These are the canonical values from `sui-types` (their first 4 bytes are the familiar short
   /// chain ids — testnet `4c78adac`, mainnet `35834a8a`). Used in the `ValidDuring` expiration of

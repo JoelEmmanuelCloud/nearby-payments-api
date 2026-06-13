@@ -36,7 +36,7 @@ struct ContentView: View {
             currentProvider: viewModel.currentProvider,
             identityManager: viewModel.identityManager,
             toastController: viewModel.toastController,
-            zkLoginService: viewModel.zkLoginService,
+            signerProvider: { try await viewModel.reauthenticatedSigner() },
             onSignOut: {
               viewModel.signOut()
             }

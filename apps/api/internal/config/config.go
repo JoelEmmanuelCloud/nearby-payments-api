@@ -34,8 +34,8 @@ type Config struct {
 	AppleTeamID            string
 	WalrusPublisherURL     string
 	WalrusAggregatorURL    string
-	ZkLoginProverURL string
-	AppCallbackURL   string
+	ZkLoginProverURL       string
+	AppCallbackURL         string
 }
 
 func Load() (*Config, error) {
@@ -83,8 +83,8 @@ func Load() (*Config, error) {
 		AppleTeamID:            optional("APPLE_TEAM_ID", ""),
 		WalrusPublisherURL:     optional("WALRUS_PUBLISHER_URL", ""),
 		WalrusAggregatorURL:    optional("WALRUS_AGGREGATOR_URL", ""),
-		ZkLoginProverURL: optional("ZKLOGIN_PROVER_URL", "https://prover.variance.space/v1"),
-		AppCallbackURL:   optional("APP_CALLBACK_URL", "https://variance.space/callback"),
+		ZkLoginProverURL:       optional("ZKLOGIN_PROVER_URL", "https://prover.variance.space/v1"),
+		AppCallbackURL:         optional("APP_CALLBACK_URL", "https://variance.space/callback"),
 	}
 
 	if len(missing) > 0 {

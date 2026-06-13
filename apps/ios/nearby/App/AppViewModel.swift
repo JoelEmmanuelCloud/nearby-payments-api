@@ -10,6 +10,7 @@ import LeanSuiApi
 import LocalAuthentication
 import Storage
 import UI
+import UIKit
 
 /// Central coordinator for the iOS application state, routing, and user session lifecycles.
 ///
@@ -167,6 +168,56 @@ final class AppViewModel: ObservableObject {
         // Transient / non-session failure → best-effort, no-op (signer simply not cached yet).
       }
     }
+  }
+
+  /// Errors from the just-in-time re-authentication path.
+  enum ReauthError: LocalizedError {
+    case noProvider
+    case noPresentationAnchor
+
+    var errorDescription: String? {
+      switch self {
+      case .noProvider: return "No sign-in provider on record."
+      case .noPresentationAnchor: return "Couldn't present sign in."
+      }
+    }
+  }
+
+  /// Returns a usable zkLogin signer, transparently re-authenticating with the current OAuth provider
+  /// when the session can no longer sign (its `maxEpoch` has passed, invalidating the proof). The user
+  /// is **not** signed out: a fresh nonce + interactive OAuth mints a new proof for the same (stable)
+  /// zkLogin address, and a signer is returned in one sweep. This is the gate the send and consolidate
+  /// actions sign through, so a stale proof never reaches the network.
+  func reauthenticatedSigner() async throws -> ZkLoginSigner {
+    if try await zkLoginService.isSessionUsable() {
+      return try await zkLoginService.signer()
+    }
+
+    guard let provider = currentProvider else { throw ReauthError.noProvider }
+    let nonce = try await zkLoginService.prepareNonce()
+
+    switch provider {
+    case .google:
+      guard let anchor = Self.keyWindow() else { throw ReauthError.noPresentationAnchor }
+      try await authManager.signInWithGoogle(nonce: nonce, presentationAnchor: anchor)
+    case .apple:
+      guard let anchor = Self.keyWindow() else { throw ReauthError.noPresentationAnchor }
+      let request = ASAuthorizationAppleIDProvider().createRequest()
+      authManager.prepareAppleRequest(request, nonce: nonce)
+      let authorization = try await AppleSignInPresenter().present(request: request, anchor: anchor)
+      try await authManager.signInWithApple(.success(authorization), nonce: nonce)
+    }
+
+    // Re-derive the (unchanged) address and persist the renewed maxEpoch, then mint the signer.
+    try zkLoginService.commitSessionIdentity()
+    return try await zkLoginService.signer()
+  }
+
+  private static func keyWindow() -> UIWindow? {
+    UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .flatMap(\.windows)
+      .first { $0.isKeyWindow }
   }
 
   /// Performs a sign-out by revoking backend session tokens, clearing local data, and resetting navigation routes.

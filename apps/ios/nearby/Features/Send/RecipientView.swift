@@ -19,13 +19,13 @@ struct RecipientView: View {
   @FocusState private var fieldFocused: Bool
 
   init(
-    amount: Decimal, coinSymbol: String, zkLoginService: ZkLoginService,
+    amount: Decimal, coinSymbol: String, signerProvider: @escaping SignerProvider,
     onFinish: @escaping () -> Void
   ) {
     self.amount = amount
     self.coinSymbol = coinSymbol
     self.onFinish = onFinish
-    let service = SendService(signerProvider: { try await zkLoginService.signer() })
+    let service = SendService(signerProvider: signerProvider)
     _sendModel = StateObject(
       wrappedValue: SendViewModel(amount: amount, coinSymbol: coinSymbol, service: service))
   }

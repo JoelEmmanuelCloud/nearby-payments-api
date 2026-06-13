@@ -55,8 +55,8 @@ type ServiceDeps struct {
 	AppleTeamID           string
 	CredentialSignKey     ed25519.PrivateKey
 	CredentialPubKey      ed25519.PublicKey
-	ProverURL      string
-	AppCallbackURL string
+	ProverURL             string
+	AppCallbackURL        string
 }
 
 type Service struct {
@@ -76,10 +76,10 @@ type Service struct {
 	appleTeamID           string
 	credSignKey           ed25519.PrivateKey
 	credPubKey            ed25519.PublicKey
-	proverURL      string
-	proverClient   *http.Client
-	appCallbackURL string
-	appleJWKSCache appleJWKSCache
+	proverURL             string
+	proverClient          *http.Client
+	appCallbackURL        string
+	appleJWKSCache        appleJWKSCache
 }
 
 func NewService(deps ServiceDeps) *Service {
@@ -100,9 +100,9 @@ func NewService(deps ServiceDeps) *Service {
 		appleTeamID:           deps.AppleTeamID,
 		credSignKey:           deps.CredentialSignKey,
 		credPubKey:            deps.CredentialPubKey,
-		proverURL:      deps.ProverURL,
-		proverClient:   &http.Client{Timeout: 60 * time.Second},
-		appCallbackURL: deps.AppCallbackURL,
+		proverURL:             deps.ProverURL,
+		proverClient:          &http.Client{Timeout: 60 * time.Second},
+		appCallbackURL:        deps.AppCallbackURL,
 	}
 }
 

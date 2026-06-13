@@ -8,7 +8,7 @@ struct SendAmountView: View {
   @StateObject private var viewModel: SendAmountViewModel
 
   private let coinSymbol: String
-  private let zkLoginService: ZkLoginService
+  private let signerProvider: SignerProvider
   private let onFinish: () -> Void
 
   @State private var enteredAmount: Decimal?
@@ -18,11 +18,11 @@ struct SendAmountView: View {
     maxFractionDigits: Int,
     suiAddress: String?,
     store: AppSessionStore,
-    zkLoginService: ZkLoginService,
+    signerProvider: @escaping SignerProvider,
     onFinish: @escaping () -> Void
   ) {
     self.coinSymbol = coinSymbol
-    self.zkLoginService = zkLoginService
+    self.signerProvider = signerProvider
     self.onFinish = onFinish
     _viewModel = StateObject(
       wrappedValue: SendAmountViewModel(
@@ -75,7 +75,7 @@ struct SendAmountView: View {
       RecipientView(
         amount: amount,
         coinSymbol: coinSymbol,
-        zkLoginService: zkLoginService,
+        signerProvider: signerProvider,
         onFinish: onFinish
       )
     }

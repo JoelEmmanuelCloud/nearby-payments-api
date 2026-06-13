@@ -1,6 +1,11 @@
 import Foundation
 import LeanSui
 import LeanSuiApi
+import LeanSuiBCS
+
+/// Produces a usable zkLogin signer on demand, re-authenticating first when the session has expired
+/// (see `AppViewModel.reauthenticatedSigner`). The gasless write paths sign through this.
+typealias SignerProvider = () async throws -> ZkLoginSigner
 
 /// Builds, signs, and executes a single **gasless** transaction (Address Balances): gas is paid from
 /// the sender's address balance, so `gasPrice`/`gasBudget` are 0 and no SUI is required.

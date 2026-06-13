@@ -53,10 +53,13 @@ extension GraphQLSuiProvider {
       )
     )
     let txs = try require(result.data?.transactions, "transactions")
+    let nodes = try txs.nodes.map {
+      try SuiTransactionBlockResponse(activity: $0.fragments.aCCOUNT_ACTIVITY_FIELDS)
+    }
+    // The connection always returns a page's nodes in ascending (oldest→newest) order. A descending
+    // query pages from the newest end (`last`/`before`), so reverse each page to present newest-first.
     return Page(
-      data: try txs.nodes.map {
-        try SuiTransactionBlockResponse(activity: $0.fragments.aCCOUNT_ACTIVITY_FIELDS)
-      },
+      data: order == .descending ? Array(nodes.reversed()) : nodes,
       pageInfo: PageInfo(activity: txs.pageInfo)
     )
   }

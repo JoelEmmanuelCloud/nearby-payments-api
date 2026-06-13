@@ -103,6 +103,7 @@ final class ZkLoginService: ObservableObject {
   /// `pendingZKEphemeral` in memory) is also usable even before its proof is persisted.
   func isSessionUsable() async throws -> Bool {
     if pendingZKEphemeral != nil { return true }
+    if AppConstants.debugForceSessionExpired { return false }
     let epoch = try await zkAuth.getCurrentEpoch().epoch
     return try sessionManager.isZkLoginSessionUsable(currentEpoch: epoch)
   }

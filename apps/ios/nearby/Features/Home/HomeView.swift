@@ -10,7 +10,7 @@ struct HomeView: View {
   let userId: String
   let suiAddress: String?
   let currentProvider: OAuthProvider?
-  let zkLoginService: ZkLoginService
+  let signerProvider: SignerProvider
   let toastController: ToastController
   let onSignOut: () -> Void
 
@@ -33,7 +33,7 @@ struct HomeView: View {
     userId: String,
     suiAddress: String?,
     currentProvider: OAuthProvider?,
-    zkLoginService: ZkLoginService,
+    signerProvider: @escaping SignerProvider,
     toastController: ToastController,
     onSignOut: @escaping () -> Void
   ) {
@@ -42,15 +42,14 @@ struct HomeView: View {
     self.userId = userId
     self.suiAddress = suiAddress
     self.currentProvider = currentProvider
-    self.zkLoginService = zkLoginService
+    self.signerProvider = signerProvider
     self.toastController = toastController
     self.onSignOut = onSignOut
     _balanceModel = StateObject(
       wrappedValue: HomeViewModel(
         suiAddress: suiAddress,
         store: store,
-        consolidateService: ConsolidateService(
-          signerProvider: { try await zkLoginService.signer() }),
+        consolidateService: ConsolidateService(signerProvider: signerProvider),
         toastController: toastController))
   }
 
@@ -129,7 +128,7 @@ struct HomeView: View {
             maxFractionDigits: AppConstants.balanceCoinDecimals,
             suiAddress: suiAddress,
             store: store,
-            zkLoginService: zkLoginService,
+            signerProvider: signerProvider,
             onFinish: { destination = nil }
           )
         }
@@ -202,7 +201,7 @@ struct HomeView: View {
     userId: "preview",
     suiAddress: nil,
     currentProvider: .google,
-    zkLoginService: .preview,
+    signerProvider: { try await ZkLoginService.preview.signer() },
     toastController: ToastController(),
     onSignOut: {}
   )
