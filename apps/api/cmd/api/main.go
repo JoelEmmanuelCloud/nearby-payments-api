@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"google.golang.org/api/idtoken"
 
 	"github.com/vaariance/nearby/internal/avs"
 	"github.com/vaariance/nearby/internal/config"
@@ -97,19 +96,6 @@ func main() {
 
 	authStore := auth.NewStore(pool)
 
-	// Prover HTTP client. If the prover is a private Cloud Run service, attach a Google ID token
-	// (audience = the service URL) via Application Default Credentials; otherwise a plain client.
-	proverClient := &http.Client{Timeout: 60 * time.Second}
-	if cfg.ZkLoginProverAudience != "" {
-		idClient, err := idtoken.NewClient(context.Background(), cfg.ZkLoginProverAudience)
-		if err != nil {
-			slog.Error("zklogin prover id-token client init failed", "error", err)
-			os.Exit(1)
-		}
-		idClient.Timeout = 60 * time.Second
-		proverClient = idClient
-	}
-
 	authSvc := auth.NewService(auth.ServiceDeps{
 		Store:                 authStore,
 		Redis:                 rdb,
@@ -128,7 +114,6 @@ func main() {
 		CredentialSignKey:     credSignKey,
 		CredentialPubKey:      credPubKey,
 		ProverURL:      cfg.ZkLoginProverURL,
-		ProverClient:   proverClient,
 		AppCallbackURL: cfg.AppCallbackURL,
 	})
 	authHandler := auth.NewHandler(authSvc)

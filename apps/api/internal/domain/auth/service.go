@@ -56,7 +56,6 @@ type ServiceDeps struct {
 	CredentialSignKey     ed25519.PrivateKey
 	CredentialPubKey      ed25519.PublicKey
 	ProverURL      string
-	ProverClient   *http.Client
 	AppCallbackURL string
 }
 
@@ -79,7 +78,6 @@ type Service struct {
 	credPubKey            ed25519.PublicKey
 	proverURL      string
 	proverClient   *http.Client
-	zkProverClient *http.Client
 	appCallbackURL string
 	appleJWKSCache appleJWKSCache
 }
@@ -104,7 +102,6 @@ func NewService(deps ServiceDeps) *Service {
 		credPubKey:            deps.CredentialPubKey,
 		proverURL:      deps.ProverURL,
 		proverClient:   &http.Client{Timeout: 60 * time.Second},
-		zkProverClient: deps.ProverClient,
 		appCallbackURL: deps.AppCallbackURL,
 	}
 }
@@ -641,7 +638,7 @@ func (s *Service) ProveZkLogin(ctx context.Context, req ZkLoginProveRequest) ([]
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	resp, err := s.zkProverClient.Do(httpReq)
+	resp, err := s.proverClient.Do(httpReq)
 	if err != nil {
 		return nil, ErrProverUnavailable
 	}
