@@ -97,7 +97,7 @@ public class RemoteZkProofService {
     let requestBody: [String: Any] = [
       "jwt": jwt,
       "extendedEphemeralPublicKey": Data(ephemeralPublicKey).base64EncodedString(),
-      "maxEpoch": NSNumber(value: maxEpoch),
+      "maxEpoch": String(maxEpoch),
       "jwtRandomness": Data(jwtRandomness).base64EncodedString(),
       "salt": userSalt,
       "keyClaimName": "sub",
