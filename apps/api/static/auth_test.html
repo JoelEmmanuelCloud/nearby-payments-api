@@ -224,6 +224,17 @@
   </div>
 
   <script type="module">
+    const API = window.location.origin;
+    const SUI_RPC = 'https://fullnode.testnet.sui.io:443';
+    let countdownInterval = null;
+
+    // Capture URL params immediately — before any async work.
+    // The load event may fire while we are awaiting SDK imports,
+    // so we must not rely on it to trigger handleCallback.
+    const initParams = new URLSearchParams(window.location.search);
+    const initCode = initParams.get('code');
+    const initState = initParams.get('state');
+
     let Ed25519Keypair, generateNonce, generateRandomness, getExtendedEphemeralPublicKey;
 
     try {
@@ -238,10 +249,6 @@
       document.getElementById('error-card').classList.remove('hidden');
       document.getElementById('error-output').textContent = 'Sui SDK failed to load: ' + e.message;
     }
-
-    const API = window.location.origin;
-    const SUI_RPC = 'https://fullnode.testnet.sui.io:443';
-    let countdownInterval = null;
 
     function generateVerifier() {
       const arr = new Uint8Array(32);
@@ -319,10 +326,7 @@
       }
     }
 
-    async function handleCallback() {
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
-      const state = params.get('state');
+    async function handleCallback(code, state) {
       if (!code || !state) return;
 
       window.history.replaceState({}, '', '/static/auth_test.html');
@@ -574,7 +578,9 @@
     window._signOut = signOut;
     window._getProof = getProof;
 
-    window.addEventListener('load', () => {
+    if (initCode && initState) {
+      handleCallback(initCode, initState);
+    } else {
       const stored = sessionStorage.getItem('accessToken');
       if (stored) {
         showTokens({
@@ -586,8 +592,7 @@
         });
         document.getElementById('sign-in-card').classList.add('hidden');
       }
-      handleCallback();
-    });
+    }
   </script>
 </body>
 </html>
