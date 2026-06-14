@@ -243,7 +243,7 @@ type networkConfig struct {
 var networkConfigs = map[string]networkConfig{
 	"solana":   {bridgeChain: "solana",   currency: "usdc", minAmount: "1"},
 	"arbitrum": {bridgeChain: "evm",      currency: "usdc", minAmount: "1"},
-	"hyperevm": {bridgeChain: "hyperevm", currency: "usdc", minAmount: "1"},
+	"hyperevm": {bridgeChain: "hyper_evm", currency: "usdc", minAmount: "1"},
 	"tron":     {bridgeChain: "tron",     currency: "usdt", minAmount: "5"},
 	"polygon":  {bridgeChain: "evm",      currency: "usdc", minAmount: "1"},
 	"base":     {bridgeChain: "evm",      currency: "usdc", minAmount: "1"},
