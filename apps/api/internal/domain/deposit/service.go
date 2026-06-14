@@ -284,6 +284,11 @@ func (s *Service) GetLiquidationAddress(ctx context.Context, userID, network, cu
 		}, nil
 	}
 
+	eligibility, err := s.bridge.GetCustomerEligibility(ctx, link.BridgeCustomerID)
+	if err != nil || eligibility.KycStatus != "approved" || !eligibility.Endorsed {
+		return nil, ErrKycNotApproved
+	}
+
 	la, err := s.bridge.EnsureLiquidationAddress(ctx, link.BridgeCustomerID, cfg.bridgeChain, cfg.currency, wallet.SuiAddress)
 	if err != nil {
 		return nil, ErrBridgeUnavailable
