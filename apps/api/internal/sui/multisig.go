@@ -20,17 +20,18 @@ func TransactionSigningDigest(txBytes []byte) []byte {
 }
 
 func BuildMultisigAddress(publicKeys [][]byte, threshold uint16) string {
+	// Sui derives a multisig address as a custom hash (NOT the BCS of MultiSigPublicKey):
+	//   blake2b256( flag(0x03) || threshold(u16 LE) || (pk_flag || pk || weight) for each ).
+	// Threshold comes immediately after the flag, and there is no length prefix.
 	var payload []byte
 	payload = append(payload, multisigFlag)
-	payload = appendULEB128(payload, uint64(len(publicKeys)))
+	payload = append(payload, byte(threshold), byte(threshold>>8))
 
 	for _, pk := range publicKeys {
 		payload = append(payload, ed25519Flag)
 		payload = append(payload, pk...)
 		payload = append(payload, 1)
 	}
-
-	payload = append(payload, byte(threshold), byte(threshold>>8))
 
 	hash := blake2b256(payload)
 	return "0x" + hexEncode(hash)

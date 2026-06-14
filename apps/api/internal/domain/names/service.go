@@ -14,7 +14,7 @@ import (
 	"github.com/vaariance/nearby/internal/utils"
 )
 
-const parentName = "nearby"
+const parentName = "variance"
 
 var leafNameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]$|^[a-z0-9]$`)
 

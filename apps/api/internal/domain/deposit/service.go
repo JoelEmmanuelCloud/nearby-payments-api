@@ -241,14 +241,14 @@ type networkConfig struct {
 }
 
 var networkConfigs = map[string]networkConfig{
-	"solana":   {bridgeChain: "solana",   currency: "usdc", minAmount: "1"},
-	"arbitrum": {bridgeChain: "evm",      currency: "usdc", minAmount: "1"},
+	"solana":   {bridgeChain: "solana", currency: "usdc", minAmount: "1"},
+	"arbitrum": {bridgeChain: "evm", currency: "usdc", minAmount: "1"},
 	"hyperevm": {bridgeChain: "hyper_evm", currency: "usdc", minAmount: "1"},
-	"tron":     {bridgeChain: "tron",     currency: "usdt", minAmount: "5"},
-	"polygon":  {bridgeChain: "evm",      currency: "usdc", minAmount: "1"},
-	"base":     {bridgeChain: "evm",      currency: "usdc", minAmount: "1"},
-	"ethereum": {bridgeChain: "evm",      currency: "usdc", minAmount: "1"},
-	"stellar":  {bridgeChain: "stellar",  currency: "usdc", minAmount: "1"},
+	"tron":     {bridgeChain: "tron", currency: "usdt", minAmount: "5"},
+	"polygon":  {bridgeChain: "evm", currency: "usdc", minAmount: "1"},
+	"base":     {bridgeChain: "evm", currency: "usdc", minAmount: "1"},
+	"ethereum": {bridgeChain: "evm", currency: "usdc", minAmount: "1"},
+	"stellar":  {bridgeChain: "stellar", currency: "usdc", minAmount: "1"},
 }
 
 func (s *Service) GetLiquidationAddress(ctx context.Context, userID, network, currency string) (*LiquidationAddressResponse, error) {
