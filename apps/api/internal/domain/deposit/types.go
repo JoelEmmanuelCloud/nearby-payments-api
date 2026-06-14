@@ -68,6 +68,7 @@ type DepositRoute struct {
 	SourceRail          string
 	SourceCurrency      string
 	SourceAddress       string
+	SourceMemo          string
 	DestinationRail     string
 	DestinationCurrency string
 	DestinationAddrHash string
@@ -125,10 +126,24 @@ type BridgeVirtualAccount struct {
 }
 
 type BridgeLiquidationAddress struct {
-	ID       string
-	Address  string
-	Chain    string
-	Currency string
+	ID             string
+	Address        string
+	Chain          string
+	Currency       string
+	BlockchainMemo string
+}
+
+type LiquidationAddressRequest struct {
+	Network  string `json:"network"`
+	Currency string `json:"currency"`
+}
+
+type LiquidationAddressResponse struct {
+	Network   string `json:"network"`
+	Currency  string `json:"currency"`
+	Address   string `json:"address"`
+	Memo      string `json:"memo,omitempty"`
+	MinAmount string `json:"minAmount"`
 }
 
 type Deposit struct {

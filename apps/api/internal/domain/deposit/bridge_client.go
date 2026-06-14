@@ -219,10 +219,11 @@ func (c *BridgeClient) EnsureLiquidationAddress(ctx context.Context, customerID,
 	listPath := "/v0/customers/" + customerID + "/liquidation_addresses"
 	var listResult struct {
 		Data []struct {
-			ID       string `json:"id"`
-			Chain    string `json:"chain"`
-			Currency string `json:"currency"`
-			Address  string `json:"address"`
+			ID             string `json:"id"`
+			Chain          string `json:"chain"`
+			Currency       string `json:"currency"`
+			Address        string `json:"address"`
+			BlockchainMemo string `json:"blockchain_memo"`
 		} `json:"data"`
 	}
 
@@ -230,10 +231,11 @@ func (c *BridgeClient) EnsureLiquidationAddress(ctx context.Context, customerID,
 		for _, la := range listResult.Data {
 			if la.Chain == chain && la.Currency == currency {
 				return &BridgeLiquidationAddress{
-					ID:       la.ID,
-					Address:  la.Address,
-					Chain:    la.Chain,
-					Currency: la.Currency,
+					ID:             la.ID,
+					Address:        la.Address,
+					Chain:          la.Chain,
+					Currency:       la.Currency,
+					BlockchainMemo: la.BlockchainMemo,
 				}, nil
 			}
 		}
@@ -250,10 +252,11 @@ func (c *BridgeClient) EnsureLiquidationAddress(ctx context.Context, customerID,
 	}
 
 	var createResult struct {
-		ID       string `json:"id"`
-		Chain    string `json:"chain"`
-		Currency string `json:"currency"`
-		Address  string `json:"address"`
+		ID             string `json:"id"`
+		Chain          string `json:"chain"`
+		Currency       string `json:"currency"`
+		Address        string `json:"address"`
+		BlockchainMemo string `json:"blockchain_memo"`
 	}
 
 	if err := c.do(ctx, http.MethodPost, listPath, "la-"+customerID+"-"+chain+"-"+currency, body, &createResult); err != nil {
@@ -261,9 +264,10 @@ func (c *BridgeClient) EnsureLiquidationAddress(ctx context.Context, customerID,
 	}
 
 	return &BridgeLiquidationAddress{
-		ID:       createResult.ID,
-		Address:  createResult.Address,
-		Chain:    createResult.Chain,
-		Currency: createResult.Currency,
+		ID:             createResult.ID,
+		Address:        createResult.Address,
+		Chain:          createResult.Chain,
+		Currency:       createResult.Currency,
+		BlockchainMemo: createResult.BlockchainMemo,
 	}, nil
 }

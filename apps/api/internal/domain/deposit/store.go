@@ -46,13 +46,13 @@ func (s *Store) GetDepositRoute(ctx context.Context, userID, kind, sourceRail, s
 	dr := &DepositRoute{}
 	err := s.db.QueryRow(ctx,
 		`SELECT id, user_id, provider, provider_route_id, kind, source_rail, source_currency,
-		        source_address, destination_rail, destination_currency, destination_address_hash, state, created_at, updated_at
+		        source_address, source_memo, destination_rail, destination_currency, destination_address_hash, state, created_at, updated_at
 		 FROM deposit_routes
 		 WHERE user_id = $1 AND kind = $2 AND source_rail = $3 AND source_currency = $4
 		 ORDER BY created_at DESC LIMIT 1`,
 		userID, kind, sourceRail, sourceCurrency,
 	).Scan(&dr.ID, &dr.UserID, &dr.Provider, &dr.ProviderRouteID, &dr.Kind,
-		&dr.SourceRail, &dr.SourceCurrency, &dr.SourceAddress, &dr.DestinationRail, &dr.DestinationCurrency,
+		&dr.SourceRail, &dr.SourceCurrency, &dr.SourceAddress, &dr.SourceMemo, &dr.DestinationRail, &dr.DestinationCurrency,
 		&dr.DestinationAddrHash, &dr.State, &dr.CreatedAt, &dr.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
@@ -64,11 +64,11 @@ func (s *Store) CreateDepositRoute(ctx context.Context, dr *DepositRoute) error 
 	_, err := s.db.Exec(ctx,
 		`INSERT INTO deposit_routes
 		 (id, user_id, provider, provider_route_id, kind, source_rail, source_currency,
-		  source_address, destination_rail, destination_currency, destination_address_hash, state, created_at, updated_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		  source_address, source_memo, destination_rail, destination_currency, destination_address_hash, state, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		 ON CONFLICT (provider, provider_route_id) DO NOTHING`,
 		dr.ID, dr.UserID, dr.Provider, dr.ProviderRouteID, dr.Kind,
-		dr.SourceRail, dr.SourceCurrency, dr.SourceAddress, dr.DestinationRail, dr.DestinationCurrency,
+		dr.SourceRail, dr.SourceCurrency, dr.SourceAddress, dr.SourceMemo, dr.DestinationRail, dr.DestinationCurrency,
 		dr.DestinationAddrHash, dr.State, dr.CreatedAt, dr.UpdatedAt,
 	)
 	return err
@@ -129,11 +129,11 @@ func (s *Store) GetDepositRouteByProviderRouteID(ctx context.Context, providerRo
 	dr := &DepositRoute{}
 	err := s.db.QueryRow(ctx,
 		`SELECT id, user_id, provider, provider_route_id, kind, source_rail, source_currency,
-		        source_address, destination_rail, destination_currency, destination_address_hash, state, created_at, updated_at
+		        source_address, source_memo, destination_rail, destination_currency, destination_address_hash, state, created_at, updated_at
 		 FROM deposit_routes WHERE provider_route_id = $1 LIMIT 1`,
 		providerRouteID,
 	).Scan(&dr.ID, &dr.UserID, &dr.Provider, &dr.ProviderRouteID, &dr.Kind,
-		&dr.SourceRail, &dr.SourceCurrency, &dr.SourceAddress, &dr.DestinationRail, &dr.DestinationCurrency,
+		&dr.SourceRail, &dr.SourceCurrency, &dr.SourceAddress, &dr.SourceMemo, &dr.DestinationRail, &dr.DestinationCurrency,
 		&dr.DestinationAddrHash, &dr.State, &dr.CreatedAt, &dr.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil

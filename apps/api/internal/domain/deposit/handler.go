@@ -65,6 +65,29 @@ func (h *Handler) GetDeposits(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+func (h *Handler) GetLiquidationAddress(w http.ResponseWriter, r *http.Request) {
+	sessCtx := auth.GetSession(r.Context())
+	if sessCtx == nil {
+		apperr.Write(w, apperr.ErrUnauthorized)
+		return
+	}
+
+	var req LiquidationAddressRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apperr.Write(w, apperr.ErrBadRequest)
+		return
+	}
+
+	resp, err := h.svc.GetLiquidationAddress(r.Context(), sessCtx.User.ID, req.Network, req.Currency)
+	if err != nil {
+		apperr.Write(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
 func (h *Handler) GetDeposit(w http.ResponseWriter, r *http.Request) {
 	sessCtx := auth.GetSession(r.Context())
 	if sessCtx == nil {

@@ -234,6 +234,90 @@ func (s *Service) getCryptoState(ctx context.Context, userID, suiAddress string)
 	}, nil
 }
 
+type networkConfig struct {
+	bridgeChain string
+	currency    string
+	minAmount   string
+}
+
+var networkConfigs = map[string]networkConfig{
+	"solana":   {bridgeChain: "solana",   currency: "usdc", minAmount: "1"},
+	"arbitrum": {bridgeChain: "evm",      currency: "usdc", minAmount: "1"},
+	"hyperevm": {bridgeChain: "hyperevm", currency: "usdc", minAmount: "1"},
+	"tron":     {bridgeChain: "tron",     currency: "usdt", minAmount: "5"},
+	"polygon":  {bridgeChain: "evm",      currency: "usdc", minAmount: "1"},
+	"base":     {bridgeChain: "evm",      currency: "usdc", minAmount: "1"},
+	"ethereum": {bridgeChain: "evm",      currency: "usdc", minAmount: "1"},
+	"stellar":  {bridgeChain: "stellar",  currency: "usdc", minAmount: "1"},
+}
+
+func (s *Service) GetLiquidationAddress(ctx context.Context, userID, network, currency string) (*LiquidationAddressResponse, error) {
+	cfg, ok := networkConfigs[network]
+	if !ok || cfg.currency != currency {
+		return nil, ErrUnsupportedNetwork
+	}
+
+	wallet, err := s.authStore.GetWalletBinding(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get wallet binding: %w", err)
+	}
+	if wallet == nil {
+		return nil, apperr.ErrUnprocessable
+	}
+
+	link, err := s.store.GetBridgeLinkByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get bridge link: %w", err)
+	}
+	if link == nil || link.BridgeCustomerID == "" {
+		return nil, ErrNoBridgeCustomer
+	}
+
+	existing, _ := s.store.GetDepositRoute(ctx, userID, "liquidation_address", cfg.bridgeChain, cfg.currency)
+	if existing != nil {
+		return &LiquidationAddressResponse{
+			Network:   network,
+			Currency:  cfg.currency,
+			Address:   existing.SourceAddress,
+			Memo:      existing.SourceMemo,
+			MinAmount: cfg.minAmount,
+		}, nil
+	}
+
+	la, err := s.bridge.EnsureLiquidationAddress(ctx, link.BridgeCustomerID, cfg.bridgeChain, cfg.currency, wallet.SuiAddress)
+	if err != nil {
+		return nil, ErrBridgeUnavailable
+	}
+
+	now := utils.NowUnix()
+	dr := &DepositRoute{
+		ID:                  utils.NewID(),
+		UserID:              userID,
+		Provider:            "bridge",
+		ProviderRouteID:     la.ID,
+		Kind:                "liquidation_address",
+		SourceRail:          cfg.bridgeChain,
+		SourceCurrency:      cfg.currency,
+		SourceAddress:       la.Address,
+		SourceMemo:          la.BlockchainMemo,
+		DestinationRail:     "sui",
+		DestinationCurrency: "usdc",
+		DestinationAddrHash: utils.SHA256HexString(wallet.SuiAddress),
+		State:               "active",
+		CreatedAt:           now,
+		UpdatedAt:           now,
+	}
+	_ = s.store.CreateDepositRoute(ctx, dr)
+
+	return &LiquidationAddressResponse{
+		Network:   network,
+		Currency:  cfg.currency,
+		Address:   la.Address,
+		Memo:      la.BlockchainMemo,
+		MinAmount: cfg.minAmount,
+	}, nil
+}
+
 func buildCryptoRoute(dr *DepositRoute) CryptoDepositRoute {
 	route := CryptoDepositRoute{
 		Rail:     dr.SourceRail,

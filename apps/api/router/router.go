@@ -78,10 +78,16 @@ func New(deps Deps) http.Handler {
 
 		r.Route("/deposit", func(r chi.Router) {
 			r.Use(auth.Middleware(deps.AuthService, "low"))
-			r.Use(readLimit)
-			r.Get("/options", deps.DepositHandler.GetOptions)
-			r.Get("/history", deps.DepositHandler.GetDeposits)
-			r.Get("/{id}", deps.DepositHandler.GetDeposit)
+			r.Group(func(r chi.Router) {
+				r.Use(readLimit)
+				r.Get("/options", deps.DepositHandler.GetOptions)
+				r.Get("/history", deps.DepositHandler.GetDeposits)
+				r.Get("/{id}", deps.DepositHandler.GetDeposit)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(writeLimit)
+				r.Post("/liquidation-address", deps.DepositHandler.GetLiquidationAddress)
+			})
 		})
 
 		r.Route("/payments", func(r chi.Router) {

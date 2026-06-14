@@ -1,0 +1,1 @@
+ALTER TABLE deposit_routes ADD COLUMN IF NOT EXISTS source_memo TEXT NOT NULL DEFAULT '';
