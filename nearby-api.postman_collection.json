@@ -578,6 +578,41 @@
               "path": ["v1", "deposit", "{{depositId}}"]
             }
           }
+        },
+        {
+          "name": "Get Liquidation Address",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  console.log('network:', d.network, '| currency:', d.currency);",
+                  "  console.log('address:', d.address);",
+                  "  if (d.memo) console.log('memo:', d.memo);",
+                  "  console.log('minAmount:', d.minAmount);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/deposit/liquidation-address",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "deposit", "liquidation-address"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"network\": \"base\",\n  \"currency\": \"usdc\"\n}"
+            },
+            "description": "Returns a permanent deposit address for the specified network and currency. The address is created on first request and cached — subsequent calls for the same (network, currency) return instantly from the database without hitting Bridge.\n\nRequires a valid accessToken (Bearer) and an active wallet binding (PUT /v1/me/wallet). The user must have initiated KYC (GET /v1/deposit/options) before calling this endpoint.\n\nSupported combinations:\n- solana / usdc  (min 1 USDC)\n- arbitrum / usdc  (min 1 USDC)\n- hyperevm / usdc  (min 1 USDC)\n- tron / usdt  (min 5 USDT)\n- polygon / usdc  (min 1 USDC)\n- base / usdc  (min 1 USDC)\n- ethereum / usdc  (min 1 USDC)\n- stellar / usdc  (min 1 USDC)\n\nNote: arbitrum, polygon, base, and ethereum all share the same EVM deposit address from Bridge — any of these four return the same address.\n\nFor stellar, the response includes a memo field that must be included when sending the deposit, otherwise funds cannot be routed.\n\nErrors:\n- 400 unsupported_network — network/currency combination not in the list above\n- 403 no_bridge_customer — user has not started KYC yet\n- 422 — user has no bound wallet address\n- 503 bridge_unavailable — Bridge API is unreachable"
+          }
         }
       ]
     },
