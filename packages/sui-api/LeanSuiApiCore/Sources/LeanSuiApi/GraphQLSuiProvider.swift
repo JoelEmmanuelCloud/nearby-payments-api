@@ -146,6 +146,35 @@ public struct GraphQLSuiProvider: Sendable, SuiNSResolverProtocol {
     )
   }
 
+  /// All `Coin<coinType>` object ids owned by `owner`, across every page. `coinType` is the inner type
+  /// (e.g. `0x…::usdc::USDC`), wrapped internally. Bridge-friendly (`[String]`) — unlike the generic
+  /// `getCoins` page, whose `[CoinStruct]` array doesn't cross the JNI boundary.
+  public func getAllCoinObjectIds(owner: String, coinType: String) async throws -> [String] {
+    let wrapped = "0x2::coin::Coin<\(coinType)>"
+    var ids: [String] = []
+    var cursor: String?
+    repeat {
+      let page = try await getCoins(owner: owner, coinType: wrapped, cursor: cursor)
+      ids.append(contentsOf: page.data.map { $0.coinObjectId })
+      cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : nil
+    } while cursor != nil
+    return ids
+  }
+
+  /// Sum of every `Coin<coinType>` object's balance for `owner` (base units). Bridge-friendly scalar
+  /// counterpart to summing `getCoins`, for the address-vs-coin balance split.
+  public func getTotalCoinObjectBalance(owner: String, coinType: String) async throws -> UInt64 {
+    let wrapped = "0x2::coin::Coin<\(coinType)>"
+    var total: UInt64 = 0
+    var cursor: String?
+    repeat {
+      let page = try await getCoins(owner: owner, coinType: wrapped, cursor: cursor)
+      for coin in page.data { total &+= coin.balance }
+      cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : nil
+    } while cursor != nil
+    return total
+  }
+
   // MARK: - Object endpoints
 
   /// Return the object information for a single object.

@@ -27,8 +27,38 @@ object AppConstants {
     const val BALANCE_COIN_DECIMALS = 6
 
     // / How often the Home account balance silently refreshes (ms).
-    const val BALANCE_REFRESH_MS = 30_000L
+    const val BALANCE_REFRESH_MS = 15_000L
 
     // / Debounce before checking SuiNS name availability as the user types (ms).
     const val NAME_CHECK_DEBOUNCE_MS = 500L
+
+    // / Deadline for one-shot network lookups (name check / resolution, activity refresh) before they
+    // / time out and surface a toast, rather than spinning forever on a stalled connection (ms).
+    const val NETWORK_TIMEOUT_MS = 12_000L
+
+    // / Full 32-byte genesis checkpoint digests (the chain identifier) per network, hex-encoded. Their
+    // / first 4 bytes are the familiar short chain ids (testnet 4c78adac, mainnet 35834a8a). Used in the
+    // / `ValidDuring` expiration of gasless (address-balance) transactions for cross-chain replay safety.
+    private const val TESTNET_GENESIS_DIGEST_HEX =
+        "4c78adacf2a2f5ad80f27ed7d54aa69d3a78f1ca67fdef9ecf5754f5b8bb77b0"
+    private const val MAINNET_GENESIS_DIGEST_HEX =
+        "35834a8ac17ca48fb14ac8f99c17c98747e95dd07294ae41a46b382246a4499b"
+
+    /** The 32-byte chain identifier for the configured network, for gasless transaction expiration. */
+    val SUI_CHAIN_IDENTIFIER: ByteArray
+        get() = hexToBytes(
+            when (SUI_NETWORK) {
+                SuiNetworkKind.Discriminator.MAINNET -> MAINNET_GENESIS_DIGEST_HEX
+                else -> TESTNET_GENESIS_DIGEST_HEX
+            },
+        )
+
+    // / DEBUG ONLY — leave `false`. When `true`, the zkLogin session is treated as expired so the
+    // / just-in-time re-login (OAuth) path runs on the next sign. To test: set `true`, cold-launch the
+    // / app (so the in-memory ephemeral is cleared), then tap Send or "Move to balance". Reset after.
+    const val DEBUG_FORCE_SESSION_EXPIRED = false
+
+    private fun hexToBytes(hex: String): ByteArray = ByteArray(hex.length / 2) {
+        ((hex[it * 2].digitToInt(16) shl 4) or hex[it * 2 + 1].digitToInt(16)).toByte()
+    }
 }

@@ -37,21 +37,9 @@ struct ConsolidateService {
   @discardableResult
   func consolidate() async throws -> String {
     try await runner.run { tx, owner in
-      let coinObjectIds = try await allCoinObjectIds(owner: owner)
+      let coinObjectIds = try await provider.getAllCoinObjectIds(owner: owner, coinType: coinType)
       guard !coinObjectIds.isEmpty else { throw ConsolidateError.nothingToConsolidate }
       try tx.gaslessDepositCoins(coinType: coinType, coinObjectIds: coinObjectIds, owner: owner)
     }
-  }
-
-  private func allCoinObjectIds(owner: String) async throws -> [String] {
-    let wrappedType = "0x2::coin::Coin<\(coinType)>"
-    var ids: [String] = []
-    var cursor: String?
-    repeat {
-      let page = try await provider.getCoins(owner: owner, coinType: wrappedType, cursor: cursor)
-      ids.append(contentsOf: page.data.map { $0.coinObjectId })
-      cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : nil
-    } while cursor != nil
-    return ids
   }
 }

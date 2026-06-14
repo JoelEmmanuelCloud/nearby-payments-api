@@ -367,7 +367,7 @@ fun ProfileEditContent(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             MutedText(
-                value = "Choose your unique Nearby handle. This registers an on-chain sub-domain under nearby.sui and cannot be changed.",
+                value = "Choose your unique Sui handle. This registers an on-chain sub-domain under variance.sui and cannot be changed.",
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -380,7 +380,7 @@ fun ProfileEditContent(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = ".nearby.sui",
+                    text = ".variance",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

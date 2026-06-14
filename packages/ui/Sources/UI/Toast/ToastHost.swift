@@ -20,7 +20,7 @@ public struct ToastHost<Content: View>: View {
   public var body: some View {
     #if os(iOS)
       ToastBridge(controller: controller, content: content)
-        .installToast(position: .bottom)
+        .installToast(position: .top)
     #else
       content
     #endif

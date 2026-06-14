@@ -1,10 +1,12 @@
 package com.variance.nearby.core
 
 import android.content.Context
+import android.content.Intent
 import androidx.biometric.BiometricManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.variance.nearby.auth.GoogleAuthManager
@@ -15,18 +17,23 @@ import com.variance.nearby.gateway.APIGateway
 import com.variance.nearby.hsm.HardwareSecurityModule
 import com.variance.nearby.hsm.StrongBoxHSM
 import com.variance.nearby.identity.IdentityManager
+import com.variance.nearby.leansui.ZkLoginSigner
 import com.variance.nearby.leansui.api.GraphQLSuiProvider
 import com.variance.nearby.leansui.api.SuiNetwork
 import com.variance.nearby.leansui.api.SuiNetworkKind
 import com.variance.nearby.services.zk.ZkLoginService
 import com.variance.nearby.storage.PreferencesProvider
 import com.variance.nearby.ui.ToastController
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.swift.swiftkit.core.ClosableSwiftArena
 import org.swift.swiftkit.core.SwiftArena
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * Central coordinator for the Android application state, routing, and user session lifecycles.
@@ -195,6 +202,59 @@ class AppViewModel(
         }
     }
 
+    /**
+     * Returns a usable zkLogin signer, transparently re-authenticating with the current OAuth provider
+     * when the session can no longer sign (its `maxEpoch` has passed, invalidating the proof). The user
+     * is **not** signed out: a fresh nonce + interactive OAuth mints a new proof for the same (stable)
+     * zkLogin address, and a signer is returned in one sweep. This is the gate the send and consolidate
+     * actions sign through, so a stale proof never reaches the network.
+     */
+    /** Continuation suspended across an Apple re-auth's browser round-trip; resumed on redirect. */
+    private var pendingReauth: CancellableContinuation<Unit>? = null
+
+    private fun launchCustomTab(url: String) {
+        val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        appContext.startActivity(intent)
+    }
+
+    suspend fun reauthenticatedSigner(): ZkLoginSigner {
+        if (zkLoginService.isSessionUsable()) return zkLoginService.signer()
+
+        val provider = currentProvider ?: throw ReauthException("No sign-in provider on record.")
+        val nonce = zkLoginService.prepareNonce()
+
+        when (provider) {
+            "google" -> suspendCancellableCoroutine { cont ->
+                googleAuthManager.signInWithGoogle(
+                    nonce = nonce,
+                    onSuccess = { if (cont.isActive) cont.resume(Unit) },
+                    onError = { if (cont.isActive) cont.resumeWithException(it) },
+                )
+            }
+            // Apple is a two-legged flow: launch the browser tab here, suspend, and resume from
+            // `handleAppleRedirect` when the OAuth redirect returns through the activity.
+            "apple" -> suspendCancellableCoroutine<Unit> { cont ->
+                pendingReauth = cont
+                cont.invokeOnCancellation { pendingReauth = null }
+                googleAuthManager.signInWithApple(
+                    nonce = nonce,
+                    launchCustomTabs = { url -> launchCustomTab(url) },
+                    onError = { error ->
+                        pendingReauth = null
+                        if (cont.isActive) cont.resumeWithException(error)
+                    },
+                )
+            }
+            else -> throw ReauthException("No supported sign-in provider on record.")
+        }
+
+        // Re-derive the (unchanged) address and persist the renewed maxEpoch, then mint the signer.
+        zkLoginService.commitSessionIdentity()
+        return zkLoginService.signer()
+    }
+
     /** Performs a sign-out by revoking backend session tokens, clearing local data, and resetting navigation routes. */
     fun signOut() {
         isSigningIn = true
@@ -215,6 +275,9 @@ class AppViewModel(
 
     /** Handles browser-based redirect callbacks to complete native Apple OAuth sign-in. */
     fun handleAppleRedirect(code: String, state: String) {
+        // A pending continuation means this redirect completes a just-in-time re-auth (mid-send),
+        // not an initial login — resume the suspended signer instead of routing to Home.
+        val reauthCont = pendingReauth
         isSigningIn = true
         statusMessage = "Completing Apple Sign-In..."
 
@@ -224,11 +287,20 @@ class AppViewModel(
             onSuccess = { name ->
                 isSigningIn = false
                 statusMessage = null
-                handleSignInSuccess(name)
+                if (reauthCont != null) {
+                    pendingReauth = null
+                    if (reauthCont.isActive) reauthCont.resume(Unit)
+                } else {
+                    handleSignInSuccess(name)
+                }
             },
             onError = { error ->
                 isSigningIn = false
                 statusMessage = "Apple Sign-In failed: ${error.localizedMessage}"
+                if (reauthCont != null) {
+                    pendingReauth = null
+                    if (reauthCont.isActive) reauthCont.resumeWithException(error)
+                }
             },
         )
     }
@@ -296,3 +368,6 @@ class AppViewModel(
         swiftArena.close()
     }
 }
+
+/** Thrown by [AppViewModel.reauthenticatedSigner] when re-authentication can't proceed. */
+class ReauthException(message: String) : Exception(message)

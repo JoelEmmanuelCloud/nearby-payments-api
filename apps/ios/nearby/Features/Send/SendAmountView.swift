@@ -9,6 +9,7 @@ struct SendAmountView: View {
 
   private let coinSymbol: String
   private let signerProvider: SignerProvider
+  private let toastController: ToastController
   private let onFinish: () -> Void
 
   @State private var enteredAmount: Decimal?
@@ -19,10 +20,12 @@ struct SendAmountView: View {
     suiAddress: String?,
     store: AppSessionStore,
     signerProvider: @escaping SignerProvider,
+    toastController: ToastController,
     onFinish: @escaping () -> Void
   ) {
     self.coinSymbol = coinSymbol
     self.signerProvider = signerProvider
+    self.toastController = toastController
     self.onFinish = onFinish
     _viewModel = StateObject(
       wrappedValue: SendAmountViewModel(
@@ -76,6 +79,7 @@ struct SendAmountView: View {
         amount: amount,
         coinSymbol: coinSymbol,
         signerProvider: signerProvider,
+        toastController: toastController,
         onFinish: onFinish
       )
     }

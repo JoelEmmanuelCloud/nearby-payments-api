@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.variance.nearby.core.AppSessionStore
-import com.variance.nearby.screens.home.BalanceService
+import com.variance.nearby.services.sui.BalanceService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

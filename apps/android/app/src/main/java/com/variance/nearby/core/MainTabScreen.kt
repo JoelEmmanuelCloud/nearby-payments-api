@@ -22,15 +22,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.variance.nearby.R
-import com.variance.nearby.core.AppViewModel
 import com.variance.nearby.screens.activity.ActivityScreen
-import com.variance.nearby.screens.activity.ActivityService
 import com.variance.nearby.screens.activity.ActivityViewModel
-import com.variance.nearby.screens.home.BalanceService
 import com.variance.nearby.screens.home.HomeScreen
 import com.variance.nearby.screens.home.HomeViewModel
 import com.variance.nearby.screens.profile.ProfileScreen
 import com.variance.nearby.screens.profile.ProfileViewModel
+import com.variance.nearby.services.sui.ActivityService
+import com.variance.nearby.services.sui.BalanceService
+import com.variance.nearby.services.sui.ConsolidateService
 
 enum class Tab {
     HOME,
@@ -50,6 +50,12 @@ fun MainTabScreen(
             balanceService = BalanceService(viewModel.suiNetwork, viewModel.swiftArena),
             suiAddress = viewModel.currentSuiAddress,
             store = viewModel.sessionStore,
+            consolidateService = ConsolidateService(
+                network = viewModel.suiNetwork,
+                swiftArena = viewModel.swiftArena,
+                signerProvider = { viewModel.reauthenticatedSigner() },
+            ),
+            toastController = viewModel.toastController,
         )
     }
 
@@ -68,6 +74,8 @@ fun MainTabScreen(
         ActivityViewModel(
             service = ActivityService(viewModel.suiNetwork, viewModel.swiftArena),
             address = viewModel.currentSuiAddress,
+            store = viewModel.sessionStore,
+            toastController = viewModel.toastController,
         )
     }
 

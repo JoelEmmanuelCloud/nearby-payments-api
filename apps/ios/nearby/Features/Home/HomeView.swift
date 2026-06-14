@@ -129,6 +129,7 @@ struct HomeView: View {
             suiAddress: suiAddress,
             store: store,
             signerProvider: signerProvider,
+            toastController: toastController,
             onFinish: { destination = nil }
           )
         }

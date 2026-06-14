@@ -1,5 +1,8 @@
 package com.variance.nearby.core
 
+import com.variance.nearby.screens.activity.ActivityRow
+import com.variance.nearby.screens.activity.activityRowsFromJson
+import com.variance.nearby.screens.activity.toJsonString
 import com.variance.nearby.storage.SecureStorage
 import com.variance.nearby.storage.StorageItem
 import org.json.JSONObject
@@ -21,7 +24,9 @@ class AppSessionStore(
         private const val KEY_USER_NAME = "nearby.userName"
         private const val KEY_BALANCE_HIDDEN = "nearby.balanceHidden"
         private const val KEY_LAST_BALANCE = "nearby.lastUsdSuiBalance"
+        private const val CACHED_ACTIVITY_LIMIT = 30
         private fun profileKey(userId: String) = "nearby.profile.$userId"
+        private fun activityKey(address: String) = "nearby.activity.$address"
     }
 
     /**
@@ -33,7 +38,7 @@ class AppSessionStore(
         if (!itemOpt.isPresent) return null
         return try {
             BigDecimal(String(itemOpt.get().value, Charsets.UTF_8))
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -106,8 +111,29 @@ class AppSessionStore(
                 suinsName = json.optString("suinsName").ifEmpty { null },
                 avatarUrl = json.optString("avatarUrl").ifEmpty { null },
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
+        }
+    }
+
+    // MARK: - Activity cache
+    //
+    // The newest page of activity rows, so the Activity tab shows the last-known feed immediately on
+    // re-entry while a silent refresh runs (mirrors `lastBalance`). Keyed by address.
+
+    fun cacheActivity(items: List<ActivityRow>, address: String) {
+        val text = items.take(CACHED_ACTIVITY_LIMIT).toJsonString()
+        val item = StorageItem.init(text.toByteArray(Charsets.UTF_8), swiftArena)
+        storage.set(item, activityKey(address))
+    }
+
+    fun cachedActivity(address: String): List<ActivityRow> {
+        val itemOpt = storage.get(activityKey(address), swiftArena)
+        if (!itemOpt.isPresent) return emptyList()
+        return try {
+            activityRowsFromJson(String(itemOpt.get().value, Charsets.UTF_8))
+        } catch (_: Exception) {
+            emptyList()
         }
     }
 }

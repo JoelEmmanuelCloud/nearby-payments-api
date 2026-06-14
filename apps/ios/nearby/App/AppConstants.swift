@@ -32,10 +32,14 @@ nonisolated enum AppConstants {
   static let balanceCoinDecimals = 6
 
   /// How often the Home account balance silently refreshes.
-  static let balanceRefreshInterval: TimeInterval = 30
+  static let balanceRefreshInterval: TimeInterval = 15
 
   /// Debounce before checking SuiNS name availability as the user types.
   static let nameCheckDebounce: TimeInterval = 0.5
+
+  /// Deadline for one-shot network lookups (name check / resolution, activity refresh) before they
+  /// time out and surface a toast, rather than spinning forever on a stalled connection.
+  static let networkTimeout: TimeInterval = 12
 
   /// DEBUG ONLY — leave `false`. When `true`, the zkLogin session is treated as expired so the
   /// just-in-time re-login (OAuth) path runs on the next sign. To test: set `true`, **cold-launch**

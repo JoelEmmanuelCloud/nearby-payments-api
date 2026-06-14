@@ -1,8 +1,10 @@
-package com.variance.nearby.screens.activity
+package com.variance.nearby.services.sui
 
 import com.variance.nearby.core.AppConstants
 import com.variance.nearby.leansui.api.GraphQLSuiProvider
 import com.variance.nearby.leansui.api.SuiNetwork
+import com.variance.nearby.screens.activity.ActivityPage
+import com.variance.nearby.screens.activity.toPage
 import kotlinx.coroutines.future.await
 import org.swift.swiftkit.core.SwiftArena
 import java.util.Optional

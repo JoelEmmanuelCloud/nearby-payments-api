@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import UI
 
 /// Drives the recipient field's edge-of-field state machine: idle → resolving → resolved ✓ / not-found
 /// ✗. Addresses resolve instantly; SuiNS names debounce then hit the network.
@@ -20,13 +21,16 @@ final class RecipientViewModel: ObservableObject {
   private(set) var state: State = .idle
 
   private let service: RecipientService
+  private let toastController: ToastController?
 
   private var resolveTask: Task<Void, Never>?
 
   init(
-    service: RecipientService = RecipientService(network: AppConstants.suiNetwork)
+    service: RecipientService = RecipientService(network: AppConstants.suiNetwork),
+    toastController: ToastController? = nil
   ) {
     self.service = service
+    self.toastController = toastController
   }
 
   /// The address to send to, once a recipient resolves.
@@ -56,13 +60,17 @@ final class RecipientViewModel: ObservableObject {
   private func resolve(name: String) async {
     try? await Task.sleep(nanoseconds: UInt64(AppConstants.nameCheckDebounce * 1_000_000_000))
     guard !Task.isCancelled else { return }
+    let svc = service
     do {
-      if let address = try await service.resolve(name: name) {
-        guard !Task.isCancelled else { return }
-        state = .resolved(address: address, name: name)
-      } else {
-        state = .notFound
+      let address = try await withTimeout(seconds: AppConstants.networkTimeout) {
+        try await svc.resolve(name: name)
       }
+      guard !Task.isCancelled else { return }
+      state = address.map { .resolved(address: $0, name: name) } ?? .notFound
+    } catch is TimeoutError {
+      guard !Task.isCancelled else { return }
+      state = .notFound
+      toastController?.show("Name lookup timed out. Check your connection.", tone: .warning)
     } catch {
       guard !Task.isCancelled else { return }
       state = .notFound

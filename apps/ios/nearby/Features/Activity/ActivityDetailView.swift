@@ -63,7 +63,7 @@ struct ActivityDetailView: View {
           if let url = suiExplorerURL(digest: activity.digest, network: AppConstants.suiNetwork) {
             Link(destination: url) {
               HStack {
-                Text("View on Suiscan")
+                Text("View on SuiVision")
                 Spacer()
                 Image(systemName: "arrow.up.right.square")
               }

@@ -14,7 +14,7 @@ struct ProfileEditView: View {
     // input and helper text at the top.
     VStack(alignment: .leading, spacing: 16) {
       MutedText(
-        "Choose your unique Nearby handle. This registers an on-chain sub-domain under nearby.sui and cannot be changed."
+        "Choose your unique Sui handle. This registers an on-chain sub-domain under variance.sui and cannot be changed."
       )
 
       HStack {
@@ -24,7 +24,7 @@ struct ProfileEditView: View {
           .background(Color(.secondarySystemBackground))
           .clipShape(RoundedRectangle(cornerRadius: 12))
 
-        Text(".nearby.sui")
+        Text(".variance")
           .foregroundColor(.secondary)
       }
 

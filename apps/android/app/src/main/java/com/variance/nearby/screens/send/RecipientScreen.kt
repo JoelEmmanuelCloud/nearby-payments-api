@@ -37,7 +37,7 @@ import java.text.NumberFormat
 
 /**
  * Step 2 of the send flow (#6c): enter the recipient as a SuiNS name or `0x` address. The field shows
- * a live Idle → Resolving → ✓ / ✗ state; [onContinue] hands the resolved address to #6d.
+ * a live Idle → Resolving → ✓ / ✗ state; `onContinue` hands the resolved address to #6d.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,8 +45,8 @@ fun RecipientScreen(
     amount: BigDecimal,
     coinSymbol: String,
     viewModel: RecipientViewModel,
+    sendViewModel: SendViewModel,
     onBack: () -> Unit,
-    onContinue: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -81,8 +81,9 @@ fun RecipientScreen(
             OutlinedTextField(
                 value = viewModel.input,
                 onValueChange = viewModel::onInputChange,
-                placeholder = { Text("name.sui or 0x address") },
+                placeholder = { Text("sui name or address") },
                 singleLine = true,
+                enabled = !sendViewModel.isSending,
                 keyboardOptions = KeyboardOptions(
                     autoCorrectEnabled = false,
                     capitalization = KeyboardCapitalization.None,
@@ -96,9 +97,9 @@ fun RecipientScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             UIButton(
-                title = "Continue",
-                isDisabled = viewModel.resolvedAddress == null,
-                onClick = { viewModel.resolvedAddress?.let(onContinue) },
+                title = if (sendViewModel.isSending) "Sending…" else "Send",
+                isDisabled = viewModel.resolvedAddress == null || sendViewModel.isSending,
+                onClick = { viewModel.resolvedAddress?.let { sendViewModel.send(it) } },
             )
         }
     }

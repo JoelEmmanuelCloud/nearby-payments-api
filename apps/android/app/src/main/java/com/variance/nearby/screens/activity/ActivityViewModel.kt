@@ -5,9 +5,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.variance.nearby.core.AppConstants
+import com.variance.nearby.core.AppSessionStore
+import com.variance.nearby.services.sui.ActivityService
+import com.variance.nearby.ui.ToastController
+import com.variance.nearby.ui.ToastTone
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 /**
  * Owns the Activity feed: an append-only list of rows with cursor-based infinite scroll. Network IO
@@ -16,14 +23,21 @@ import kotlinx.coroutines.withContext
 class ActivityViewModel(
     private val service: ActivityService,
     private val address: String?,
+    private val store: AppSessionStore,
+    private val toastController: ToastController? = null,
 ) : ViewModel() {
 
     enum class Phase { LOADING, CONTENT, EMPTY, ERROR }
 
-    var phase by mutableStateOf(Phase.LOADING)
+    // Seed from cache so re-entering Activity shows the last-known feed immediately (no skeleton);
+    // `load` then refreshes it silently.
+    private val cachedRows: List<ActivityRow> =
+        address?.takeIf { it.isNotEmpty() }?.let { store.cachedActivity(it) } ?: emptyList()
+
+    var phase by mutableStateOf(if (cachedRows.isEmpty()) Phase.LOADING else Phase.CONTENT)
         private set
 
-    var items by mutableStateOf<List<ActivityRow>>(emptyList())
+    var items by mutableStateOf(cachedRows)
         private set
 
     var isLoadingMore by mutableStateOf(false)
@@ -47,7 +61,9 @@ class ActivityViewModel(
         viewModelScope.launch {
             isRefreshing = true
             try {
-                var page = withContext(Dispatchers.IO) { service.activity(addr, null) }
+                var page = withTimeout(AppConstants.NETWORK_TIMEOUT_MS) {
+                    withContext(Dispatchers.IO) { service.activity(addr, null) }
+                }
                 var accumulated = page.items
                 cursor = page.nextCursor
                 canLoadMore = page.hasMore
@@ -65,9 +81,15 @@ class ActivityViewModel(
 
                 items = accumulated
                 phase = if (accumulated.isEmpty()) Phase.EMPTY else Phase.CONTENT
+                store.cacheActivity(accumulated, addr)
+            } catch (e: TimeoutCancellationException) {
+                if (items.isEmpty()) phase = Phase.ERROR
+                toastController?.show(
+                    "Couldn't refresh activity. Check your connection.",
+                    ToastTone.WARNING,
+                )
             } catch (e: Exception) {
                 if (items.isEmpty()) phase = Phase.ERROR
-                println("ActivityViewModel.load failed: ${e.message}")
             } finally {
                 isRefreshing = false
             }

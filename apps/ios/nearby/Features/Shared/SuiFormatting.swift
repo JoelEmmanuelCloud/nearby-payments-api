@@ -26,13 +26,13 @@ func suiPartyLabel(_ address: String?, currentAddress: String?) -> String {
   return isSameSuiAddress(address, currentAddress) ? "You" : shortSuiAddress(address)
 }
 
-/// The Suiscan explorer URL for a transaction digest on the app's network.
+/// The SuiVision explorer URL for a transaction digest on the app's network.
 func suiExplorerURL(digest: String, network: SuiNetworkKind) -> URL? {
-  let segment: String
+  let host: String
   switch network {
-  case .mainnet: segment = "mainnet"
-  case .testnet: segment = "testnet"
-  case .devnet: segment = "devnet"
+  case .mainnet: host = "suivision.xyz"
+  case .testnet: host = "testnet.suivision.xyz"
+  case .devnet: host = "devnet.suivision.xyz"
   }
-  return URL(string: "https://suiscan.xyz/\(segment)/tx/\(digest)")
+  return URL(string: "https://\(host)/txblock/\(digest)")
 }

@@ -20,7 +20,7 @@ let package = Package(
     .package(
       url: "https://github.com/vaariance/swift-java.git", branch: "peter/swift-java-callbackdeps"),
     .package(url: "https://github.com/attaswift/BigInt.git", from: "5.3.0"),
-    .package(path: "/Users/peter/Developer/apollo-ios"),
+    .package(url: "https://github.com/vaariance/apollo-ios.git", branch: "jextract-portable"),
   ],
   targets: [
     .target(

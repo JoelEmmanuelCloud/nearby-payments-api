@@ -77,8 +77,8 @@ final class ProfileViewModel: ObservableObject {
 
   /// The display string for the main page, e.g. "alice.nearby.sui" or the dummy placeholder.
   var displayName: String {
-    if let suinsName { return "\(suinsName).nearby.sui" }
-    return "myname.nearby.sui"
+    if let suinsName { return "\(suinsName).variance.sui" }
+    return "yourname.variance"
   }
 
   func loadProfile() {
@@ -146,13 +146,19 @@ final class ProfileViewModel: ObservableObject {
 
   private func checkName(_ name: String) async {
     statusMessage = "Checking availability..."
+    let manager = identityManager
     do {
-      let res = try await identityManager.checkNameAvailability(leafName: name)
+      let res = try await withTimeout(seconds: AppConstants.networkTimeout) {
+        try await manager.checkNameAvailability(leafName: name)
+      }
       isAvailable = res.available
       statusMessage = res.available ? "Name is available!" : "Name is already taken."
-    } catch {
+    } catch is TimeoutError {
       statusMessage = nil
-      toastController.show("Couldn't check name availability")
+      toastController.show("Name check timed out. Check your connection.", tone: .warning)
+    } catch {
+      // Non-timeout failure: stay quiet — the status message is enough, and a toast here misfires.
+      statusMessage = nil
     }
   }
 

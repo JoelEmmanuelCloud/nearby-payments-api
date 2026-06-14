@@ -11,9 +11,11 @@ struct ActivityView: View {
 
   private let suiAddress: String?
 
-  init(suiAddress: String?, store: AppSessionStore) {
+  init(suiAddress: String?, store: AppSessionStore, toastController: ToastController) {
     self.suiAddress = suiAddress
-    _viewModel = StateObject(wrappedValue: ActivityViewModel(suiAddress: suiAddress, store: store))
+    _viewModel = StateObject(
+      wrappedValue: ActivityViewModel(
+        suiAddress: suiAddress, store: store, toastController: toastController))
   }
 
   var body: some View {

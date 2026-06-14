@@ -44,23 +44,11 @@ actor BalanceService {
 
     let total = Decimal(
       try await provider.getBalance(owner: owner, coinType: coinType).totalBalance)
-    let coins = Decimal(try await totalCoinObjectBalance(owner: owner))
+    let coins = Decimal(
+      try await provider.getTotalCoinObjectBalance(owner: owner, coinType: coinType))
     let address = max(total - coins, 0)  // guard against a transient over-count
 
     return BalanceBreakdown(addressBalance: address / scale, coinBalance: coins / scale)
-  }
-
-  /// Sum of every `Coin<coinType>` object the owner holds (`u64` base units), paginated to be exact.
-  private func totalCoinObjectBalance(owner: String) async throws -> UInt64 {
-    let wrappedType = "0x2::coin::Coin<\(coinType)>"
-    var total: UInt64 = 0
-    var cursor: String?
-    repeat {
-      let page = try await provider.getCoins(owner: owner, coinType: wrappedType, cursor: cursor)
-      for coin in page.data { total &+= coin.balance }
-      cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : nil
-    } while cursor != nil
-    return total
   }
 
   private func decimals() async throws -> Int {

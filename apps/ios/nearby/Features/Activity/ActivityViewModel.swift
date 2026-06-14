@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import LeanSuiApi
+import UI
 
 /// Owns the Activity feed: an append-only list of `SuiActivity` rows with cursor-based infinite
 /// scroll. Network IO and formatting live in `ActivityService` / the shared package; this layer holds
@@ -26,6 +27,7 @@ final class ActivityViewModel: ObservableObject {
   private let service: ActivityService
   private let address: String?
   private let store: AppSessionStore
+  private let toastController: ToastController?
 
   private var cursor: String?
 
@@ -35,11 +37,13 @@ final class ActivityViewModel: ObservableObject {
     suiAddress: String?,
     store: AppSessionStore,
     service: ActivityService = ActivityService(
-      network: AppConstants.suiNetwork, coinType: AppConstants.usdSuiCoinType)
+      network: AppConstants.suiNetwork, coinType: AppConstants.usdSuiCoinType),
+    toastController: ToastController? = nil
   ) {
     self.address = suiAddress
     self.store = store
     self.service = service
+    self.toastController = toastController
     // Seed from cache so re-entering Activity shows the last-known feed immediately (no skeleton);
     // `load` then refreshes it silently.
     if let suiAddress, !suiAddress.isEmpty {
@@ -59,14 +63,21 @@ final class ActivityViewModel: ObservableObject {
     }
     if items.isEmpty { phase = .loading }
     cursor = nil
+    let svc = service
+    let addr = address
     do {
-      let feed = try await service.activity(address: address, cursor: nil)
+      let feed = try await withTimeout(seconds: AppConstants.networkTimeout) {
+        try await svc.activity(address: addr, cursor: nil)
+      }
       items = feed.items
       cursor = feed.nextCursor
       canLoadMore = feed.hasMore
       try await fillIfStarved()
       phase = items.isEmpty ? .empty : .content
       store.cacheActivity(items, for: address)
+    } catch is TimeoutError {
+      phase = items.isEmpty ? .error : .content
+      toastController?.show("Couldn't refresh activity. Check your connection.", tone: .warning)
     } catch {
       phase = items.isEmpty ? .error : .content
     }

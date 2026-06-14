@@ -80,7 +80,11 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIntent(intent: Intent?) {
         val uri = intent?.data ?: return
-        if (intent.action == Intent.ACTION_VIEW && uri.scheme == "nearby-auth" && uri.host == "callback") {
+        if (intent.action == Intent.ACTION_VIEW &&
+            uri.scheme == "https" &&
+            uri.host == "variance.space" &&
+            uri.path == "/callback"
+        ) {
             val code = uri.getQueryParameter("code")
             val state = uri.getQueryParameter("state")
             if (code != null && state != null) {

@@ -14,10 +14,12 @@ import com.variance.nearby.ui.ToastController
 import com.variance.nearby.ui.ToastTone
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.swift.swiftkit.core.SwiftArena
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -71,7 +73,7 @@ class ProfileViewModel(
 
     val isRegistered: Boolean get() = suinsName != null
 
-    val displayName: String get() = suinsName?.let { "$it.nearby.sui" } ?: "myname.nearby.sui"
+    val displayName: String get() = suinsName?.let { "$it.variance.sui" } ?: "yourname.variance"
 
     fun loadProfile() {
         // 1. Prefill from the app-side cache for an instant badge resolution on re-entry.
@@ -143,14 +145,19 @@ class ProfileViewModel(
             statusMessage = "Checking availability..."
         }
         try {
-            val res = identityManager.checkNameAvailability(leafName, swiftArena).await()
+            val res = withTimeout(AppConstants.NETWORK_TIMEOUT_MS) {
+                identityManager.checkNameAvailability(leafName, swiftArena).await()
+            }
             withContext(Dispatchers.Main) {
                 isAvailable = res.isAvailable
                 statusMessage = if (res.isAvailable) "Name is available!" else "Name is already taken."
             }
-        } catch (_: Exception) {
+        } catch (e: TimeoutCancellationException) {
             withContext(Dispatchers.Main) { statusMessage = null }
-            toastController.show("Couldn't check name availability", ToastTone.DANGER)
+            toastController.show("Name check timed out. Check your connection.", ToastTone.WARNING)
+        } catch (_: Exception) {
+            // Non-timeout failure: stay quiet — the status message is enough; a toast here misfires.
+            withContext(Dispatchers.Main) { statusMessage = null }
         }
     }
 

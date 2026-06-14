@@ -1,6 +1,15 @@
 {
-  "originHash" : "80ad8817641b85d9ae7c1db1e83ce825559e2d0b3abb07b84880bffb0715aea9",
+  "originHash" : "e351d178c3a13afe579c74911e6b8183c9ca1b3fb7ff0d230d88bd271a3bccb9",
   "pins" : [
+    {
+      "identity" : "apollo-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vaariance/apollo-ios.git",
+      "state" : {
+        "branch" : "jextract-portable",
+        "revision" : "53dcc09e6a6437e44456c3c6860ca4d315211620"
+      }
+    },
     {
       "identity" : "bigint",
       "kind" : "remoteSourceControl",

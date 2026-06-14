@@ -26,12 +26,12 @@ fun suiPartyLabel(address: String?, currentAddress: String?): String {
     return if (isSameSuiAddress(address, currentAddress)) "You" else shortSuiAddress(address)
 }
 
-/** The Suiscan explorer URL for a transaction digest on the app's network. */
+/** The SuiVision explorer URL for a transaction digest on the app's network. */
 fun suiExplorerUrl(digest: String, network: SuiNetworkKind.Discriminator): String {
-    val segment = when (network) {
-        SuiNetworkKind.Discriminator.MAINNET -> "mainnet"
-        SuiNetworkKind.Discriminator.TESTNET -> "testnet"
-        SuiNetworkKind.Discriminator.DEVNET -> "devnet"
+    val host = when (network) {
+        SuiNetworkKind.Discriminator.MAINNET -> "suivision.xyz"
+        SuiNetworkKind.Discriminator.TESTNET -> "testnet.suivision.xyz"
+        SuiNetworkKind.Discriminator.DEVNET -> "devnet.suivision.xyz"
     }
-    return "https://suiscan.xyz/$segment/tx/$digest"
+    return "https://$host/txblock/$digest"
 }

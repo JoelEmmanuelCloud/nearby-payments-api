@@ -1,4 +1,4 @@
-package com.variance.nearby.screens.send
+package com.variance.nearby.services.sui
 
 import com.variance.nearby.leansui.api.GraphQLSuiProvider
 import com.variance.nearby.leansui.api.SuiNetwork

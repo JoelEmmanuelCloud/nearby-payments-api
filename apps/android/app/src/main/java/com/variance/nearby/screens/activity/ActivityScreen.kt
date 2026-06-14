@@ -73,6 +73,11 @@ fun ActivityScreen(
 
     LaunchedEffect(Unit) { viewModel.load() }
 
+    // Refresh live when a send/consolidation reports an account change.
+    LaunchedEffect(Unit) {
+        com.variance.nearby.core.AccountRefresh.events.collect { viewModel.load() }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -381,7 +386,7 @@ private fun ActivityDetailSheet(row: ActivityRow, currentAddress: String?) {
             onClick = { uriHandler.openUri(suiExplorerUrl(row.digest, AppConstants.SUI_NETWORK)) },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("View on Suiscan", fontWeight = FontWeight.Medium)
+            Text("View on SuiVision", fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
                 painter = painterResource(id = R.drawable.open_in_new),

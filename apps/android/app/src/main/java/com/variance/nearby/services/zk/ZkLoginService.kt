@@ -108,8 +108,27 @@ class ZkLoginService(
     /**
      * Returns a ready-to-use signer, constructing it just-in-time from the persisted proof (or, if
      * none is cached yet, by generating one). Shares the in-flight warm-up job when present.
+     *
+     * Throws [SessionUnusableException] when the session can no longer sign (expired `maxEpoch` /
+     * missing StrongBox key) so the caller routes a just-in-time re-authentication instead of
+     * submitting a signature the network will reject.
      */
-    suspend fun signer(): ZkLoginSigner = resolveSigner()
+    suspend fun signer(): ZkLoginSigner {
+        if (!isSessionUsable()) throw SessionUnusableException()
+        return resolveSigner()
+    }
+
+    /**
+     * Whether the persisted session can currently produce a valid signature: its `maxEpoch` is still
+     * ahead of the chain's current epoch and the StrongBox key is present. A fresh login (with a
+     * `pendingZKEphemeral` in memory) is also usable even before its proof is persisted.
+     */
+    suspend fun isSessionUsable(): Boolean = withContext(Dispatchers.IO) {
+        if (pendingZKEphemeral != null) return@withContext true
+        if (AppConstants.DEBUG_FORCE_SESSION_EXPIRED) return@withContext false
+        val epoch = zkAuth.getCurrentEpoch(swiftArena).await().epoch
+        sessionManager.isZkLoginSessionUsable(epoch)
+    }
 
     /** Clears any active pending zkLogin ephemeral session and cached signer. */
     fun clearPending() {
@@ -170,3 +189,9 @@ class ZkLoginService(
         return zkAuth.createzkLoginSigner(account, template, userAddress, graphQLClient, swiftArena)
     }
 }
+
+/**
+ * Thrown by [ZkLoginService.signer] when the session can no longer sign (its `maxEpoch` has passed or
+ * the StrongBox key is unavailable). The caller re-authenticates just-in-time before signing.
+ */
+class SessionUnusableException : Exception("zkLogin session expired; re-authentication required.")

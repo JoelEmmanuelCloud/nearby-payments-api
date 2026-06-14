@@ -552,7 +552,7 @@
           "REPO_MAPPING:rules_swift_package_manager+,bazel_skylib bazel_skylib+",
           "REPO_MAPPING:rules_swift_package_manager+,bazel_tools bazel_tools",
           "REPO_MAPPING:rules_swift_package_manager+,cgrindel_bazel_starlib cgrindel_bazel_starlib+",
-          "FILE:@@//packages/workspace/Package.resolved f800c24079c73ef77c0751fe8e4e6cef2fe762a909f8665ee2a07e57b487c9df"
+          "FILE:@@//packages/workspace/Package.resolved 4398e232ba82c618733f4afd29f1696cae89ebb11c9267084551b524d5878b83"
         ],
         "generatedRepoSpecs": {
           "swift_package": {
@@ -591,13 +591,15 @@
             }
           },
           "swiftpkg_apollo_ios": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:local_swift_package.bzl%local_swift_package",
+            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_apollo_ios",
+              "commit": "53dcc09e6a6437e44456c3c6860ca4d315211620",
+              "remote": "https://github.com/vaariance/apollo-ios.git",
               "env": {},
               "env_inherit": [],
-              "path": "/Users/peter/Developer/apollo-ios",
               "cached_json_directory": "",
+              "replace_scm_with_registry": false,
               "target_deps": {}
             }
           },

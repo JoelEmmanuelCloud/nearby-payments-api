@@ -9,10 +9,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.variance.nearby.core.AppConstants
 import com.variance.nearby.core.AppViewModel
-import com.variance.nearby.screens.home.BalanceService
+import com.variance.nearby.services.sui.BalanceService
+import com.variance.nearby.services.sui.RecipientService
+import com.variance.nearby.services.sui.SendService
 import java.math.BigDecimal
 
-/** Coordinates the send flow: amount entry (#6a / #6b) → recipient (#6c). [onExit] dismisses it. */
+/**
+ * Coordinates the send flow: amount entry (#6a / #6b) → recipient, where the gasless send executes
+ * inline (#6d) and, once it settles, the success / failure result (#6e). [onExit] dismisses it.
+ */
 @Composable
 fun SendFlow(
     viewModel: AppViewModel,
@@ -41,16 +46,43 @@ fun SendFlow(
         )
     } else {
         val recipientViewModel = remember {
-            RecipientViewModel(RecipientService(viewModel.suiNetwork, viewModel.swiftArena))
+            RecipientViewModel(
+                RecipientService(viewModel.suiNetwork, viewModel.swiftArena),
+                viewModel.toastController,
+            )
         }
-        BackHandler { amount = null }
-        RecipientScreen(
-            amount = pendingAmount,
-            coinSymbol = AppConstants.BALANCE_COIN_SYMBOL,
-            viewModel = recipientViewModel,
-            onBack = { amount = null },
-            onContinue = { /* 6d: build/sign/execute the gasless send. */ },
-            modifier = modifier,
-        )
+        val sendViewModel = remember(pendingAmount) {
+            SendViewModel(
+                amount = pendingAmount,
+                service = SendService(
+                    network = viewModel.suiNetwork,
+                    swiftArena = viewModel.swiftArena,
+                    signerProvider = { viewModel.reauthenticatedSigner() },
+                ),
+            )
+        }
+
+        when (val outcome = sendViewModel.result) {
+            null -> {
+                BackHandler(enabled = !sendViewModel.isSending) { amount = null }
+                RecipientScreen(
+                    amount = pendingAmount,
+                    coinSymbol = AppConstants.BALANCE_COIN_SYMBOL,
+                    viewModel = recipientViewModel,
+                    sendViewModel = sendViewModel,
+                    onBack = { amount = null },
+                    modifier = modifier,
+                )
+            }
+            else -> SendResultScreen(
+                outcome = outcome,
+                amount = pendingAmount,
+                coinSymbol = AppConstants.BALANCE_COIN_SYMBOL,
+                recipient = recipientViewModel.resolvedAddress ?: "",
+                onDone = onExit,
+                onRetry = { sendViewModel.reset() },
+                modifier = modifier,
+            )
+        }
     }
 }

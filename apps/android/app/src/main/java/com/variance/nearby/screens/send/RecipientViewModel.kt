@@ -6,11 +6,16 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.variance.nearby.core.AppConstants
+import com.variance.nearby.services.sui.RecipientService
+import com.variance.nearby.ui.ToastController
+import com.variance.nearby.ui.ToastTone
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
@@ -19,6 +24,7 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 class RecipientViewModel(
     private val service: RecipientService,
+    private val toastController: ToastController? = null,
 ) : ViewModel() {
 
     sealed interface State {
@@ -55,14 +61,21 @@ class RecipientViewModel(
                 resolveJob = viewModelScope.launch {
                     delay(AppConstants.NAME_CHECK_DEBOUNCE_MS.milliseconds)
                     try {
-                        val address = withContext(Dispatchers.IO) { service.resolve(parsed.value) }
+                        val address = withTimeout(AppConstants.NETWORK_TIMEOUT_MS) {
+                            withContext(Dispatchers.IO) { service.resolve(parsed.value) }
+                        }
                         state = if (address != null) {
                             State.Resolved(address, parsed.value)
                         } else {
                             State.NotFound
                         }
-                    } catch (e: Exception) {
-                        println("RecipientViewModel.resolve('${parsed.value}') failed: $e")
+                    } catch (e: TimeoutCancellationException) {
+                        state = State.NotFound
+                        toastController?.show(
+                            "Name lookup timed out. Check your connection.",
+                            ToastTone.WARNING,
+                        )
+                    } catch (_: Exception) {
                         state = State.NotFound
                     }
                 }

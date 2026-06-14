@@ -3,6 +3,7 @@ package com.variance.nearby.screens.home
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -102,6 +106,11 @@ fun HomeScreen(
             isBalanceLoading = homeViewModel.balance is HomeViewModel.BalanceState.Loading,
             isBalanceHidden = homeViewModel.isHidden,
             balanceText = homeViewModel.formattedBalance,
+            hasPendingBalance = homeViewModel.hasPendingBalance,
+            pendingBalanceText = homeViewModel.formattedPendingBalance,
+            isConsolidating = homeViewModel.isConsolidating,
+            canConsolidate = homeViewModel.canConsolidate,
+            onConsolidate = { homeViewModel.consolidate() },
             onToggleBalance = { homeViewModel.toggleVisibility() },
             onSignOut = { viewModel.signOut() },
             onDeposit = { route = HomeRoute.DEPOSIT },
@@ -124,6 +133,11 @@ fun HomeContent(
     isBalanceLoading: Boolean,
     isBalanceHidden: Boolean,
     balanceText: String,
+    hasPendingBalance: Boolean,
+    pendingBalanceText: String,
+    isConsolidating: Boolean,
+    canConsolidate: Boolean,
+    onConsolidate: () -> Unit,
     onToggleBalance: () -> Unit,
     onSignOut: () -> Unit,
     onDeposit: () -> Unit,
@@ -228,6 +242,18 @@ fun HomeContent(
                         }
                     }
                 }
+
+                // Pending (coin-object) balance: a thin call-to-action shown only when there's value
+                // to move into the spendable address balance. Tapping runs the gasless consolidation.
+                if (!isBalanceHidden && hasPendingBalance) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    PendingBalanceStrip(
+                        pendingText = pendingBalanceText,
+                        isConsolidating = isConsolidating,
+                        enabled = canConsolidate,
+                        onConsolidate = onConsolidate,
+                    )
+                }
             }
 
             // Primary actions
@@ -243,6 +269,50 @@ fun HomeContent(
                     onClick = onSend,
                 )
             }
+        }
+    }
+}
+
+/**
+ * The thin "pending balance" call to action at the bottom of the balance card. Surfaces value held as
+ * coin objects and moves it into the spendable address balance with one gasless transaction.
+ */
+@Composable
+private fun PendingBalanceStrip(
+    pendingText: String,
+    isConsolidating: Boolean,
+    enabled: Boolean,
+    onConsolidate: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+            .clickable(enabled = enabled, onClick = onConsolidate)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (isConsolidating) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            Text(
+                text = "Moving to balance…",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Text(
+                text = "$pendingText USDsui pending",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "Move to balance",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }
@@ -293,6 +363,11 @@ private fun HomeLoadingPreview() {
         isBalanceLoading = true,
         isBalanceHidden = false,
         balanceText = "",
+        hasPendingBalance = false,
+        pendingBalanceText = "0.00",
+        isConsolidating = false,
+        canConsolidate = false,
+        onConsolidate = {},
         onToggleBalance = {},
         onSignOut = {},
         onDeposit = {},
@@ -309,6 +384,11 @@ private fun HomeBalancePreview() {
         isBalanceLoading = false,
         isBalanceHidden = false,
         balanceText = "42.50",
+        hasPendingBalance = true,
+        pendingBalanceText = "20.00",
+        isConsolidating = false,
+        canConsolidate = true,
+        onConsolidate = {},
         onToggleBalance = {},
         onSignOut = {},
         onDeposit = {},

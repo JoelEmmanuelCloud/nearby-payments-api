@@ -11,7 +11,7 @@ struct RecipientView: View {
   let coinSymbol: String
   let onFinish: () -> Void
 
-  @StateObject private var viewModel = RecipientViewModel()
+  @StateObject private var viewModel: RecipientViewModel
   @StateObject private var sendModel: SendViewModel
 
   @State private var result: SendResultView.Outcome?
@@ -20,11 +20,12 @@ struct RecipientView: View {
 
   init(
     amount: Decimal, coinSymbol: String, signerProvider: @escaping SignerProvider,
-    onFinish: @escaping () -> Void
+    toastController: ToastController, onFinish: @escaping () -> Void
   ) {
     self.amount = amount
     self.coinSymbol = coinSymbol
     self.onFinish = onFinish
+    _viewModel = StateObject(wrappedValue: RecipientViewModel(toastController: toastController))
     let service = SendService(signerProvider: signerProvider)
     _sendModel = StateObject(
       wrappedValue: SendViewModel(amount: amount, coinSymbol: coinSymbol, service: service))
@@ -35,7 +36,7 @@ struct RecipientView: View {
       MutedText("Sending \(amount.formatted(.number.grouping(.automatic))) \(coinSymbol)")
 
       HStack(spacing: 8) {
-        Input("name.sui or 0x address", text: fieldBinding)
+        Input("sui name or address", text: fieldBinding)
           .focused($fieldFocused)
           .disabled(sendModel.isSending)
 
