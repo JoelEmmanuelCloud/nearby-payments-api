@@ -242,13 +242,11 @@ func (c *BridgeClient) EnsureLiquidationAddress(ctx context.Context, customerID,
 	}
 
 	body := map[string]interface{}{
-		"chain":    chain,
-		"currency": currency,
-		"destination": map[string]interface{}{
-			"currency":     "usdc",
-			"payment_rail": "sui",
-			"to_address":   destinationAddress,
-		},
+		"chain":                    chain,
+		"currency":                 currency,
+		"destination_payment_rail": "sui",
+		"destination_currency":     "usdc",
+		"destination_address":      destinationAddress,
 	}
 
 	var createResult struct {
