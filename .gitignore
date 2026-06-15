@@ -212,3 +212,8 @@ tasks/
 
 ## git lfs scope
 tools/zkprover/zkeys/
+
+# sui move
+build/
+publish.json
+upgrade.json

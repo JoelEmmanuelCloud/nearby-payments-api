@@ -169,9 +169,12 @@ func (s *Service) CheckAvailability(ctx context.Context, leafName string) (*Name
 		return nil, ErrNameInvalid
 	}
 
-	fullName := leafName + "." + parentName
+	fullName := leafName + "." + parentName + ".sui"
 	nameHash := "0x" + utils.SHA256HexString(fullName)
 
+	// SuiNS resolution needs the fully-qualified `.sui` name. `parentName` omits the TLD (it's used
+	// as-is for the AVS + task hash), but the on-chain leaf is `<leaf>.<parent>.sui` — without the
+	// suffix the resolver never matches a registered name and every name reads back as "available".
 	address, err := s.suiClient.ResolveNameServiceAddress(ctx, fullName)
 	if err != nil {
 		return nil, ErrSuiNSUnavailable

@@ -1,0 +1,18 @@
+[package]
+name = "variance"
+edition = "2024.beta"
+
+# Custody package for the protocol-controlled SuiNS parent `variance.sui`.
+# See sources/custody.move for the why, and REGISTER_PARENT.txt for publish + parent setup.
+
+[dependencies]
+# The SuiNS core + subdomains packages, resolved via the Move Registry (MVR).
+#
+# `@suins/subnames` transitively pins `suins` at a different source revision than `@suins/core`, so
+# both resolve to the same published package id but two source revs — a diamond conflict. `override`
+# makes this top-level `suins` the single authoritative version for the whole graph.
+suins = { r.mvr = "@suins/core", override = true }
+suins_subdomains = { r.mvr = "@suins/subnames" }
+
+[addresses]
+variance = "0x0"
